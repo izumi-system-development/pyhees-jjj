@@ -1,0 +1,9 @@
+[project]
+name = "izumipyhees"
+version = "0.0.1"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+[project.urls]
+"Homepage" = "https://github.com/izumi-system-development/pyhees"
+
