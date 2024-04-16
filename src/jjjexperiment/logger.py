@@ -3,6 +3,7 @@ from pathlib import Path
 from inspect import stack
 import numpy as np
 import datetime
+import functools
 
 from os import path
 
@@ -50,15 +51,11 @@ class LimitedLoggerAdapter(logging.LoggerAdapter):
 
     """ logger のフィルタリング """
 
-    @classmethod
-    def critical(cls, message):
-        if cls._isTest: cls._logger.critical(message)
-    @classmethod
-    def error(cls, message):
-        if cls._isTest: cls._logger.error(message)
-    @classmethod
-    def warning(cls, message):
-        if cls._isTest: cls._logger.warning(message)
+    # def critical(cls, message):
+    # def error(cls, message):
+    # def warning(cls, message):
+    # def info(cls, message):
+
     @classmethod
     def info(cls, message):
         if cls._isTest: cls._logger.info(message)
@@ -67,15 +64,63 @@ class LimitedLoggerAdapter(logging.LoggerAdapter):
         if cls._isTest: cls._logger.debug(message)
 
     @classmethod
-    def NDdebug(cls, name: str, arr: np.ndarray):
-        if cls._isTest:
-            cls._logger.debug(f"{name}[MAX]  : {max(arr)}")
-            cls._logger.debug(f"{name}[ZEROS]: {arr.size - np.count_nonzero(arr)}")
-            cls._logger.debug(f"{name}[AVG.] : {np.average(arr[np.nonzero(arr)])}")
+    def NDdebug(cls, label: str, arr: np.ndarray):
+        if cls._isTest: cls._write_arr_info(label, arr)
 
     @classmethod
-    def NDtoCSV(cls, name: str, arr: np.ndarray):
+    def NDtoCSV(cls, label: str, arr: np.ndarray):
         if cls._isTest:
             now = datetime.datetime.now()
             # 混ぜると見にくいので別ファイルとする
-            np.savetxt(name + now.strftime('%H%M%S') + '.csv', arr, delimiter=',')
+            np.savetxt(label + now.strftime('%H%M%S') + '.csv', arr, delimiter=',')
+
+    @classmethod
+    def _write_arr_info(cls, label: str, arr: np.ndarray):
+        cls._logger.debug(f"{label}[MAX]  : {max(arr)}")
+        cls._logger.debug(f"{label}[ZEROS]: {arr.size - np.count_nonzero(arr)}")
+        cls._logger.debug(f"{label}[AVG.] : {np.average(arr[np.nonzero(arr)])}")
+
+
+
+# ロギング用デコレータ
+
+def log_res(res_labels: list = []):
+    """ デコレータでロガーを有効化します(返却値と同じ長さのラベルを渡して下さい """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            res = func(*args, **kwargs)
+
+            # Break
+            if not LimitedLoggerAdapter._isTest: return res
+
+            # 複数返却値
+            if type(res) is tuple:
+                if len(res) == len(res_labels):
+                    for i, label in enumerate(res_labels):
+                        if res[i] is np.ndarray:
+                            if res[i].ndim > 1:
+                                # FIXME: 二次元を前提でインデックス0固定にしています
+                                LimitedLoggerAdapter.NDdebug(f"{func.__name__}.{label}", res[i][0])
+                            else:
+                                LimitedLoggerAdapter.NDdebug(f"{func.__name__}.{label}", res[i])
+                        else:
+                            # その他の型
+                            LimitedLoggerAdapter.debug(f"{func.__name__}.{label}: {res[i]}")
+                else:
+                    LimitedLoggerAdapter.debug(f"[ERROR]{func.__name__} should be checked for log label.")
+
+            # 単体返却値
+            elif type(res) is np.ndarray:
+                if res.ndim > 1:
+                    # FIXME: 二次元を前提でインデックス0固定にしています
+                    LimitedLoggerAdapter.NDdebug(func.__name__, res[0])
+                else:
+                    LimitedLoggerAdapter.NDdebug(func.__name__, res)
+            else:
+                # その他の型
+                LimitedLoggerAdapter.debug(f"{func.__name__}: {res}")
+
+            return res
+        return wrapper
+    return decorator

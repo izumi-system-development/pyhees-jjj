@@ -6,8 +6,11 @@ import math
 from jjjexperiment.main import calc
 from os import path
 
+from jjjexperiment.logger import LimitedLoggerAdapter as _logger
+
 from test_utils.utils import  \
     expected_inputs, expected_result_type1, INPUT_SAMPLE_TYPE1_PATH
+
 
 class Test既存計算維持_入力値切替_方式1:
     """ 既存計算が壊れていないことのテスト
@@ -41,13 +44,14 @@ class Test既存計算維持_入力値切替_方式1:
             Theta_hs_out_max_H_d_t_limit
         """
         inputs = copy.deepcopy(self._inputs)
+        # NOTE: 上限域の設定なので下げて有効性をテストする
         inputs["Theta_hs_out_max_H_d_t_limit"] = 47.5
 
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 36312.73469516181)
+        assert math.isclose(result['TValue'].E_H, 36577.182142974685)
 
     def test_入力値入替_02(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -55,13 +59,14 @@ class Test既存計算維持_入力値切替_方式1:
             Theta_hs_out_min_C_d_t_limit
         """
         inputs = copy.deepcopy(self._inputs)
-        inputs["Theta_hs_out_min_C_d_t_limit"] = 18.2
+        # NOTE: 下限域の設定なので上げて有効性をテストする
+        inputs["Theta_hs_out_min_C_d_t_limit"] = 80.0
 
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 14499.62278132686)
+        assert math.isclose(result['TValue'].E_C, 91238.14278017973)
 
     def test_入力値入替_03(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -75,7 +80,7 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 35890.90098587334)
+        assert math.isclose(result['TValue'].E_H, 36136.30658681903)
 
     def test_入力値入替_04(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -89,7 +94,7 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 36546.573126677504)
+        assert math.isclose(result['TValue'].E_H, 36795.17930292908)
 
     def test_入力値入替_05(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -103,7 +108,7 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 36611.49578865069)
+        assert math.isclose(result['TValue'].E_H, 36863.72831878159)
 
     def test_入力値入替_06(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -116,9 +121,9 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 36646.91339321118)
+        assert math.isclose(result['TValue'].E_H, 36897.60513882977)
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 14803.44514208752)
+        assert math.isclose(result['TValue'].E_C, 14922.665182803587)
 
     def test_入力値入替_07(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -132,7 +137,7 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 35836.748455098634)
+        assert math.isclose(result['TValue'].E_H, 36088.188174138966)
 
     def test_入力値入替_08(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -145,80 +150,58 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H == expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_C, 14646.69148373989)
+        assert math.isclose(result['TValue'].E_C, 14596.973595586454)
         assert result['TValue'].E_C != expected_result_type1.E_C
 
     def test_入力値入替_09(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
-            デフロストに関する暖房出力補正係数（ルームエアコンディショナー）
-            C_df_H_d_t_defrost_rac
+            ルームエアコン計算用の定数
+            C_df_H_d_t_defrost_rac: デフロストに関する暖房出力補正係数
+            defrost_temp_rac: デフロスト発生外気温度
+            defrost_humid_rac: デフロスト発生外気相対湿度
         """
         inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫?
-        inputs["C_df_H_d_t_defrost_rac"] = 0.88
+        inputs["C_df_H_d_t_defrost_rac"] = 0.88  # 0.77
+        # NOTE: 下限域の設定なので上げて有効性をテストする
+        inputs["defrost_temp_rac"] = 8.0  # 5.0
+        # NOTE: 上限域の設定なので下げて有効性をテストする
+        inputs["defrost_humid_rac"] = 60  # 80
 
         result = calc(inputs, test_mode=True)
 
+        # NOTE: 上記 はダクトセントラルの計算には使用されていない
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C == expected_result_type1.E_C
 
     def test_入力値入替_10(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
-            デフロスト発生外気温度（ルームエアコンディショナー）
-            defrost_temp_rac
+            室内機吸い込み湿度に関する冷房出力補正係数
+            C_hm_C
         """
         inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫?
-        inputs["defrost_temp_rac"] = 5.2
+        inputs["C_hm_C"] = 1.32
 
         result = calc(inputs, test_mode=True)
 
+        # NOTE: C_hm_C はダクトセントラルの計算には使用されていない
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C == expected_result_type1.E_C
 
     def test_入力値入替_11(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
-            デフロスト発生外気相対湿度（ルームエアコンディショナー）
-            defrost_humid_rac
-        """
-        inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫?
-        inputs["defrost_humid_rac"] = 82
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TValue'].E_H == expected_result_type1.E_H
-        assert result['TValue'].E_C == expected_result_type1.E_C
-
-    def test_入力値入替_12(self, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
-            室内機吸い込み湿度に関する冷房出力補正係数
-            C_hm_C
-        """
-        inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫?
-        inputs["C_hm_C"] = 1.32
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TValue'].E_H == expected_result_type1.E_H
-        assert result['TValue'].E_C == expected_result_type1.E_C
-
-    def test_入力値入替_13(self, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
             定格冷房能力の最大値
             q_rtd_C_limit
         """
         inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫?
         inputs["q_rtd_C_limit"] = 3500
 
         result = calc(inputs, test_mode=True)
 
+        # NOTE: q_rtd_C_limit はダクトセントラルの計算には使用されていない
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C == expected_result_type1.E_C
 
-    def test_入力値入替_14(self, expected_result_type1):
+    def test_入力値入替_12(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             面積の合計 [m2]
             A_A
@@ -228,12 +211,12 @@ class Test既存計算維持_入力値切替_方式1:
 
         result = calc(inputs, test_mode=True)
 
-        assert math.isclose(result['TValue'].E_H, 40461.6302264345)
+        assert math.isclose(result['TValue'].E_H, 40678.98334704396)
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_C, 14832.537841444147)
+        assert math.isclose(result['TValue'].E_C, 14265.3960140718)
         assert result['TValue'].E_C != expected_result_type1.E_C
 
-    def test_入力値入替_15(self, expected_result_type1):
+    def test_入力値入替_13(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             主たる居室の面積 [m2]
             A_MR
@@ -243,12 +226,12 @@ class Test既存計算維持_入力値切替_方式1:
 
         result = calc(inputs, test_mode=True)
 
-        assert math.isclose(result['TValue'].E_H, 42391.84140416556)
+        assert math.isclose(result['TValue'].E_H, 42405.99765769754)
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_C, 21443.382718755827)
+        assert math.isclose(result['TValue'].E_C, 22790.188407415048)
         assert result['TValue'].E_C != expected_result_type1.E_C
 
-    def test_入力値入替_16(self, expected_result_type1):
+    def test_入力値入替_14(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             その他の居室の面積[m2]
             A_OR
@@ -258,12 +241,12 @@ class Test既存計算維持_入力値切替_方式1:
 
         result = calc(inputs, test_mode=True)
 
-        assert math.isclose(result['TValue'].E_H, 49036.33660346446)
+        assert math.isclose(result['TValue'].E_H, 49109.975894658266)
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_C, 24217.967340540887)
+        assert math.isclose(result['TValue'].E_C, 24974.279701328636)
         assert result['TValue'].E_C != expected_result_type1.E_C
 
-    def test_入力値入替_17(self, expected_result_type1):
+    def test_入力値入替_15(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             地域区分
             region
@@ -274,11 +257,11 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 141367.326695553)
+        assert math.isclose(result['TValue'].E_H, 142538.7729598713)
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 3151.6467125592953)
+        assert math.isclose(result['TValue'].E_C, 3196.6096582137293)
 
-    def test_入力値入替_18(self, expected_result_type1):
+    def test_入力値入替_16(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             外皮面積 [m2]
             A_env
@@ -288,12 +271,12 @@ class Test既存計算維持_入力値切替_方式1:
 
         result = calc(inputs, test_mode=True)
 
-        assert math.isclose(result['TValue'].E_H, 42086.82025871831)
+        assert math.isclose(result['TValue'].E_H, 42178.032569146)
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_C, 14867.887750721573)
+        assert math.isclose(result['TValue'].E_C, 14980.844098614029)
         assert result['TValue'].E_C != expected_result_type1.E_C
 
-    def test_入力値入替_19(self, expected_result_type1):
+    def test_入力値入替_17(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             外皮平均熱貫流率 UA [W/(m2・K)]
             U_A
@@ -303,12 +286,12 @@ class Test既存計算維持_入力値切替_方式1:
 
         result = calc(inputs, test_mode=True)
 
-        assert math.isclose(result['TValue'].E_H, 44911.46410023861)
+        assert math.isclose(result['TValue'].E_H, 45391.65533397831)
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_C, 14005.505611991277)
+        assert math.isclose(result['TValue'].E_C, 13888.950231547475)
         assert result['TValue'].E_C != expected_result_type1.E_C
 
-    def test_入力値入替_20(self, expected_result_type1):
+    def test_入力値入替_18(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             冷房期平均日射熱取得率ηAC
             eta_A_C
@@ -320,9 +303,9 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 16358.465844105795)
+        assert math.isclose(result['TValue'].E_C, 16627.81552369583)
 
-    def test_入力値入替_21(self, expected_result_type1):
+    def test_入力値入替_19(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             暖房期平均日射熱取得率ηAH
             eta_A_H
@@ -333,10 +316,10 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_C == expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_H, 40516.98524230055)
+        assert math.isclose(result['TValue'].E_H, 40537.790968649)
         assert result['TValue'].E_H != expected_result_type1.E_H
 
-    def test_入力値入替_22(self, expected_result_type1):
+    def test_入力値入替_20(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             床下空間を経由して外気を導入する換気方式の利用 （☐：評価しない or ☑：評価する）
             underfloor_ventilation
@@ -347,80 +330,69 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 34056.175244458456)
+        assert math.isclose(result['TValue'].E_H, 34284.81604847377)
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 13038.13319064152)
+        assert math.isclose(result['TValue'].E_C, 12442.943840965381)
 
-    def test_入力値入替_23(self, expected_result_type1):
+    def test_入力値入替_21(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             外気が経由する床下の面積の割合 [%]
             r_A_ufvnt
         """
         inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫?
         inputs["r_A_ufvnt"] = 85.0
 
         result = calc(inputs, test_mode=True)
 
+        # NOTE: r_A_ufvnt はダクトセントラルの計算には使用されていない
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C == expected_result_type1.E_C
 
-    def test_入力値入替_24(self, expected_result_type1):
+    def test_入力値入替_22(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             床下空間の断熱 （☐：断熱区画外 or ☑：断熱区画内）
             underfloor_insulation
         """
         inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫?
         inputs["underfloor_insulation"] = "2"
 
         result = calc(inputs, test_mode=True)
 
+        # NOTE: underfloor_insulation はダクトセントラルの計算には使用されていない
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C == expected_result_type1.E_C
 
-    def test_入力値入替_25(self, expected_result_type1):
+    def test_入力値入替_23(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             空調空気を床下を通して給気する （☐：床下を通して給気しない or ☑：床下を通して給気する）
             underfloor_air_conditioning_air_supply
         """
         inputs = copy.deepcopy(self._inputs)
         inputs["underfloor_air_conditioning_air_supply"] = "2"
+        # NOTE: この設定のみで 他の床下関係インプットも強制されます
 
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 59669.99880864711)
+        assert math.isclose(result['TValue'].E_H, 59047.04305281064)
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 18714.44515829817)
+        assert math.isclose(result['TValue'].E_C, 19511.84935219687)
 
-    def test_入力値入替_26(self, expected_result_type1):
+    def test_入力値入替_24(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
             地盤またはそれを覆う基礎の表面熱伝達抵抗 [(m2・K)/W]
             R_g
         """
         inputs = copy.deepcopy(self._inputs)
-        # WARNING: 値変更しても変わらないけど大丈夫? 0.15 -> 0.19
         inputs["R_g"] = 0.19
 
         result = calc(inputs, test_mode=True)
 
+        # NOTE: R_g はダクトセントラルの計算には使用されていない
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C == expected_result_type1.E_C
 
-    def test_入力値入替_27(self, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
-            全体風量を固定する （☐：固定しない or ☑：固定する）
-            hs_CAV
-        """
-        inputs = copy.deepcopy(self._inputs)
-        inputs["hs_CAV"] = "2"
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TValue'].E_C == expected_result_type1.E_C
-        assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 34061.44658403281)
+    # NOTE: hs_CAV はオリジナルではない概念なのでテスト対象外
 
     def test_入力値入替_H1(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -434,7 +406,21 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 34608.193798931)
+        assert math.isclose(result['TValue'].E_H, 34946.68098810251)
+
+    def test_入力値入替_R1(self, expected_result_type1):
+        """ 以前のプログラムと同じ計算結果になる
+            ダクトが通過する空間（全てもしくは一部が断熱区画外である or 全て断熱区画内である）
+            C_A_duct_insulation
+        """
+        inputs = copy.deepcopy(self._inputs)
+        inputs["C_A"]["duct_insulation"] = 2
+
+        result = calc(inputs, test_mode=True)
+
+        assert result['TValue'].E_H == expected_result_type1.E_H
+        assert result['TValue'].E_C != expected_result_type1.E_C
+        assert math.isclose(result['TValue'].E_C, 14072.155251104796)
 
     def test_入力値入替_H2(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -448,7 +434,21 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 36291.25164821471)
+        assert math.isclose(result['TValue'].E_H, 36778.616118057646)
+
+    def test_入力値入替_R2(self, expected_result_type1):
+        """ 以前のプログラムと同じ計算結果になる
+            VAV方式 (採用しない or 採用する）
+            C_A_VAV
+        """
+        inputs = copy.deepcopy(self._inputs)
+        inputs["C_A"]["VAV"] = 2
+
+        result = calc(inputs, test_mode=True)
+
+        assert result['TValue'].E_H == expected_result_type1.E_H
+        assert result['TValue'].E_C != expected_result_type1.E_C
+        assert math.isclose(result['TValue'].E_C, 15418.25608575497)
 
     def test_入力値入替_H3(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -462,7 +462,21 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 37064.91576192836)
+        assert math.isclose(result['TValue'].E_H, 37318.00958773161)
+
+    def test_入力値入替_R3(self, expected_result_type1):
+        """ 以前のプログラムと同じ計算結果になる
+            全般換気機能（あり or なし）
+            C_A_general_ventilation
+        """
+        inputs = copy.deepcopy(self._inputs)
+        inputs["C_A"]["general_ventilation"] = 2
+
+        result = calc(inputs, test_mode=True)
+
+        assert result['TValue'].E_H == expected_result_type1.E_H
+        assert result['TValue'].E_C != expected_result_type1.E_C
+        assert math.isclose(result['TValue'].E_C, 15296.164414070729)
 
     def test_入力値入替_H4(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -477,7 +491,22 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 32622.96874682381)
+        assert math.isclose(result['TValue'].E_H, 32884.75839280709)
+
+    def test_入力値入替_R4(self, expected_result_type1):
+        """ 以前のプログラムと同じ計算結果になる
+            設計風量 [m3/h]（入力する場合のみ）
+            C_A_V_hs_dsgn_C
+        """
+        inputs = copy.deepcopy(self._inputs)
+        inputs["C_A"]["input_V_hs_dsgn_C"] = 2
+        inputs["C_A"]["V_hs_dsgn_C"] = 1650
+
+        result = calc(inputs, test_mode=True)
+
+        assert result['TValue'].E_H == expected_result_type1.E_H
+        assert result['TValue'].E_C != expected_result_type1.E_C
+        assert math.isclose(result['TValue'].E_C, 13164.51337255744)
 
     def test_入力値入替_H5_方式1(self, expected_inputs, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -506,95 +535,8 @@ class Test既存計算維持_入力値切替_方式1:
         assert result['TInput'].e_rtd_H == expected_inputs.e_rtd_H
 
         assert result['TValue'].E_C == expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_H, 81575.50253836498)
+        assert math.isclose(result['TValue'].E_H, 82027.87069522333)
         assert result['TValue'].E_H != expected_result_type1.E_H
-
-    def test_入力値入替_H6_方式1(self, expected_inputs, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
-            暖房の機器仕様を入力する2
-        """
-        inputs = copy.deepcopy(self._inputs)
-        # 機器仕様の入力（入力しない or 定格能力試験の値を入力する or 定格能力試験と中間能力試験の値を入力する）
-        inputs["H_A"]["input"] = 2
-        # ▼ 入力する場合のみ
-        inputs["H_A"]["q_hs_rtd_H"] = 27500.0     # 定格暖房能力試験 能力 [W]
-        inputs["H_A"]["q_hs_mid_H"] = 13000.0     # 中間暖房能力試験 能力 [W]
-        inputs["H_A"]["P_hs_rtd_H"] = 7100        # 定格暖房能力試験 消費電力 [W]
-        inputs["H_A"]["P_hs_mid_H"] = 3450        # 中間暖房能力試験 消費電力 [W]
-        inputs["H_A"]["V_fan_rtd_H"] = 54.0 * 60  # 定格暖房能力試験 風量 [m3/h]
-        inputs["H_A"]["V_fan_mid_H"] = 22.0 * 60  # 中間暖房能力試験 風量 [m3/h]
-        inputs["H_A"]["P_fan_rtd_H"] = 400        # 定格暖房能力試験 室内側送風機の消費電力 [W]
-        inputs["H_A"]["P_fan_mid_H"] = 210        # 中間暖房能力試験 室内側送風機の消費電力 [W]
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TInput'].q_rtd_C == expected_inputs.q_rtd_C
-        assert result['TInput'].q_rtd_H == expected_inputs.q_rtd_H
-        assert result['TInput'].q_max_C == expected_inputs.q_max_C
-        assert result['TInput'].q_max_H == expected_inputs.q_max_H
-        assert result['TInput'].e_rtd_C == expected_inputs.e_rtd_C
-        assert result['TInput'].e_rtd_H == expected_inputs.e_rtd_H
-
-        assert result['TValue'].E_C == expected_result_type1.E_C
-        assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 72987.18193043352)
-
-    def test_入力値入替_R1(self, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
-            ダクトが通過する空間（全てもしくは一部が断熱区画外である or 全て断熱区画内である）
-            C_A_duct_insulation
-        """
-        inputs = copy.deepcopy(self._inputs)
-        inputs["C_A"]["duct_insulation"] = 2
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TValue'].E_H == expected_result_type1.E_H
-        assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 14980.637500033028)
-
-    def test_入力値入替_R2(self, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
-            VAV方式 (採用しない or 採用する）
-            C_A_VAV
-        """
-        inputs = copy.deepcopy(self._inputs)
-        inputs["C_A"]["VAV"] = 2
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TValue'].E_H == expected_result_type1.E_H
-        assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 12852.724729450114)
-
-    def test_入力値入替_R3(self, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
-            全般換気機能（あり or なし）
-            C_A_general_ventilation
-        """
-        inputs = copy.deepcopy(self._inputs)
-        inputs["C_A"]["general_ventilation"] = 2
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TValue'].E_H == expected_result_type1.E_H
-        assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 15191.971001329612)
-
-    def test_入力値入替_R4(self, expected_result_type1):
-        """ 以前のプログラムと同じ計算結果になる
-            設計風量 [m3/h]（入力する場合のみ）
-            C_A_V_hs_dsgn_C
-        """
-        inputs = copy.deepcopy(self._inputs)
-        inputs["C_A"]["input_V_hs_dsgn_C"] = 2
-        inputs["C_A"]["V_hs_dsgn_C"] = 1650
-
-        result = calc(inputs, test_mode=True)
-
-        assert result['TValue'].E_H == expected_result_type1.E_H
-        assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 13915.09558491048)
 
     def test_入力値入替_R5_方式1(self, expected_inputs, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -624,7 +566,37 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 19187.38971453038)
+        assert math.isclose(result['TValue'].E_C, 25856.578888133274)
+
+    def test_入力値入替_H6_方式1(self, expected_inputs, expected_result_type1):
+        """ 以前のプログラムと同じ計算結果になる
+            暖房の機器仕様を入力する2
+        """
+        inputs = copy.deepcopy(self._inputs)
+        # 機器仕様の入力（入力しない or 定格能力試験の値を入力する or 定格能力試験と中間能力試験の値を入力する）
+        inputs["H_A"]["input"] = 2
+        # ▼ 入力する場合のみ
+        inputs["H_A"]["q_hs_rtd_H"] = 27500.0     # 定格暖房能力試験 能力 [W]
+        inputs["H_A"]["q_hs_mid_H"] = 13000.0     # 中間暖房能力試験 能力 [W]
+        inputs["H_A"]["P_hs_rtd_H"] = 7100        # 定格暖房能力試験 消費電力 [W]
+        inputs["H_A"]["P_hs_mid_H"] = 3450        # 中間暖房能力試験 消費電力 [W]
+        inputs["H_A"]["V_fan_rtd_H"] = 54.0 * 60  # 定格暖房能力試験 風量 [m3/h]
+        inputs["H_A"]["V_fan_mid_H"] = 22.0 * 60  # 中間暖房能力試験 風量 [m3/h]
+        inputs["H_A"]["P_fan_rtd_H"] = 400        # 定格暖房能力試験 室内側送風機の消費電力 [W]
+        inputs["H_A"]["P_fan_mid_H"] = 210        # 中間暖房能力試験 室内側送風機の消費電力 [W]
+
+        result = calc(inputs, test_mode=True)
+
+        assert result['TInput'].q_rtd_C == expected_inputs.q_rtd_C
+        assert result['TInput'].q_rtd_H == expected_inputs.q_rtd_H
+        assert result['TInput'].q_max_C == expected_inputs.q_max_C
+        assert result['TInput'].q_max_H == expected_inputs.q_max_H
+        assert result['TInput'].e_rtd_C == expected_inputs.e_rtd_C
+        assert result['TInput'].e_rtd_H == expected_inputs.e_rtd_H
+
+        assert result['TValue'].E_C == expected_result_type1.E_C
+        assert result['TValue'].E_H != expected_result_type1.E_H
+        assert math.isclose(result['TValue'].E_H, 73523.57117653707)
 
     def test_入力値入替_R6_方式1(self, expected_inputs, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -654,7 +626,7 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_H == expected_result_type1.E_H
         assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 19238.129853353777)
+        assert math.isclose(result['TValue'].E_C, 23576.89371309802)
 
     def test_入力値入替_HEX1(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -669,4 +641,4 @@ class Test既存計算維持_入力値切替_方式1:
 
         assert result['TValue'].E_C == expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 34414.79844612079)
+        assert math.isclose(result['TValue'].E_H, 34617.143039980554)

@@ -11,10 +11,12 @@ INPUT_SAMPLE_TYPE2_PATH = path.join(path.dirname(__file__), 'input_sample_type2.
 INPUT_SAMPLE_TYPE3_PATH = path.join(path.dirname(__file__), 'input_sample_type3.json')
 INPUT_SAMPLE_TYPE4_PATH = path.join(path.dirname(__file__), 'input_sample_type4.json')
 
-# INPUT_SAMPLE_TYPE1_PATH = '../test_utils/input_sample_type1.json'
-# INPUT_SAMPLE_TYPE2_PATH = '../test_utils/input_sample_type2.json'
-# INPUT_SAMPLE_TYPE3_PATH = '../test_utils/input_sample_type3.json'
-# INPUT_SAMPLE_TYPE4_PATH = 'test_utils/input_sample_type4.json'
+"""テストインプットデータの差し替え設定エリア"""
+
+# V_supply_d_t_i の設計風量によるキャップロジック(案1,案2) のテストに有用なデータ
+# 委員の方が検証のために使用されていたデータをいただいたものです
+
+# INPUT_SAMPLE_TYPE1_PATH = path.join(path.dirname(__file__), 'input_sample_vsup_cap_logics.json')
 
 @pytest.fixture
 def expected_inputs():
@@ -32,12 +34,12 @@ def expected_inputs():
 @pytest.fixture
 def expected_result_type1():
     """ 上記の入力内容で期待される結果 """
-    return ResultSummary(E_C=14746.052998129611, E_H=36310.32799729332)
+    return ResultSummary(E_C=14773.136498249627, E_H=36558.649546681496)
 
 @pytest.fixture
 def expected_result_type2():
     """ 上記の入力内容で期待される結果 """
-    return ResultSummary(E_C=14695.841130521072, E_H=40812.21298826678)
+    return ResultSummary(E_C=13839.429941240252, E_H=40692.8527046848)
 
 def deep_update(d, u):
     for k, v in u.items():
