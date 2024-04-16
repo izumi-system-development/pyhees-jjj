@@ -6,6 +6,8 @@ import numpy as np
 from math import sqrt
 from functools import lru_cache
 
+# JJJ_EXPERIMENT ADD
+import jjjexperiment.constants as constants
 
 # ============================================================================
 # E.2 床下温度
@@ -360,7 +362,7 @@ def get_table_e_6():
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
                L_dash_H_R_d_t,
-               L_dash_CS_R_d_t):
+               L_dash_CS_R_d_t, R_g=None):
     """床下温度及び地盤またはそれを覆う基礎の表面温度 (℃) (1)(9)
 
     Args:
@@ -377,14 +379,20 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       H_OR_C: type H_OR_C: str
       L_dash_H_R_d_t(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
       L_dash_CS_R_d_t(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
-
+      R_g: 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
     Returns:
       tuple: 床下温度、地盤またはそれを覆う基礎の表面温度 (℃)
 
     """
 
+    # 元開発時、複製していたが、古い方も併用されていた。
+    # ここでは上書きしているため、古い方の呼び出しにも対応する必要があった。
+    # そのため R_g=None として、その呼び出しにも対応できるようにした
+    R_g = constants.R_g if R_g is None else R_g
+
     # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
-    R_g = 0.15
+    #R_g = 0.15
+    #R_g = 0.15 + 2.63  #フェノバボード50mm
 
     # 吸熱応答係数の初項
     Phi_A_0 = 0.025504994

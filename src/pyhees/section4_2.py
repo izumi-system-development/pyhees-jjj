@@ -771,7 +771,7 @@ def get_Theta_hs_out_d_t(VAV, Theta_req_d_t_i, V_dash_supply_d_t_i, L_star_H_d_t
     f3 = np.logical_and(C, np.sum(L_star_CS_d_t_i[:5], axis=0) > 0)
     f4 = np.logical_and(C, np.sum(L_star_CS_d_t_i[:5], axis=0) <= 0)
 
-    if VAV == False:
+    if (not VAV) and constants.change_heat_source_outlet_required_temperature != 2:
         # 暖房期および冷房期 (14-1)
         Theta_hs_out_d_t[f1] = np.sum(Theta_req_d_t_i[:5, f1] * V_dash_supply_d_t_i[:5, f1], axis=0) / \
                                        np.sum(V_dash_supply_d_t_i[:5, f1], axis=0)
@@ -875,7 +875,7 @@ def get_Theta_hs_out_max_H_d_t(Theta_star_hs_in_d_t, Q_hs_max_H_d_t, V_dash_supp
     c_p_air = get_c_p_air()
     rho_air = get_rho_air()
     return np.clip(Theta_star_hs_in_d_t + ((Q_hs_max_H_d_t * 10 ** 6) / \
-                                           (c_p_air * rho_air * np.sum(V_dash_supply_d_t_i[:5, :], axis=0))), None, 45)
+                                           (c_p_air * rho_air * np.sum(V_dash_supply_d_t_i[:5, :], axis=0))), None, constants.Theta_hs_out_max_H_d_t_limit)
 
 
 def get_Theta_hs_out_min_C_d_t(Theta_star_hs_in_d_t, Q_hs_max_CS_d_t, V_dash_supply_d_t_i):
@@ -893,7 +893,7 @@ def get_Theta_hs_out_min_C_d_t(Theta_star_hs_in_d_t, Q_hs_max_CS_d_t, V_dash_sup
     c_p_air = get_c_p_air()
     rho_air = get_rho_air()
     return np.clip(Theta_star_hs_in_d_t - ((Q_hs_max_CS_d_t * 10 ** 6) / \
-                                           (c_p_air * rho_air * np.sum(V_dash_supply_d_t_i[:5, :], axis=0))), 15, None)
+                                           (c_p_air * rho_air * np.sum(V_dash_supply_d_t_i[:5, :], axis=0))), constants.Theta_hs_out_min_C_d_t_limit, None)
 
 
 def get_X_hs_out_min_C_d_t(X_star_hs_in_d_t, Q_hs_max_CL_d_t, V_dash_supply_d_t_i):
@@ -1071,7 +1071,7 @@ def get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t):
 
     """
     C_df_H_d_t = np.ones(24 * 365)
-    C_df_H_d_t[np.logical_and(Theta_ex_d_t < 5, h_ex_d_t > 80)] = 0.77
+    C_df_H_d_t[np.logical_and(Theta_ex_d_t < constants.defrost_temp_ductcentral, h_ex_d_t > constants.defrost_humid_ductcentral)] = constants.C_df_H_d_t_defrost_ductcentral
     return C_df_H_d_t
 
 
@@ -2090,7 +2090,7 @@ l_duct_R_i = np.array([
 # ダクトiの線熱損失係数 [W/mK]
 def get_phi_i():
     """ """
-    return np.array([0.49] * 5)
+    return np.array([constants.phi_i] * 5)
 
 
 # ============================================================================

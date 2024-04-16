@@ -42,6 +42,9 @@ import numpy as np
 
 from scipy import optimize
 
+# JJJ_EXPERIMENT ADD
+import jjjexperiment.constants as constants
+
 # ============================================================================
 # A.2 消費電力量
 # ============================================================================
@@ -1280,16 +1283,39 @@ def get_alpha_c_hex_C(V_fan_x_C, X_hs_in):
 # A.5.3 熱交換器の表面積
 # ============================================================================
 
-# 室内機熱交換器の全面面積のうち熱交換に有効な面積 (m2)
-def get_A_f_hex():
-    """ """
-    return 0.23559
+# コイル特性
+def get_A_f_hex(type, q_hs_rtd_C):
+    """ 室内機熱交換器の前面面積のうち熱交換に有効な面積 (m2)
 
+    Args:
+      type: 暖房設備の種類
+      q_hs_rtd_C: 熱源機の冷房時の定格出力 (W)
+
+    """
+    if type == constants.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+      if q_hs_rtd_C < 5600:
+        return constants.A_f_hex_small_H
+      else:
+        return constants.A_f_hex_large_H
+    else:
+      return 0.23559
 
 # 室内機熱交換器の表面積のうち熱交換に有効な面積 (m2)
-def get_A_e_hex():
-    """ """
-    return 6.396
+def get_A_e_hex(type, q_hs_rtd_C):
+    """ 室内機熱交換器の表面積のうち熱交換に有効な面積 (m2)
+
+    Args:
+      type: 暖房設備の種類
+      q_hs_rtd_C: 熱源機の冷房時の定格出力 (W)
+
+    """
+    if type == constants.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+      if q_hs_rtd_C < 5600:
+        return constants.A_e_hex_small_H
+      else:
+        return constants.A_e_hex_large_H
+    else:
+      return 6.396
 
 
 # ============================================================================
