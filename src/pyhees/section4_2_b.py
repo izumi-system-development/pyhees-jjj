@@ -219,7 +219,7 @@ def get_V_fan_rtd_H(q_hs_rtd_H):
 
 
 def get_P_fan_rtd_H(V_fan_rtd_H):
-    """(10)
+    """(10) ファン消費電力
 
     Args:
       V_fan_rtd_H: 定格暖房能力運転時の送風機の風量（m3/h）
@@ -236,7 +236,6 @@ def get_V_fan_rtd_C(q_hs_rtd_C):
 
     Args:
       q_hs_rdt_C: 熱源機の定格冷房能力（W）
-      q_hs_rtd_C: returns: 定格冷房能力運転時の送風機の風量（m3/h）
 
     Returns:
       定格冷房能力運転時の送風機の風量（m3/h）
@@ -246,7 +245,7 @@ def get_V_fan_rtd_C(q_hs_rtd_C):
 
 
 def get_P_fan_rtd_C(V_fan_rtd_C):
-    """(12)
+    """(12) ファン消費電力
 
     Args:
       V_fan_rtd_C: 定格冷房能力運転時の送風機の風量（m3/h）

@@ -79,7 +79,7 @@ def calc_L_H_d_t_i(region, A_A, A_MR, A_OR, mode_H, mode_C, TS, Q, mu_H, mu_C, N
     Theta_ex_d_t = get_Theta_ex(climate)
 
     # 負荷補正前の暖房負荷
-    L_dash_H_d_t_i, L_dash_H_R_d_t_i = calc_L_dash_H_d_t_i(
+    L_dash_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = calc_L_dash_H_d_t_i(
         region=region,
         A_A=A_A,
         A_MR=A_MR,
@@ -127,7 +127,7 @@ def calc_L_H_d_t_i(region, A_A, A_MR, A_OR, mode_H, mode_C, TS, Q, mu_H, mu_C, N
         else:
             L_H_d_t_i[i - 1, :] = L_dash_H_d_t_i[i - 1, :]  # (1)
 
-    return L_H_d_t_i, L_dash_H_R_d_t_i
+    return L_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i
 
 
 def get_table_3():
@@ -462,7 +462,7 @@ def calc_L_dash_H_d_t_i(region, A_A, A_MR, A_OR, mode_H, mode_C, NV_MR, NV_OR, T
         f = L_dash_H_d_t_i[i - 1, :] > 0
         L_dash_H_d_t_i[i - 1, f] = L_dash_H_d_t_i[i - 1, f] - delta_L_dash_H_ass_d_t_i[f]
 
-    return L_dash_H_d_t_i, L_dash_H_R_d_t_i
+    return L_dash_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i
 
 
 def calc_L_dash_CS_d_t_i(region, A_A, A_MR, A_OR, mode_H, mode_C, NV_MR, NV_OR, Q, mu_H, mu_C, TS, etr_dash_t, hex,

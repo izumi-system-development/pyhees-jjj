@@ -8,6 +8,7 @@ from functools import lru_cache
 
 # JJJ_EXPERIMENT ADD
 import jjjexperiment.constants as constants
+from jjjexperiment.logger import log_res
 
 # ============================================================================
 # E.2 床下温度
@@ -416,6 +417,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     Theta_uf_d_t = np.zeros(24 * 365)
     Theta_g_surf_d_t = np.zeros(24 * 365)
     Theta_dash_g_surf_A_m = np.zeros(M)
+    Theta_dash_g_surf_A_m_d_t = np.zeros((24 * 365, M))
+    Theta_star_d_t_i = np.zeros((12, 24 * 365))
+    H_star_d_t_i = np.zeros((12, 24 * 365))
 
     # 初期値の設定
     Theta_uf_prev = 0.0
@@ -531,9 +535,85 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         # 計算結果の保存
         Theta_uf_d_t[dt] = Theta_uf
         Theta_g_surf_d_t[dt] = Theta_g_surf
+        Theta_dash_g_surf_A_m_d_t[dt] = Theta_dash_g_surf_A_m
+        Theta_star_d_t_i[:, dt] = Theta_star
+        H_star_d_t_i[:, dt] = H_star
 
-    return Theta_uf_d_t, Theta_g_surf_d_t
+    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i
 
+@log_res(['Theta_uf_d_t'])
+def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_dash_supply_d_t_i, Theta_ex_d_t):
+    """床下温度
+
+    Args:
+      L_H_d_t_i(ndarray): 暖冷房区画iの1時間当たりの暖房負荷
+      L_CS_d_t_i(ndarray): 暖冷房区画iの1時間当たりの冷房顕熱負荷
+      A_A(float): 床面積の合計 (m2)
+      A_MR(float): 主たる居室の床面積 (m2)
+      A_OR(float): その他の居室の床面積 (m2)
+      r_A_ufvnt(list[float]): 当該住戸において、床下空間全体の面積に対する空気を供給する床下空間の面積の比 (-)
+      V_dash_supply_d_t_i(ndarray): 日付dの時刻tにおける暖冷房区画iのVAV調整前の熱源機の風量（m3/h）
+      Theta_ex_d_t(ndarray): 外気温度 (℃)
+
+    Returns:
+      日付dの時刻tにおける暖冷房区画iの1時間当たりの床下温度
+
+    """
+
+    # 空気密度[kg/m3]
+    ro_air = get_ro_air()
+
+    # 空気の比熱[kJ/kgK]
+    c_p_air = get_c_p_air()
+
+    # 床の熱貫流率[W/m2K]
+    U_s = get_U_s()
+
+    # 床の温度差係数 (-)
+    H_floor = 0.7
+
+    # 冷房時の室温 (℃)
+    Theta_in_C = 27.0
+
+    # 暖房時の室温 (℃)
+    Theta_in_H = 20.0
+
+    if r_A_ufvnt is None:
+        r_A_ufvnt = 0
+
+    # 暖冷房区画iの床面積のうち床下空間に接する床面積の割合 (-)
+    r_A_uf_i = np.array([get_r_A_uf_i(i) for i in range(1, 13)])
+    # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
+    A_s_ufvnt_i = [calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)]
+
+    H = Theta_ex_d_t < Theta_in_H
+    C = Theta_ex_d_t > Theta_in_C
+    M = np.logical_not(np.logical_or(H, C))
+
+    # 床下への供給風量
+    V_dash_supply_d_t = np.sum(r_A_uf_i[:5, np.newaxis] * V_dash_supply_d_t_i, axis=0)
+
+    # 計算領域の確保
+    # NOTE: 床下はつながっているので d_t_i にはならない
+    Theta_uf_d_t = np.zeros(24 * 365)
+
+    Theta_uf_d_t[H] = \
+      ( np.sum(r_A_uf_i[:5, np.newaxis] * L_H_d_t_i[:5, H], axis=0) * 1000 -
+        U_s * sum(A_s_ufvnt_i[:5]) * ((Theta_in_H - Theta_ex_d_t[H]) * H_floor - Theta_in_H) * 3.6 +
+        ro_air * c_p_air * V_dash_supply_d_t[H] * Theta_in_H
+      ) / (
+        ro_air * c_p_air * V_dash_supply_d_t[H] + U_s * sum(A_s_ufvnt_i[:5]) * 3.6
+      )
+    Theta_uf_d_t[C] = \
+      ( np.sum(r_A_uf_i[:5, np.newaxis] * L_CS_d_t_i[:5, C], axis=0) * 1000 -
+        U_s * sum(A_s_ufvnt_i[:5]) * ((Theta_in_C - Theta_ex_d_t[C]) * H_floor - Theta_in_C) * 3.6 +
+        ro_air * c_p_air * V_dash_supply_d_t[C] * Theta_in_C
+      ) / (
+        ro_air * c_p_air * V_dash_supply_d_t[C] + U_s * sum(A_s_ufvnt_i[:5]) * 3.6
+      )
+    Theta_uf_d_t[M] = Theta_ex_d_t[M]
+
+    return Theta_uf_d_t
 
 def get_Theta_g_avg(Theta_ex_d_t):
     """地盤の不易層温度 (℃) (10)

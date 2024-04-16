@@ -105,7 +105,7 @@ def calc_delta_L_dash_H_ass_d_t_i(i, supply_target, L_dash_H_R_d_t_i, L_dash_CS_
 
     # 床下温度及び地盤またはそれを覆う基礎の表面温度 (℃)
     if supply_target == '床下':
-        Theta_uf_d_t, Theta_g_surf_d_t = algo.calc_Theta(
+        Theta_uf_d_t, Theta_g_surf_d_t, *others = algo.calc_Theta(
             region=region,
             A_A=A_A,
             A_MR=A_MR,

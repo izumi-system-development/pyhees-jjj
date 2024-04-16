@@ -5,6 +5,7 @@
 # ============================================================================
 
 import numpy as np
+import pandas as pd
 from math import floor
 
 from pyhees.section4_1_Q import \
@@ -31,7 +32,7 @@ import jjjexperiment.constants as constants
 # ============================================================================
 
 # 最大暖房出力 (1)
-def calc_Q_max_H_d_t(Q_r_max_H_d_t, q_rtd_H, Theta_ex, h_ex):
+def calc_Q_max_H_d_t(Q_r_max_H_d_t, q_rtd_H, Theta_ex, h_ex, input_C_af_H):
     """最大暖房出力 (1)
 
     Args:
@@ -39,13 +40,14 @@ def calc_Q_max_H_d_t(Q_r_max_H_d_t, q_rtd_H, Theta_ex, h_ex):
       q_rtd_H(float): 定格暖房能力
       Theta_ex(ndarray): 外気温度
       h_ex(ndarray): 外気相対湿度
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
 
     Returns:
       ndarray: 最大暖房出力
 
     """
     # 室内機吹き出し風量に関する暖房時の能力補正係
-    C_af_H = get_C_af_H()
+    C_af_H = get_C_af_H(input_C_af_H)
 
     # デフロストに関する暖房出力補正係数
     C_df_H_d_t = get_C_df_H(Theta_ex, h_ex)
@@ -145,19 +147,31 @@ def get_q_r_max_H(q_max_H, q_rtd_H):
 
 
 # 室内機吹き出し風量に関する暖房時の能力補正係
-def get_C_af_H():
+def get_C_af_H(input_C_af_H):
     """室内機吹き出し風量に関する暖房時の能力補正係数
 
     Args:
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
 
     Returns:
       float: 室内機吹き出し風量に関する暖房時の能力補正係
 
     """
-    return 0.8
+    if int(input_C_af_H['input_mode']) == 1:
+      if not input_C_af_H['dedicated_chamber'] and not input_C_af_H['fixed_fin_direction']:
+        return 0.800
+      elif input_C_af_H['dedicated_chamber'] and not input_C_af_H['fixed_fin_direction']:
+        return 0.900
+      elif not input_C_af_H['dedicated_chamber'] and input_C_af_H['fixed_fin_direction']:
+        return 0.950
+      else:
+        return 1.00
+    else:
+      return float(input_C_af_H['C_af_H'])
 
 
 # デフロストに関する暖房出力補正係数
+@constants.jjjexperiment_mod
 def get_C_df_H(Theta_ex, h_ex):
     """デフロストに関する暖房出力補正係数
 
@@ -232,8 +246,66 @@ def calc_E_E_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t):
 
     return E_E_H_d_t
 
+@constants.jjjexperiment_clone
+def calc_E_E_H_d_t_2024(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t, q_max_C, q_max_H, input_C_af_H, climateFile):
+    """消費電力量 (5)
 
-def calc_Q_UT_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, L_H_d_t):
+    Args:
+      region(int): 省エネルギー地域区分
+      q_rtd_C(float): 定格冷房能力
+      q_rtd_H(float): 定格暖房能力
+      e_rtd_H(float): 定格暖房エネルギー消費効率
+      dualcompressor(bool): 容量可変型コンプレッサー搭載
+      L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷
+
+      q_max_C:
+      q_max_H:
+      input_C_af_H: 室内機吹き出し風量に関する暖房出力補正係数に関する入力
+      climateFile: 気象条件ファイル
+
+    Returns:
+      ndarray: 消費電力量
+
+    """
+    # 気象条件
+    if climateFile == '-':
+        climate = load_climate(region)
+    else:
+        climate = pd.read_csv(climateFile, nrows=24 * 365, encoding="SHIFT-JIS")
+    Theta_ex = get_Theta_ex(climate)
+    X_ex = get_X_ex(climate)
+    h_ex = calc_h_ex(X_ex, Theta_ex)
+
+    # TODO: コメントアウトした理由は何ですか
+    # 最大暖房能力
+    # q_max_C = get_q_max_C(q_rtd_C)
+    # q_max_H = get_q_max_H(q_rtd_H, q_max_C)
+
+    # 最大暖房能力比
+    q_r_max_H = get_q_r_max_H(q_max_H, q_rtd_H)
+
+    # 最大暖房出力比
+    Q_r_max_H_d_t = calc_Q_r_max_H_d_t(q_rtd_C, q_r_max_H, Theta_ex)
+
+    # 最大暖房出力
+    Q_max_H_d_t = calc_Q_max_H_d_t(Q_r_max_H_d_t, q_rtd_H, Theta_ex, h_ex, input_C_af_H)
+
+    # 処理暖房負荷
+    Q_T_H_d_t = get_Q_T_H_d_t_i(Q_max_H_d_t_i=Q_max_H_d_t, L_H_d_t_i=L_H_d_t)
+
+    # 補正処理暖房負荷
+    Q_dash_T_H_d_t = calc_Q_dash_T_H_d_t(Q_T_H_d_t, Theta_ex, h_ex, input_C_af_H)
+
+    # 消費電力量
+    E_E_H_d_t = calc_f_H_Theta(Q_dash_T_H_d_t / (q_max_H * 3600 * 10 ** (-6)), q_rtd_C, dualcompressor, Theta_ex) \
+                / calc_f_H_Theta(1.0 / q_r_max_H, q_rtd_C, dualcompressor, np.ones(24 * 365) * 7.0) \
+                * (q_rtd_H / e_rtd_H) * 10 ** (-3)
+    E_E_H_d_t[Q_dash_T_H_d_t == 0.0] = 0.0  # 補正処理暖房負荷が0の場合は0
+
+    return E_E_H_d_t
+
+
+def calc_Q_UT_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, L_H_d_t, input_C_af_H):
     """未処理負荷
 
     Args:
@@ -242,6 +314,7 @@ def calc_Q_UT_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, L_H_d_t):
       q_rtd_H(float): 定格暖房能力
       e_rtd_H(float): 定格暖房エネルギー消費効率
       L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
 
     Returns:
       ndarray: 未処理負荷
@@ -264,7 +337,7 @@ def calc_Q_UT_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, L_H_d_t):
     Q_r_max_H_d_t = calc_Q_r_max_H_d_t(q_rtd_C, q_r_max_H, Theta_ex)
 
     # 最大暖房出力
-    Q_max_H_d_t = calc_Q_max_H_d_t(Q_r_max_H_d_t, q_rtd_H, Theta_ex, h_ex)
+    Q_max_H_d_t = calc_Q_max_H_d_t(Q_r_max_H_d_t, q_rtd_H, Theta_ex, h_ex, input_C_af_H)
 
     # 処理暖房負荷
     Q_T_H_d_t = get_Q_T_H_d_t_i(Q_max_H_d_t_i=Q_max_H_d_t, L_H_d_t_i=L_H_d_t)
@@ -341,6 +414,7 @@ def calc_a_eq7(q_rtd_C, dualcompressor, Theta_ex):
 
 # 係数p_i (8) (i=0,1,2,10..42)
 # (容量可変型コンプレッサー搭載ルームエアコンディショナーでないルームエアコンディショナー)
+@constants.jjjexperiment_mod
 def calc_p_i_eq8(i, q_rtd_C):
     """係数p_i
 
@@ -547,20 +621,22 @@ def get_table_4_C():
 
 
 # 補正処理暖房負荷 (10)
-def calc_Q_dash_T_H_d_t(Q_T_H_d_t, Theta_ex, h_ex):
+# TODO: 引数を渡す
+def calc_Q_dash_T_H_d_t(Q_T_H_d_t, Theta_ex, h_ex, input_C_af_H):
     """補正処理暖房負荷 (10)
 
     Args:
       Q_T_H_d_t(ndarray): 処理負荷
       Theta_ex(ndarray): 外気温度
       h_ex(ndarray): 外気相対温度
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
 
     Returns:
       ndarray: 補正処理暖房負荷 (10)
 
     """
     ##室内機吹き出し風量に関する暖房時の能力補正係
-    C_af_H = get_C_af_H()
+    C_af_H = get_C_af_H(input_C_af_H)
 
     ##デフロストに関する暖房出力補正係数
     C_d_f = get_C_df_H(Theta_ex, h_ex)
@@ -630,12 +706,14 @@ def get_E_M_H_d_t():
 # ============================================================================
 
 # 最大冷房出力 (11)
-def calc_Q_max_C_d_t(Q_r_max_C_d_t, q_rtd_C):
+# TODO: 引数を渡す
+def calc_Q_max_C_d_t(Q_r_max_C_d_t, q_rtd_C, input_C_af_C):
     """最大冷房出力 (11)
 
     Args:
       Q_r_max_C_d_t(ndarray): 最大冷房出力比
       q_rtd_C(float): 定格冷房能力
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
 
     Returns:
       ndarray: 最大冷房出力
@@ -645,7 +723,7 @@ def calc_Q_max_C_d_t(Q_r_max_C_d_t, q_rtd_C):
     C_hm_C = get_C_hm_C()
 
     # 室内機吹き出し風量に関する冷房出力係数
-    C_af_C = get_C_af_C()
+    C_af_C = get_C_af_C(input_C_af_C)
 
     return Q_r_max_C_d_t * q_rtd_C * C_af_C * C_hm_C * 3600 * 10 ** (-6)
 
@@ -739,19 +817,31 @@ def get_q_r_max_C(q_max_C, q_rtd_C):
 
 
 # 室内機吹き出し風量に関する冷房時の能力補正係数 C_af_C
-def get_C_af_C():
+# TODO: 引数を渡す
+def get_C_af_C(input_C_af_C):
     """室内機吹き出し風量に関する冷房時の能力補正係数 C_af_C
 
     Args:
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
 
     Returns:
       float: 室内機吹き出し風量に関する冷房時の能力補正係数
 
     """
-    return 0.85
-
+    if int(input_C_af_C['input_mode']) == 1:
+      if not input_C_af_C['dedicated_chamber'] and not input_C_af_C['fixed_fin_direction']:
+        return 0.850
+      elif input_C_af_C['dedicated_chamber'] and not input_C_af_C['fixed_fin_direction']:
+        return 0.925
+      elif not input_C_af_C['dedicated_chamber'] and input_C_af_C['fixed_fin_direction']:
+        return 0.962
+      else:
+        return 1.00
+    else:
+      return float(input_C_af_C['C_af_C'])
 
 # 室内機吸い込み湿度に関する冷房能力補正係 C_hm_C
+@constants.jjjexperiment_mod
 def get_C_hm_C():
     """室内機吸い込み湿度に関する冷房能力補正係数 C_hm_C
 
@@ -941,6 +1031,78 @@ def calc_E_E_C_d_t(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t)
 
     # 補正処理冷房負荷
     Q_dash_T_C_d_t = calc_Q_dash_T_C_d_t(Q_T_CS_d_t, Q_T_CL_d_t)
+
+    # 消費電力量
+    E_E_C_d_t = calc_f_C_Theta(Q_dash_T_C_d_t / (q_max_C * 3600 * 10 ** (-6)), Theta_ex, q_rtd_C, dualcompressor) \
+                / calc_f_C_Theta(1.0 / q_r_max_C, np.ones(24 * 365) * 35.0, q_rtd_C, dualcompressor) \
+                * (q_rtd_C / e_rtd_C) * 10 ** (-3)
+    E_E_C_d_t[Q_dash_T_C_d_t == 0.0] = 0.0
+
+    return E_E_C_d_t
+
+@constants.jjjexperiment_clone
+def calc_E_E_C_d_t_2024(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t, q_max_C, input_C_af_C, climateFile):
+    """消費電力量 (20)
+
+    Args:
+      region(int): 省エネルギー地域区分
+      q_rtd_C(float): 定格冷房能力
+      e_rtd_C(float): 定格冷房エネルギー消費効率
+      dualcompressor(bool): 容量可変型コンプレッサー搭載
+      L_CS_d_t(ndarray): 暖冷房区画の 1 時間当たりの冷房顕熱負荷
+      L_CL_d_t(ndarray): 暖冷房区画の 1 時間当たりの冷房潜熱負荷
+
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
+      climateFile: 気象条件ファイル
+
+    Returns:
+      ndarray: 消費電力量
+
+    """
+    # 気象条件
+    if climateFile == '-':
+        climate = load_climate(region)
+    else:
+        climate = pd.read_csv(climateFile, nrows=24 * 365, encoding="SHIFT-JIS")
+    Theta_ex = get_Theta_ex(climate)
+    X_ex = get_X_ex(climate)
+    h_ex = calc_h_ex(X_ex, Theta_ex)
+
+    # 最大冷房能力
+    # q_max_C = get_q_max_C(q_rtd_C)
+
+    # 最大冷房能力比
+    q_r_max_C = get_q_r_max_C(q_max_C, q_rtd_C)
+
+    # 最大冷房出力比
+    Q_r_max_C_d_t = calc_Q_r_max_C_d_t(q_r_max_C, q_rtd_C, Theta_ex)
+
+    # 最大冷房出力
+    Q_max_C_d_t = calc_Q_max_C_d_t(Q_r_max_C_d_t, q_rtd_C, input_C_af_C)
+
+    # 冷房負荷最小顕熱比
+    SHF_L_min_c = get_SHF_L_min_c()
+
+    # 最大冷房潜熱負荷
+    L_max_CL_d_t = get_L_max_CL_d_t(L_CS_d_t, SHF_L_min_c)
+
+    # 補正冷房潜熱負荷
+    L_dash_CL_d_t = get_L_dash_CL_d_t(L_max_CL_d_t, L_CL_d_t)
+    L_dash_C_d_t = get_L_dash_C_d_t(L_CS_d_t, L_dash_CL_d_t)
+
+    # 冷房負荷補正顕熱比
+    SHF_dash_d_t = get_SHF_dash_d_t(L_CS_d_t, L_dash_C_d_t)
+
+    # 最大冷房顕熱出力, 最大冷房潜熱出力
+    Q_max_CS_d_t = get_Q_max_CS_d_t(Q_max_C_d_t, SHF_dash_d_t)
+    Q_max_CL_d_t = get_Q_max_CL_d_t(Q_max_C_d_t, SHF_dash_d_t, L_dash_CL_d_t)
+
+    # 処理冷房負荷
+    Q_T_CS_d_t = get_Q_T_CS_d_t_i(Q_max_CS_d_t_i=Q_max_CS_d_t, L_CS_d_t_i=L_CS_d_t)
+    Q_T_CL_d_t = get_Q_T_CL_d_t_i(Q_max_CL_d_t_i=Q_max_CL_d_t, L_CL_d_t_i=L_CL_d_t)
+
+    # 補正処理冷房負荷
+    Q_dash_T_C_d_t = calc_Q_dash_T_C_d_t(Q_T_CS_d_t, Q_T_CL_d_t, input_C_af_C)
 
     # 消費電力量
     E_E_C_d_t = calc_f_C_Theta(Q_dash_T_C_d_t / (q_max_C * 3600 * 10 ** (-6)), Theta_ex, q_rtd_C, dualcompressor) \
@@ -1223,12 +1385,13 @@ def get_table_6_C():
 
 
 # 補正処理冷房負荷 (25)
-def calc_Q_dash_T_C_d_t(Q_T_CS_d_t, Q_T_CL_d_t):
+def calc_Q_dash_T_C_d_t(Q_T_CS_d_t, Q_T_CL_d_t, input_C_af_C):
     """補正処理冷房負荷 (25)
 
     Args:
       Q_T_CS_d_t(ndarray): 冷房区画の処理冷房顕熱負荷
       Q_T_CL_d_t(ndarray): 冷房区画の処理冷房潜熱負荷
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
 
     Returns:
       ndarray: 補正処理冷房負荷
@@ -1238,7 +1401,7 @@ def calc_Q_dash_T_C_d_t(Q_T_CS_d_t, Q_T_CL_d_t):
     C_hm_C = get_C_hm_C()
 
     # 室内機吹き出し風量に関する冷房出力係数
-    C_af_C = get_C_af_C()
+    C_af_C = get_C_af_C(input_C_af_C)
 
     return (Q_T_CS_d_t + Q_T_CL_d_t) * (1.0 / (C_hm_C * C_af_C))
 
