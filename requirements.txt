@@ -5,3 +5,4 @@ setuptools >= 67.8.0
 
 # ADD IN FORKED REPOSITORY
 pytest
+injector
