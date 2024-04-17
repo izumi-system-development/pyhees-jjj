@@ -1,9 +1,24 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "izumipyhees"
 version = "0.0.1"
+description = "Pyheesの検証用のフォークプロジェクトです"
+authors = [
+    { name = "Pyhees Development Team" }
+]
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24.3",
+    "pandas>=2.0.1",
+    "scipy>=1.10.1",
+    "setuptools>=67.8.0",
+    "pytest",
+    "injector"
+]
 
 [project.urls]
-"Homepage" = "https://github.com/izumi-system-development/pyhees"
-
+homepage = "https://github.com/izumi-system-development/pyhees"
