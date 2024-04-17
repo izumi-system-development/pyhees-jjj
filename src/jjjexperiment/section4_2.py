@@ -18,13 +18,7 @@ import pyhees.section4_2_a as dc_a
 
 """ JJJ_EXPERIMENT OVERRIDE """
 
-# 上書きしている関数とそうでないものがあるので両方インポート
-# ダクト式セントラル空調機
-import jjjexperiment.section4_2_a as jjj_dc_a
-
 """ JJJ_EXPERIMENT ORIGINAL """
-from jjjexperiment.denchu_1 import Spec
-import jjjexperiment.denchu_2 as denchu_2
 
 import jjjexperiment.constants as constants
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
@@ -40,7 +34,7 @@ def version_info() -> str:
     """
     # NOTE: subprocessモジュールによるコミット履歴からの生成は \
     # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
-    return '_20240327'
+    return '_20240417'
 
 # NOTE: section4_2 の同名の関数の改変版
 @constants.jjjexperiment_clone
