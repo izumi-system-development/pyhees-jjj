@@ -597,20 +597,19 @@ def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_
     # NOTE: 床下はつながっているので d_t_i にはならない
     Theta_uf_d_t = np.zeros(24 * 365)
 
-    Theta_uf_d_t[H] = \
-      ( np.sum(r_A_uf_i[:5, np.newaxis] * L_H_d_t_i[:5, H], axis=0) * 1000 -
-        U_s * sum(A_s_ufvnt_i[:5]) * ((Theta_in_H - Theta_ex_d_t[H]) * H_floor - Theta_in_H) * 3.6 +
-        ro_air * c_p_air * V_dash_supply_d_t[H] * Theta_in_H
-      ) / (
-        ro_air * c_p_air * V_dash_supply_d_t[H] + U_s * sum(A_s_ufvnt_i[:5]) * 3.6
-      )
-    Theta_uf_d_t[C] = \
-      ( np.sum(r_A_uf_i[:5, np.newaxis] * L_CS_d_t_i[:5, C], axis=0) * 1000 -
-        U_s * sum(A_s_ufvnt_i[:5]) * ((Theta_in_C - Theta_ex_d_t[C]) * H_floor - Theta_in_C) * 3.6 +
-        ro_air * c_p_air * V_dash_supply_d_t[C] * Theta_in_C
-      ) / (
-        ro_air * c_p_air * V_dash_supply_d_t[C] + U_s * sum(A_s_ufvnt_i[:5]) * 3.6
-      )
+    upper1_H = np.sum(r_A_uf_i[:5, np.newaxis] * L_H_d_t_i[:5, H], axis=0) * 1000  # 1F居室に限定
+    upper1_C = np.sum(r_A_uf_i[:5, np.newaxis] * L_CS_d_t_i[:5, C], axis=0) * 1000  # 1F居室に限定
+    upper2_H = U_s * sum(A_s_ufvnt_i[:5]) * ((Theta_in_H - Theta_ex_d_t[H]) * H_floor - Theta_in_H) * 3.6
+    upper2_C = U_s * sum(A_s_ufvnt_i[:5]) * ((Theta_in_C - Theta_ex_d_t[C]) * H_floor - Theta_in_C) * 3.6
+    upper3_H = ro_air * c_p_air * V_dash_supply_d_t[H] * Theta_in_H
+    upper3_C = ro_air * c_p_air * V_dash_supply_d_t[C] * Theta_in_C
+
+    lower1_H = ro_air * c_p_air * V_dash_supply_d_t[H]
+    lower1_C = ro_air * c_p_air * V_dash_supply_d_t[C]
+    lower2 = U_s * sum(A_s_ufvnt_i[:5]) * 3.6
+
+    Theta_uf_d_t[H] = (upper1_H - upper2_H + upper3_H) / (lower1_H + lower2)
+    Theta_uf_d_t[C] = (upper1_C - upper2_C + upper3_C) / (lower1_C + lower2)
     Theta_uf_d_t[M] = Theta_ex_d_t[M]
 
     return Theta_uf_d_t
