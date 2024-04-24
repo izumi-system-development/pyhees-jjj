@@ -688,6 +688,7 @@ def get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
           L_dash_H_R_d_t, L_dash_CS_R_d_t, R_g, di)
     else:
       delta_L_star = np.zeros((5, 24 * 365))
+
     L_star_H_d_t_i = np.zeros((5, 24 * 365))
     L_star_H_d_t_i[Hf] = np.clip(L_H_d_t_i[Hf] + Q_star_trs_prt_d_t_i[Hf] + delta_L_star[Hf], 0, None)
     return L_star_H_d_t_i
@@ -716,12 +717,15 @@ def get_delta_L_star_underfloor_2023(
   """
   # 当該住戸の1時間当たりの換気量 (m3/h) D.3.2 (4)
   V_A = get_V_A(A_A)
-  Theta_uf_d_t, _, A_s_ufvnt_i, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, _, _ = \
+  Theta_uf_d_t, _, A_s_ufvnt_i, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, _, _, Theta_supply_d_t = \
     calc_Theta(
       region=region, A_A=A_A, A_MR=A_MR, A_OR=A_OR, Q=Q, r_A_ufvnt=r_A_ufvnt, underfloor_insulation=underfloor_insulation,
       Theta_sa_d_t=Theta_uf_d_t, Theta_ex_d_t=Theta_ex_d_t, V_sa_d_t_A=np.repeat(V_A, 24 * 365), H_OR_C='H',
       L_dash_H_R_d_t=L_dash_H_R_d_t, L_dash_CS_R_d_t=L_dash_CS_R_d_t, R_g=R_g)
   U_s = get_U_s()
+  # CHECK: Theta_sa_d_t に Theta_uf_d_t を入れている既存コードの意図を確認したい
+
+  # TODO: Theta_supply_d_t を求めて、コチラで使用します
 
   # 床下→地盤
   underfloor_to_ground = (A_s_ufvnt_A * (np.sum(Theta_dash_g_surf_A_m_d_t, axis=1) + Theta_g_avg - Theta_uf_d_t)) / (R_g + Phi_A_0)
@@ -1234,7 +1238,7 @@ def get_Theta_req_d_t_i_2023(
 
     r_A_uf_i = np.array([get_r_A_uf_i(i) for i in range(1,13)])
     V_sa_d_t_A = np.sum(r_A_uf_i[:5, np.newaxis] * V_dash_supply_d_t_i, axis=0)
-    Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i = \
+    Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, _ = \
       calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
         V_sa_d_t_A, H_OR_C, L_dash_H_R_d_t, L_dash_CS_R_d_t, R_g)
     U_s = get_U_s()

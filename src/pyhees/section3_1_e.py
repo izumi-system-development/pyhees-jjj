@@ -8,6 +8,7 @@ from functools import lru_cache
 
 # JJJ_EXPERIMENT ADD
 import jjjexperiment.constants as constants
+from jjjexperiment.options import *
 from jjjexperiment.logger import log_res
 
 # ============================================================================
@@ -421,6 +422,8 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     Theta_star_d_t_i = np.zeros((12, 24 * 365))
     H_star_d_t_i = np.zeros((12, 24 * 365))
 
+    Theta_supply_d_t = np.zeros(24 * 365)
+
     # 初期値の設定
     Theta_uf_prev = 0.0
     Theta_g_surf_prev = 0.0
@@ -510,18 +513,52 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
             else:
                 raise ValueError((L_dash_CS_R_d_t[i - 1][dt], L_dash_CS_R_d_t[i - 1][dt]))
 
-        # 当該住宅の床下温度 (1)
-        Theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * Theta_sa_d_t[dt] +
-                    (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in
-                          range(1, 13)])
-                     + phi * L_uf * Theta_ex_d_t[dt]
-                     + (A_s_ufvnt_A / R_g)
-                     * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
-                   / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                      + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, 13)])
-                         + phi * L_uf
+        # ここで Theta_sa_d_t 来ているが、これは Theta_uf_d_t を与えられている
+        # 床下空調新ロジックでは、これを Theta_sa の入力としてではなく、
+        # 探索された Theta_uf のバリデーションとして使用する
+
+        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+          expected_Theta_uf = Theta_sa_d_t[dt]
+          # 二分探索 探索範囲の定義 実行時間増するが30秒にもなく現実的
+          L_bnd = expected_Theta_uf
+          U_bnd = expected_Theta_uf + 100
+          tolerance = 0.001  # まずはe-3を目標とする
+          while (U_bnd - L_bnd > tolerance):
+            test_theta_uf = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
+            # 式自体は ELSE 文と同じものをコピペして使用する
+            theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * test_theta_uf +
+                        (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in
+                              range(1, 13)])
+                         + phi * L_uf * Theta_ex_d_t[dt]
                          + (A_s_ufvnt_A / R_g)
-                         * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
+                         * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
+                       / (ro_air * c_p_air * V_sa_d_t_A[dt]
+                          + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, 13)])
+                             + phi * L_uf
+                             + (A_s_ufvnt_A / R_g)
+                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
+            if theta_uf < expected_Theta_uf:
+              L_bnd = test_theta_uf
+            else:
+              U_bnd = test_theta_uf
+
+          Theta_supply_d_t[dt] = (U_bnd + L_bnd) / 2
+
+        else:
+          # 当該住宅の床下温度 (1)
+          Theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * Theta_sa_d_t[dt] +
+                      (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in
+                            range(1, 13)])
+                       + phi * L_uf * Theta_ex_d_t[dt]
+                       + (A_s_ufvnt_A / R_g)
+                       * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
+                     / (ro_air * c_p_air * V_sa_d_t_A[dt]
+                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, 13)])
+                           + phi * L_uf
+                           + (A_s_ufvnt_A / R_g)
+                           * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
+
+          Theta_supply_d_t[dt] = Theta_sa_d_t[dt]
 
         # 地盤またはそれを覆う基礎の表面温度 (℃) (9)
         Theta_g_surf = (((Phi_A_0 / R_g) * Theta_uf + np.sum(Theta_dash_g_surf_A_m) + Theta_g_avg)
@@ -539,7 +576,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_star_d_t_i[:, dt] = Theta_star
         H_star_d_t_i[:, dt] = H_star
 
-    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i
+    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
 
 @log_res(['Theta_uf_d_t'])
 def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_dash_supply_d_t_i, Theta_ex_d_t):
