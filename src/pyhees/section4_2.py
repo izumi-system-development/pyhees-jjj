@@ -721,7 +721,7 @@ def get_delta_L_star_underfloor_2023(
     calc_Theta(
       region=region, A_A=A_A, A_MR=A_MR, A_OR=A_OR, Q=Q, r_A_ufvnt=r_A_ufvnt, underfloor_insulation=underfloor_insulation,
       Theta_sa_d_t=Theta_uf_d_t, Theta_ex_d_t=Theta_ex_d_t, V_sa_d_t_A=np.repeat(V_A, 24 * 365), H_OR_C='H',
-      L_dash_H_R_d_t=L_dash_H_R_d_t, L_dash_CS_R_d_t=L_dash_CS_R_d_t, R_g=R_g)
+      L_dash_H_R_d_t=L_dash_H_R_d_t, L_dash_CS_R_d_t=L_dash_CS_R_d_t, R_g=R_g, di=di)
   U_s = get_U_s()
   # CHECK: Theta_sa_d_t に Theta_uf_d_t を入れている既存コードの意図を確認したい
 

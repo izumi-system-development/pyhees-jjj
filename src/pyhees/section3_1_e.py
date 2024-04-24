@@ -10,6 +10,8 @@ from functools import lru_cache
 import jjjexperiment.constants as constants
 from jjjexperiment.options import *
 from jjjexperiment.logger import log_res
+from jjjexperiment.di_container import *
+from injector import Injector
 
 # ============================================================================
 # E.2 床下温度
@@ -364,7 +366,7 @@ def get_table_e_6():
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
                L_dash_H_R_d_t,
-               L_dash_CS_R_d_t, R_g=None):
+               L_dash_CS_R_d_t, R_g=None, di: Injector = None):
     """床下温度及び地盤またはそれを覆う基礎の表面温度 (℃) (1)(9)
 
     Args:
@@ -527,8 +529,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
             test_theta_uf = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
             # 式自体は ELSE 文と同じものをコピペして使用する
             theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * test_theta_uf +
-                        (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in
-                              range(1, 13)])
+                        (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, 13)])
                          + phi * L_uf * Theta_ex_d_t[dt]
                          + (A_s_ufvnt_A / R_g)
                          * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
@@ -547,8 +548,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         else:
           # 当該住宅の床下温度 (1)
           Theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * Theta_sa_d_t[dt] +
-                      (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in
-                            range(1, 13)])
+                      (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, 13)])
                        + phi * L_uf * Theta_ex_d_t[dt]
                        + (A_s_ufvnt_A / R_g)
                        * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
@@ -575,6 +575,15 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_dash_g_surf_A_m_d_t[dt] = Theta_dash_g_surf_A_m
         Theta_star_d_t_i[:, dt] = Theta_star
         H_star_d_t_i[:, dt] = H_star
+
+    if di is not None:
+      hci = di.get(HaCaInputHolder)
+      df_holder = di.get(UfVarsDataFrame)
+      df_holder.update_df({
+          f"V_sa{hci.flg_char()}_d_t_A": V_sa_d_t_A,
+          f"Theta_ex{hci.flg_char()}_d_t": Theta_ex_d_t,
+          f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
+        })
 
     return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
 
