@@ -1,5 +1,21 @@
-__pycache__
+# JJJ-ADDED
 *_output*.csv
 *_input.json
 *.log
-/build
+
+# Python artifacts
+*.py[cod]
+__pycache__
+*.so
+
+# Distribution / packaging
+.Python
+.env
+.buildozer
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+sdist/
+wheel/

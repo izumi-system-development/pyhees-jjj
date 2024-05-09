@@ -1,7 +1,8 @@
 #!/usr/bin/env sh
 
 # pip の更新
-pip install --user -U pip
+pip install -U pip
 
-# numpy, pandas などは Pyhees 使用バージョンが自動的に追加されるため不要
-pip install --user -r requirements.txt
+# NOTE: requirements.txt ベースから pyproject.tomlベースへ変更
+# pip install -r requirements.txt
+pip install .
