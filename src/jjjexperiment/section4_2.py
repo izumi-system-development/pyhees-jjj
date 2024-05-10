@@ -29,13 +29,6 @@ from jjjexperiment.options import *
 from injector import Injector
 from jjjexperiment.di_container import *
 
-def version_info() -> str:
-    """ 最終編集日をバージョン管理に使用します
-    """
-    # NOTE: subprocessモジュールによるコミット履歴からの生成は \
-    # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
-    return '_20240417'
-
 # NOTE: section4_2 の同名の関数の改変版
 @constants.jjjexperiment_clone
 def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, q_rtd_H, q_rtd_C, q_max_H, q_max_C, V_hs_dsgn_H, V_hs_dsgn_C, Q,
@@ -1029,18 +1022,18 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     # 床下空調新ロジック調査用変数の出力
     if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
         hci = di.get(HaCaInputHolder)
-        filename = case_name + version_info() + hci.flg_char() + "_output_uf.csv"
+        filename = case_name + constants.version_info() + hci.flg_char() + "_output_uf.csv"
         survey_df_uf = di.get(UfVarsDataFrame)  # ネスト関数内で更新されているデータフレーム
         survey_df_uf.export_to_csv(filename)
 
     if q_hs_rtd_H is not None:
-        df_output3.to_csv(case_name + version_info() + '_H_output3.csv', encoding = 'cp932')
-        df_output2.to_csv(case_name + version_info() + '_H_output4.csv', encoding = 'cp932')
-        df_output.to_csv(case_name  + version_info() + '_H_output5.csv', encoding = 'cp932')
+        df_output3.to_csv(case_name + constants.version_info() + '_H_output3.csv', encoding = 'cp932')
+        df_output2.to_csv(case_name + constants.version_info() + '_H_output4.csv', encoding = 'cp932')
+        df_output.to_csv(case_name  + constants.version_info() + '_H_output5.csv', encoding = 'cp932')
     else:
-        df_output3.to_csv(case_name + version_info() + '_C_output3.csv', encoding = 'cp932')
-        df_output2.to_csv(case_name + version_info() + '_C_output4.csv', encoding = 'cp932')
-        df_output.to_csv(case_name  + version_info() + '_C_output5.csv', encoding = 'cp932')
+        df_output3.to_csv(case_name + constants.version_info() + '_C_output3.csv', encoding = 'cp932')
+        df_output2.to_csv(case_name + constants.version_info() + '_C_output4.csv', encoding = 'cp932')
+        df_output.to_csv(case_name  + constants.version_info() + '_C_output5.csv', encoding = 'cp932')
 
     return E_C_UT_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, \
            X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t

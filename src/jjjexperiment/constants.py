@@ -1,9 +1,11 @@
 from jjjexperiment.options import *
 
-# NOTE: subprocessモジュールによるコミット履歴からの生成は \
-# ipynb 環境では正常に動作しませんでした(returned no-zero exit status 128.)
-JJJ_EXPERIMENT_VERSION = '_20231228'
-""" 最終編集日をバージョン管理に使用します"""
+def version_info() -> str:
+  """ 最終編集日をバージョン管理に使用します
+  """
+  # NOTE: subprocessモジュールによるコミット履歴からの生成は \
+  # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
+  return '_20240510'
 
 # FIXME: このデコレータの定義箇所どこが最適か
 # NOTE: 関数ラベリング用のデコレータ ex. @jjjexperiment_fork()

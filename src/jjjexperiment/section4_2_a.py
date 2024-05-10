@@ -158,7 +158,7 @@ def calc_E_E_H_d_t(
                 E_E_fan_H_d_t = E_E_fan_H_d_t,  # kW
                 E_E_H_d_t = E_E_CRAC_H_d_t + E_E_fan_H_d_t  # kW
             )
-            df_output_denchuH.to_csv(case_name + constants.JJJ_EXPERIMENT_VERSION + '_denchu_H_output.csv', encoding='cp932')  # =Shift_JIS
+            df_output_denchuH.to_csv(case_name + constants.version_info() + '_denchu_H_output.csv', encoding='cp932')  # =Shift_JIS
 
         E_E_H_d_t = E_E_CRAC_H_d_t + E_E_fan_H_d_t
 
@@ -301,7 +301,7 @@ def get_E_E_C_d_t(
                 E_E_fan_C_d_t = E_E_fan_C_d_t,  # kW
                 E_E_C_d_t = E_E_CRAC_C_d_t + E_E_fan_C_d_t  # kW
             )
-            df_output_denchuC.to_csv(case_name + constants.JJJ_EXPERIMENT_VERSION + '_denchu_C_output.csv', encoding='cp932')  # =Shift_JIS
+            df_output_denchuC.to_csv(case_name + constants.version_info() + '_denchu_C_output.csv', encoding='cp932')  # =Shift_JIS
 
         _logger.NDdebug("E_E_CRAC_C_d_t", E_E_CRAC_C_d_t)
         _logger.NDdebug("E_E_fan_C_d_t", E_E_fan_C_d_t)
