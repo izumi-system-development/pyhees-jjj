@@ -716,7 +716,10 @@ def get_delta_L_star_underfloor_2023(
       日付dの時刻tにおける暖冷房区画iの1時間当たりの床下との熱交換による熱負荷の補正 (MJ/h)
   """
   # 当該住戸の1時間当たりの換気量 (m3/h) D.3.2 (4)
-  V_A = get_V_A(A_A)
+  # V_A = get_V_A(A_A)
+  V_A = 527.428  # [m3/h]
+  # CHECK: 144 -> 527.428 何に相当する風量か確認する
+
   Theta_uf_d_t, _, A_s_ufvnt_i, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, _, _, Theta_supply_d_t = \
     calc_Theta(
       region=region, A_A=A_A, A_MR=A_MR, A_OR=A_OR, Q=Q, r_A_ufvnt=r_A_ufvnt, underfloor_insulation=underfloor_insulation,
@@ -803,7 +806,6 @@ def get_L_star_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
       L_CS_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの冷房顕熱負荷（MJ/h）
       Q_star_trs_prt_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの熱損失を含む負荷バランス時の非居室への熱移動（MJ/h）
       region: 地域区分
-
       A_A(float): 床面積の合計 (m2)
       A_MR(float): 主たる居室の床面積 (m2)
       A_OR(float): その他の居室の床面積 (m2)
@@ -812,8 +814,6 @@ def get_L_star_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
       underfloor_insulation(bool): 床下空間が断熱空間内である場合はTrue
       Theta_uf_d_t(ndarray): 床下空間の空気の温度 (℃)
       Theta_ex_d_t(ndarray): 外気温度 (℃)
-      V_sa_d_t_A(ndarray): 床下空間または居室へ供給する1時間当たりの空気の風量の合計
-      H_OR_C: type H_OR_C: str
       L_dash_H_R_d_t(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
       L_dash_CS_R_d_t(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
       R_g: 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)

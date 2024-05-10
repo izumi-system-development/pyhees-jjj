@@ -515,39 +515,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
             else:
                 raise ValueError((L_dash_CS_R_d_t[i - 1][dt], L_dash_CS_R_d_t[i - 1][dt]))
 
-        # ここで Theta_sa_d_t 来ているが、これは Theta_uf_d_t を与えられている
-        # 床下空調新ロジックでは、これを Theta_sa の入力としてではなく、
-        # 探索された Theta_uf のバリデーションとして使用する
-
-        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-          expected_Theta_uf = Theta_sa_d_t[dt]
-          # 二分探索 探索範囲の定義 実行時間増するが30秒にもなく現実的
-          L_bnd = expected_Theta_uf
-          U_bnd = expected_Theta_uf + 100
-          tolerance = 0.001  # まずはe-3を目標とする
-          while (U_bnd - L_bnd > tolerance):
-            test_theta_uf = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
-            # 式自体は ELSE 文と同じものをコピペして使用する
-            theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * test_theta_uf +
-                        (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, 13)])
-                         + phi * L_uf * Theta_ex_d_t[dt]
-                         + (A_s_ufvnt_A / R_g)
-                         * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
-                       / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                          + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, 13)])
-                             + phi * L_uf
-                             + (A_s_ufvnt_A / R_g)
-                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
-            if theta_uf < expected_Theta_uf:
-              L_bnd = test_theta_uf
-            else:
-              U_bnd = test_theta_uf
-
-          Theta_supply_d_t[dt] = (U_bnd + L_bnd) / 2
-
-        else:
+        def calc_Theta_uf(theta_sa):
           # 当該住宅の床下温度 (1)
-          Theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * Theta_sa_d_t[dt] +
+          theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa +
                       (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, 13)])
                        + phi * L_uf * Theta_ex_d_t[dt]
                        + (A_s_ufvnt_A / R_g)
@@ -557,8 +527,35 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
                            + phi * L_uf
                            + (A_s_ufvnt_A / R_g)
                            * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
+          return theta_uf
 
+        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+          # ここで Theta_sa_d_t 来ているが、これは仮決めの Theta_uf_d_t を与えられている
+          # 床下空調新ロジックでは、これを Theta_sa の入力としてではなく、
+          # 探索された Theta_uf のバリデーションとして使用する
+          expected_Theta_uf = Theta_sa_d_t[dt]
+          # 二分探索 探索範囲の定義 実行時間増するが30秒にもなく現実的
+          L_bnd = expected_Theta_uf
+          U_bnd = expected_Theta_uf + 100
+          tolerance = 0.001  # まずはe-3を目標とする
+          while (U_bnd - L_bnd > tolerance):
+            test_theta_uf = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
+            # 式自体は ELSE 文と同じものをコピペして使用する
+            Theta_uf = calc_Theta_uf(test_theta_uf)
+            if Theta_uf < expected_Theta_uf:
+              L_bnd = test_theta_uf
+            else:
+              U_bnd = test_theta_uf
+
+          Theta_supply_d_t[dt] = test_theta_uf
+
+        else:
+          # CHECK: 先生のエクセルが同じになるか確認しました
+          # Theta_sa_d_t[0] = 29.4
+
+          # 当該住宅の床下温度 (1)
           Theta_supply_d_t[dt] = Theta_sa_d_t[dt]
+          Theta_uf = calc_Theta_uf(Theta_sa_d_t[dt])
 
         # 地盤またはそれを覆う基礎の表面温度 (℃) (9)
         Theta_g_surf = (((Phi_A_0 / R_g) * Theta_uf + np.sum(Theta_dash_g_surf_A_m) + Theta_g_avg)
@@ -582,7 +579,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       df_holder.update_df({
           f"V_sa{hci.flg_char()}_d_t_A": V_sa_d_t_A,
           f"Theta_ex{hci.flg_char()}_d_t": Theta_ex_d_t,
+          f"Theta_sa_d_t": Theta_sa_d_t,
           f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
+          f"Theta_uf_d_t": Theta_uf_d_t,
         })
 
     return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
