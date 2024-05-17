@@ -516,38 +516,41 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
                 raise ValueError((L_dash_CS_R_d_t[i - 1][dt], L_dash_CS_R_d_t[i - 1][dt]))
 
         def calc_Theta_uf(theta_sa):
+          i_end = 2 if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value else 12
           # 当該住宅の床下温度 (1)
-          theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa +
-                      (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, 13)])
-                       + phi * L_uf * Theta_ex_d_t[dt]
-                       + (A_s_ufvnt_A / R_g)
-                       * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
-                     / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, 13)])
-                           + phi * L_uf
-                           + (A_s_ufvnt_A / R_g)
-                           * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
+          theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa
+                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, i_end + 1)])
+                          + phi * L_uf * Theta_ex_d_t[dt]
+                          + (A_s_ufvnt_A / R_g)
+                            * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g)) * 3.6) \
+                      / (ro_air * c_p_air * V_sa_d_t_A[dt]
+                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, i_end + 1)])
+                          + phi * L_uf
+                          + (A_s_ufvnt_A / R_g)
+                            * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
           return theta_uf
 
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-          # ここで Theta_sa_d_t 来ているが、これは仮決めの Theta_uf_d_t を与えられている
-          # 床下空調新ロジックでは、これを Theta_sa の入力としてではなく、
-          # 探索された Theta_uf のバリデーションとして使用する
+          # NOTE: 床下空調新ロジックでは、Theta_sa_d_t として Theta_uf_d_t の目標値が来ています
+          # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
           expected_Theta_uf = Theta_sa_d_t[dt]
-          # 二分探索 探索範囲の定義 実行時間増するが30秒にもなく現実的
-          L_bnd = expected_Theta_uf
-          U_bnd = expected_Theta_uf + 100
-          tolerance = 0.001  # まずはe-3を目標とする
-          while (U_bnd - L_bnd > tolerance):
-            test_theta_uf = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
-            # 式自体は ELSE 文と同じものをコピペして使用する
-            Theta_uf = calc_Theta_uf(test_theta_uf)
-            if Theta_uf < expected_Theta_uf:
-              L_bnd = test_theta_uf
-            else:
-              U_bnd = test_theta_uf
 
-          Theta_supply_d_t[dt] = test_theta_uf
+          # 二分探索
+          # 探索範囲(冷暖房 両対応のため上下に広げる) 実行時間に注意
+          L_bnd = expected_Theta_uf - 50  # CHECK: マイナス温度での給気を許可するか
+          U_bnd = expected_Theta_uf + 50
+          tolerance = 0.001  # まずはe-3を目標とする
+
+          while (U_bnd - L_bnd > tolerance):  # 終了条件
+            test_theta_sa = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
+            # 式自体は ELSE 文と同じものをコピペして使用する
+            Theta_uf = calc_Theta_uf(test_theta_sa)
+            if Theta_uf < expected_Theta_uf:
+              L_bnd = test_theta_sa
+            else:
+              U_bnd = test_theta_sa
+
+          Theta_supply_d_t[dt] = test_theta_sa
 
         else:
           # CHECK: 先生のエクセルが同じになるか確認しました
@@ -573,13 +576,16 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_star_d_t_i[:, dt] = Theta_star
         H_star_d_t_i[:, dt] = H_star
 
-    if di is not None:
+    if di is not None and constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+      # 床下空調新ロジック調査用 変数出力
       hci = di.get(HaCaInputHolder)
       df_holder = di.get(UfVarsDataFrame)
       df_holder.update_df({
           f"V_sa{hci.flg_char()}_d_t_A": V_sa_d_t_A,
           f"Theta_ex{hci.flg_char()}_d_t": Theta_ex_d_t,
-          f"Theta_sa_d_t": Theta_sa_d_t,
+          f"Theta_uf_EXP_d_t": Theta_sa_d_t,
+          f"Theta_star_d_t": Theta_star_d_t_i[0, :],
+          f"Theta_dash_g_surf_A_d_t": Theta_dash_g_surf_A_m_d_t.sum(axis=1),  # shape(8760, 10) -> shape(8760, )
           f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
           f"Theta_uf_d_t": Theta_uf_d_t,
         })

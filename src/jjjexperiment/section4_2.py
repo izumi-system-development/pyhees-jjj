@@ -570,7 +570,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # TODO: 床下空調新ロジック 分岐ここで行う方がスマート
         L_star_CS_d_t_i = dc.get_L_star_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
                                                  A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
-                                                 Theta_uf_d_t_2023, Theta_ex_d_t,
+                                                 Theta_uf_d_t_2023, Theta_ex_d_t, V_dash_supply_d_t_i,
                                                  L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g)
 
         # (8)　熱損失を含む負荷バランス時の暖房負荷
@@ -578,7 +578,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # 暖房負荷を補正する(暖房負荷 - 床下への損失 + 床下からの地盤への熱損失 + 床下から外気への熱損失)
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
                                                A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
-                                               Theta_uf_d_t_2023, Theta_ex_d_t,
+                                               Theta_uf_d_t_2023, Theta_ex_d_t, V_dash_supply_d_t_i,
                                                L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g, di)
 
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
