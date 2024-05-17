@@ -1,0 +1,9 @@
+{
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    // テストコードのインポート基準
+    "python.testing.cwd": "/workspaces/pyhees-jjj/src",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+}
