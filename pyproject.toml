@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pyhees-jjj"
 version = "0.0.1"
 description = "Pyheesの検証用のフォークプロジェクトです"
+urls = { homepage = "https://github.com/izumi-system-development/pyhees-jjj" }
 authors = [
     { name = "Pyhees Development Team" }
 ]
@@ -15,9 +16,8 @@ dependencies = [
     "numpy>=1.24.3",
     "pandas>=2.0.1",
     "scipy>=1.10.1",
-    "injector",
-    "pytest>=6.0"
+    "injector"
 ]
 
-[project.urls]
-homepage = "https://github.com/izumi-system-development/pyhees-jjj"
+[project.optional-dependencies]
+dev = ["pytest"]
