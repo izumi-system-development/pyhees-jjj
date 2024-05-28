@@ -4,16 +4,17 @@ on: [push]
 jobs:
   pytest:
     runs-on: ubuntu-latest
+
     steps:
       # リポジトリをチェックアウト
       - name: Checkout
         uses: actions/checkout@v2
 
       # Pythonの環境をセットアップ
-      - name: Set up Python 3.7
+      - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.12.3
 
       # pytestをインストール
       - name: Install dependencies
