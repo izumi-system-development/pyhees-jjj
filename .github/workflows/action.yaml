@@ -15,12 +15,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          poetry: true  # when use pyproject.toml
+          cache: 'pip'
 
       # pytest は 開発用ライブラリなので toml から除外しているため別インストール
       - name: Install pytest
-        run: |
-          poetry install && poetry run pytest
+        run: .devcontainer/post-create.sh
 
       # pytest -> JUnit xml形式で結果を出力
       - name: Upload Unit Test Results
