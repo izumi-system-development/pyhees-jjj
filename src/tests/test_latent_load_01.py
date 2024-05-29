@@ -452,7 +452,7 @@ def prepare_args_for_calc_Q_UT_A() -> dict:
         'underfloor_insulation': uflr_insul,
         'underfloor_air_conditioning_air_supply': uflr_air_cdtn_air_spl,
         'YUCACO_r_A_ufvnt': fixtures["YUCACO_r_A_ufvnt"],
-        'R_g': fixtures["R_g"],
+        # 'R_g': fixtures["R_g"],
         'climateFile': fixtures["climateFile"],
         'L_dash_H_R_d_t_i': L_dash_H_R_d_t_i,
         'L_dash_CS_R_d_t_i': L_dash_CS_R_d_t_i,

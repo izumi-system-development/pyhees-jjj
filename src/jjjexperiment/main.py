@@ -163,7 +163,7 @@ def calc(input_data: dict, test_mode=False):
         """ 電柱研モデルのモデリング定数の確認のためのCSV出力 """
         df_denchu_consts = jjjexperiment.denchu_1 \
             .get_DataFrame_denchu_modeling_consts(spec, cdtn, R2, R1, R0, T_real, RH_real, P_rac_fan_rtd_H)
-        df_denchu_consts.to_csv(case_name + constants.JJJ_EXPERIMENT_VERSION + '_denchu_consts_H_output.csv', encoding='cp932')
+        df_denchu_consts.to_csv(case_name + constants.version_info() + '_denchu_consts_H_output.csv', encoding='cp932')
 
         del cdtn, R2, R1, R0  # NOTE: 以降不要
     else:
