@@ -198,7 +198,6 @@ class Test既存計算維持_入力値切替_方式2:
             室内機吸い込み湿度に関する冷房出力補正係数
             C_hm_C
         """
-        _logger.init_logger()
 
         inputs = copy.deepcopy(self._inputs)
         inputs["C_hm_C"] = 1.32
@@ -214,7 +213,6 @@ class Test既存計算維持_入力値切替_方式2:
             定格冷房能力の最大値
             q_rtd_C_limit
         """
-        _logger.init_logger()
 
         inputs = copy.deepcopy(self._inputs)
         inputs["q_rtd_C_limit"] = 3500

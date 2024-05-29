@@ -46,7 +46,6 @@ class Test既存計算維持_デフォルト入力時:
     def test_計算結果一致_方式1(self, expected_result_type1):
         """ ipynbのサンプル入力で計算結果が意図しない変化がないことを確認
         """
-        _logger.init_logger()
 
         inputs = copy.deepcopy(self._inputs1)
         # inputs = change_testmode_VAV_cap2logic(inputs)
