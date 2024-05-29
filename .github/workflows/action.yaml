@@ -17,7 +17,6 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
 
-      # pytest は 開発用ライブラリなので toml から除外しているため別インストール
       - name: Install pytest
         run: .devcontainer/post-create.sh
 
