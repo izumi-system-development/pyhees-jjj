@@ -22,9 +22,9 @@ jobs:
 
       # pytest -> JUnit xml形式で結果を出力
       - name: Upload Unit Test Results
-        # TODO: 単一テストでトライしてテスト全体へ置き換える
+        # CHECK: テストファイル毎に実行を分割するか検討
         run: |
-          pytest src/tests/test_carry_heat.py --junit-xml results/pytest.xml
+          pytest src/tests --junit-xml actionresults/pytest.xml
         continue-on-error: true
 
       # テスト結果の表示
