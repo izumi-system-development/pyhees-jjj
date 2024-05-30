@@ -20,6 +20,10 @@ jobs:
       - name: Install pytest
         run: .devcontainer/post-create.sh
 
+      - name: Prevent Slow Causes
+        # テスト実行時にロガーが動いてしまわないようにする
+        run: .github/workflows/turn-off-logger.sh
+
       # pytest -> JUnit xml形式で結果を出力
       - name: Execute pytest
         run: |
