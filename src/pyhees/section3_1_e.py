@@ -380,18 +380,30 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Theta_sa_d_t(ndarray): 床下空間または居室へ供給する空気の温度 (℃)
       Theta_ex_d_t(ndarray): 外気温度 (℃)
       V_sa_d_t_A(ndarray): 床下空間または居室へ供給する1時間当たりの空気の風量の合計
-      H_OR_C: type H_OR_C: str
+      H_OR_C(str): TODO: d_tでないと不十分(利用されていない)
       L_dash_H_R_d_t(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
       L_dash_CS_R_d_t(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
       R_g: 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
+
     Returns:
-      tuple: 床下温度、地盤またはそれを覆う基礎の表面温度 (℃)
+      Theta_uf_d_t: 日付dの時刻tにおける 床下温度 (℃)
+      Theta_g_surf_d_t: 日付dの時刻tにおける 地盤の表面温度 (℃)
+      A_s_ufvnt: 当該住戸の外気を導入する床下空間に接する 床の面積の部分合計 (m2)
+      A_s_ufvnt_A: 当該住戸の外気を導入する床下空間に接する 床の面積の合計 (m2)
+      Theta_g_avg: 地盤の不易層温度 (℃)
+      Theta_dash_g_surf_A_m_d_t: 日付dの時刻tにおける指数項mの吸熱応答の項別成分 (℃)
+      L_uf: 当該住戸の外気を導入する床下空間の基礎外周長さ
+      H_floor: 床の温度差係数 (-)
+      phi: 基礎潜熱
+      Phi_A_0: 吸熱応答係数の初項
+      H_star_d_t_i: -
+      Theta_star_d_t_i: -
+      Theta_supply_d_t: 日付dの時刻tにおける暖冷房区画iの吹き出し温度 (℃)
 
     """
+    # NOTE: 元コードからの利用もあるため、挙動を変えないように注意する
 
-    # 元開発時、複製していたが、古い方も併用されていた。
-    # ここでは上書きしているため、古い方の呼び出しにも対応する必要があった。
-    # そのため R_g=None として、その呼び出しにも対応できるようにした
+    # 元コードでは R_g は使用していない
     R_g = constants.R_g if R_g is None else R_g
 
     # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
@@ -438,6 +450,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
 
     Theta_in_H = 20
     Theta_in_C = 27
+    # NOTE: 既存コードにあったものを、新床下空調時 目標 Theta_uf の実行可否の閾値に再利用しています
 
     # 指数項mにおける吸熱応答係数
     phi_1_A_m = np.array([get_phi_1_A_m(m) for m in range(1, M + 1)])
@@ -516,15 +529,15 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
                 raise ValueError((L_dash_CS_R_d_t[i - 1][dt], L_dash_CS_R_d_t[i - 1][dt]))
 
         def calc_Theta_uf(theta_sa):
-          i_end = 2 if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value else 12
+          endi = 12  # NOTE: 熱貫流は1階床全体とする(=> 12でも内部的には(i=1,2,6,7,8,9))
           # 当該住宅の床下温度 (1)
           theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa
-                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, i_end + 1)])
+                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, endi+1)])
                           + phi * L_uf * Theta_ex_d_t[dt]
                           + (A_s_ufvnt_A / R_g)
                             * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g)) * 3.6) \
                       / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, i_end + 1)])
+                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, endi+1)])
                           + phi * L_uf
                           + (A_s_ufvnt_A / R_g)
                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
@@ -535,22 +548,36 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
           expected_Theta_uf = Theta_sa_d_t[dt]
 
-          # 二分探索
-          # 探索範囲(冷暖房 両対応のため上下に広げる) 実行時間に注意
-          L_bnd = expected_Theta_uf - 50  # CHECK: マイナス温度での給気を許可するか
-          U_bnd = expected_Theta_uf + 50
-          tolerance = 0.001  # まずはe-3を目標とする
+          # TODO: 暖房時・冷房時の判断は要検討
+          # Lが0であっても床下を通すことで初めて負荷が生じるケースがあるため
 
-          while (U_bnd - L_bnd > tolerance):  # 終了条件
-            test_theta_sa = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
-            # 式自体は ELSE 文と同じものをコピペして使用する
-            Theta_uf = calc_Theta_uf(test_theta_sa)
-            if Theta_uf < expected_Theta_uf:
-              L_bnd = test_theta_sa
-            else:
-              U_bnd = test_theta_sa
+          # 暖房時の目標温度が低い
+          is_incomplete_Heating = (L_dash_H_R_d_t[0][dt]>0) and (expected_Theta_uf < Theta_in_H)
+          # 冷房時の目標温度が高い
+          is_incomplete_Cooling = (L_dash_CS_R_d_t[0][dt]>0) and (expected_Theta_uf > Theta_in_C)
 
-          Theta_supply_d_t[dt] = test_theta_sa
+          # 二分探索を実行しない条件
+          if (is_incomplete_Cooling or is_incomplete_Heating):
+            Theta_supply_d_t[dt] = Theta_in_H if is_incomplete_Heating else Theta_in_C
+            Theta_uf = expected_Theta_uf
+          else:
+            # 目標床下温度となる給気温度を探索する(二分探索)
+            # 探索範囲(冷暖房 両対応なので上下) 実行時間は許容範囲
+            L_bnd = expected_Theta_uf - 50  # CHECK: マイナス温度での給気を許可するか
+            U_bnd = expected_Theta_uf + 50
+            tolerance = 0.001  # まずはe-3を目標とする
+
+            while (U_bnd - L_bnd > tolerance):  # 終了条件
+              test_theta_sa = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
+              # 式自体は ELSE 文と同じものをコピペして使用する
+              Theta_uf = calc_Theta_uf(test_theta_sa)
+              if Theta_uf < expected_Theta_uf:
+                L_bnd = test_theta_sa
+              else:
+                U_bnd = test_theta_sa
+
+            Theta_supply_d_t[dt] = test_theta_sa
+          Theta_uf = expected_Theta_uf
 
         else:
           # CHECK: 先生のエクセルが同じになるか確認しました
@@ -637,7 +664,7 @@ def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_
     # 暖冷房区画iの床面積のうち床下空間に接する床面積の割合 (-)
     r_A_uf_i = np.array([get_r_A_uf_i(i) for i in range(1, endi+1)])
     # 床下への供給風量の合計
-    V_dash_supply_d_t = np.sum(r_A_uf_i[:endi, np.newaxis] * V_dash_supply_d_t_i, axis=0)
+    V_dash_supply_d_t = np.sum(r_A_uf_i[:endi, np.newaxis] * V_dash_supply_d_t_i[:endi, :], axis=0)
 
     H = Theta_ex_d_t < Theta_in_H
     C = Theta_ex_d_t > Theta_in_C
