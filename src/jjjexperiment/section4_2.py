@@ -700,10 +700,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         # (21)　熱源機の出口における要求空気温度
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-            # TODO: 床下温度を満足するように要求温度を計算する
-            Theta_req_d_t_i = dc.get_Theta_req_d_t_i_2023(
+            # 目標床下温度から温度中和を見込んだ供給温度を計算
+            Theta_uf_supply_d_t = dc.get_Theta_uf_supply_d_t_2023(
                 region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t_2023, Theta_ex_d_t,
                 V_dash_supply_d_t_i, '', L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g)
+            # 要求温度の再計算
+            Theta_req_d_t_i = dc.get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i,
+                                L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region, Theta_uf_supply_d_t)
 
             survey_df_uf = di.get(UfVarsDataFrame)
             survey_df_uf.update_df({
@@ -711,7 +714,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             })
         else:
             Theta_req_d_t_i = dc.get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i,
-                                L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region)
+                                L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region, None)
 
         # 床下を通して空調する場合、対象居室のみ損失分を補正する
         if underfloor_air_conditioning_air_supply:

@@ -1256,8 +1256,9 @@ def get_X_star_hs_in_d_t(X_star_NR_d_t):
 # 9.4 熱源機の出口における要求空気温度・絶対湿度
 # ============================================================================
 
+@constants.jjjexperiment_mod
 def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i,
-                        l_duct_i, region):
+                        l_duct_i, region, Theta_uf_supply_d_t = None):
     """(21-1)(21-2)(21-3)
 
     Args:
@@ -1268,6 +1269,7 @@ def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i
       L_star_CS_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの熱取得を含む負荷バランス時の冷房顕熱負荷（MJ/h）
       l_duct_i: ダクトの長さ（m）
       region: 地域区分
+      Theta_uf_supply_d_t: 床下を通すことによる温度中和を見込んだ供給温度（℃）
 
     Returns:
       日付dの時刻tにおける暖冷房区画iの熱源機の出口における要求空気温度（℃）
@@ -1305,9 +1307,16 @@ def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i
     #中間期 (10-3)
     Theta_req_d_t_i[:, M] = Theta_star_HBR_d_t[M]
 
+    # 実行条件: 床下新空調ロジックのみ
+    if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+      # i=1,2(1階居室)を供給温度で差替え
+      Theta_req_d_t_i = \
+        np.vstack((np.tile(Theta_uf_supply_d_t, (2, 1)), Theta_req_d_t_i[2:, :]))
+      assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
+
     return Theta_req_d_t_i
 
-def get_Theta_req_d_t_i_2023(
+def get_Theta_uf_supply_d_t_2023(
         region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
         V_dash_supply_d_t_i, H_OR_C, L_dash_H_R_d_t, L_dash_CS_R_d_t, R_g):
     """(21-1)(21-2)(21-3)
@@ -1328,25 +1337,22 @@ def get_Theta_req_d_t_i_2023(
       L_dash_CS_R_d_t(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
       R_g: 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
     Returns:
-      Theta_req_d_t: 要求床下温度 (℃)
+      Theta_uf_supply_d_t: 床下空調新ロジックにて床下中和を見込んだ供給温度（℃）
 
     """
+    # 事前条件:
+    assert constants.change_underfloor_temperature == 床下空調ロジック.変更する.value, \
+      "床下空調新ロジックでの実行を想定しています"
 
     r_A_uf_i = np.array([get_r_A_uf_i(i) for i in range(1,13)])
     V_sa_d_t_A = np.sum(r_A_uf_i[:5, np.newaxis] * V_dash_supply_d_t_i, axis=0)
-    Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, _ = \
-      calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
-        V_sa_d_t_A, H_OR_C, L_dash_H_R_d_t, L_dash_CS_R_d_t, R_g)
-    U_s = get_U_s()
-    ro_air = get_ro_air()
-    c_p_air = get_c_p_air()
-    Theta_req_d_t = (
-        Theta_uf_d_t
-        + (U_s * np.sum(H_star_d_t_i * np.array(A_s_ufvnt)[:, np.newaxis], axis=0) + phi * L_uf + A_s_ufvnt_A / R_g / (1 + Phi_A_0 / R_g)) * Theta_uf_d_t * 3.6
-        - (U_s * np.sum(H_star_d_t_i * Theta_star_d_t_i * np.array(A_s_ufvnt)[:, np.newaxis], axis=0) + phi * L_uf * Theta_ex_d_t
-           + A_s_ufvnt_A / R_g * (np.sum(Theta_dash_g_surf_A_m_d_t, axis=1) + Theta_g_avg) / (1 + Phi_A_0 / R_g)) * 3.6
-      ) / ( ro_air * c_p_air * V_sa_d_t_A )
-    return np.tile(Theta_req_d_t, (5, 1))
+
+    _, _, _, _, _, _, _, _, _, _, _, _, Theta_uf_supply_d_t = \
+      calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation,
+                 Theta_uf_d_t, Theta_ex_d_t, V_sa_d_t_A, H_OR_C,
+                 L_dash_H_R_d_t, L_dash_CS_R_d_t, R_g)
+
+    return Theta_uf_supply_d_t
 
 def get_X_req_d_t_i(X_star_HBR_d_t, L_star_CL_d_t_i, V_dash_supply_d_t_i, region):
     """(22-1)(22-2)
