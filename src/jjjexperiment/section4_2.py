@@ -575,7 +575,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
             # (8')　熱損失を含む負荷バランス時の暖房負荷
             # 暖房負荷を補正する(暖房負荷 - 床下への損失 + 床下からの地盤への熱損失 + 床下から外気への熱損失)
-            L_star_H_d_t_i = \
+            L_star_H_d_t_i, Theta_uf_supply_d_t = \
                 dc.get_L_star_newuf_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
                         A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t_2023,
                         Theta_ex_d_t, V_dash_supply_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, Theta_star_HBR_d_t, R_g, di)
@@ -700,10 +700,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         # (21)　熱源機の出口における要求空気温度
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-            # 目標床下温度から温度中和を見込んだ供給温度を計算
-            Theta_uf_supply_d_t = dc.get_Theta_uf_supply_d_t_2023(
-                region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t_2023, Theta_ex_d_t,
-                V_dash_supply_d_t_i, '', L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g)
             # 要求温度の再計算
             Theta_req_d_t_i = dc.get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i,
                                 L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region, Theta_uf_supply_d_t)
