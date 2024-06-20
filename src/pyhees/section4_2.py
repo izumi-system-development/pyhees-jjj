@@ -795,9 +795,10 @@ def get_delta_L_star_newuf(
 
   # 床下 → 床上居室全体()
   # H_floor: 床の温度差係数(-) は通常遮蔽されており(0.7)だが、床下空調時ではスカしているため(1.0)となる値
+  assert np.sum(A_s_ufvnt_i) == A_s_ufvnt_A, "一階居室全体"
   L_newuf2room_d_t_i = \
-    U_s * np.array(A_s_ufvnt_A[:5]).reshape(-1, 1) \
-      * (np.abs(Theta_uf_d_t - Theta_star_HBR_d_t) * 1).reshape(1, -1) * 3.6 / 1_000  # [MJ/h]
+    U_s * np.array(A_s_ufvnt_i[:5]).reshape(-1, 1) \
+      * (np.abs(Theta_uf_d_t - Theta_star_HBR_d_t) * 1.0).reshape(1, -1) * 3.6 / 1_000  # [MJ/h]
 
   # 床下 → 外気
   # [W/m*K]・[m]・[K] → [W] → [MJ/h]
@@ -918,7 +919,8 @@ def get_L_star_newuf_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
       raise KeyError("床下空調 新ロジックのみで使用すべきロジックです.")
 
     # 床下との熱交換による熱負荷の補正
-    L_uf2room_d_t_i, L_uf2outdoor_d_t_i, L_uf2gnd_d_t_i = get_delta_L_star_newuf(
+    L_normal_uf2room_d_t_i, L_newuf2room_d_t_i, L_uf2outdoor_d_t_i, L_uf2gnd_d_t_i \
+      = get_delta_L_star_newuf(
         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
         V_dash_supply_d_t_i, L_dash_H_R_d_t, L_dash_CS_R_d_t, Theta_star_HBR_d_t, R_g, di)
 
@@ -930,7 +932,7 @@ def get_L_star_newuf_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
     L_star_CS_d_t_i = np.zeros((5, 24 * 365))
     L_star_CS_d_t_i[Cf] = \
       np.clip(L_CS_d_t_i[:5][Cf] + Q_star_trs_prt_d_t_i[Cf] \
-        - L_uf2room_d_t_i[Cf] + L_uf2outdoor_d_t_i[Cf] + L_uf2gnd_d_t_i[Cf], 0, None)
+        - L_normal_uf2room_d_t_i[Cf] + L_uf2outdoor_d_t_i[Cf] + L_uf2gnd_d_t_i[Cf], 0, None)
     return L_star_CS_d_t_i
 
 def get_L_star_CS_i_2023(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, t: int):
