@@ -547,7 +547,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
           return theta_uf
 
-        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value \
+          and constants.done_binsearch_newufac == False:
+
           # NOTE: 床下空調新ロジックでは、Theta_sa_d_t として Theta_uf_d_t の目標値が来ています
           # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
           expected_Theta_uf = Theta_sa_d_t[dt]
@@ -607,7 +609,10 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_star_d_t_i[:, dt] = Theta_star
         H_star_d_t_i[:, dt] = H_star
 
-    if di is not None and constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    if di is not None \
+      and constants.change_underfloor_temperature == 床下空調ロジック.変更する.value \
+      and constants.done_binsearch_newufac == False:
+
       # 床下空調新ロジック調査用 変数出力
       hci = di.get(HaCaInputHolder)
       df_holder = di.get(UfVarsDataFrame)

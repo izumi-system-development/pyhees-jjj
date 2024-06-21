@@ -703,6 +703,9 @@ def get_L_star_newuf_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t_i, Theta_ex_d_t,
         V_dash_supply_d_t_i, L_dash_H_R_d_t, L_dash_CS_R_d_t, Theta_star_HBR_d_t, R_g, di)
 
+    # θ_supply_d_t の逆算は一度しか行わないため
+    constants.done_binsearch_newufac = True
+
     if di is not None:
       hci = di.get(HaCaInputHolder)
       df_holder = di.get(UfVarsDataFrame)
@@ -920,8 +923,10 @@ def get_L_star_newuf_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
 
     """
     # 事前条件: 床下空調 新ロジックのみで使用
-    if constants.change_underfloor_temperature != 床下空調ロジック.変更する.value:
-      raise KeyError("床下空調 新ロジックのみで使用すべきロジックです.")
+    assert constants.change_underfloor_temperature == 床下空調ロジック.変更する.value, \
+      "床下空調 新ロジック で実行されることを想定しています"
+
+    constants.done_binsearch_newufac = True
 
     # 床下との熱交換による熱負荷の補正
     L_normal_uf2room_d_t_i, L_newuf2room_d_t_i, L_uf2outdoor_d_t_i, L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
@@ -929,6 +934,7 @@ def get_L_star_newuf_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
         V_dash_supply_d_t_i, L_dash_H_R_d_t, L_dash_CS_R_d_t, Theta_star_HBR_d_t, R_g, di)
 
+    constants.done_binsearch_newufac = False
     # NOTE: こちらの調査用ログの出力は省略しています
 
     H, C, M = get_season_array_d_t(region)
