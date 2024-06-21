@@ -778,9 +778,13 @@ def get_delta_L_star_newuf(
 
   Theta_uf_d_t, _, A_s_ufvnt_i, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, Phi_A_0, H_star_d_t_i, _, Theta_uf_supply_d_t = \
     calc_Theta(
-      region=region, A_A=A_A, A_MR=A_MR, A_OR=A_OR, Q=Q, r_A_ufvnt=r_A_ufvnt, underfloor_insulation=underfloor_insulation,
-      Theta_sa_d_t=Theta_uf_d_t, Theta_ex_d_t=Theta_ex_d_t, V_sa_d_t_A=V_sa_d_t, H_OR_C='',  # H_OR_C 機能してない
-      L_dash_H_R_d_t=L_dash_H_R_d_t, L_dash_CS_R_d_t=L_dash_CS_R_d_t, R_g=R_g, di=di)
+      region, A_A, A_MR, A_OR, Q,
+      r_A_ufvnt, underfloor_insulation,
+      Theta_uf_d_t,  # Theta_sa_d_t=
+      Theta_ex_d_t,
+      V_sa_d_t,  # V_sa_d_t_A=
+      '',  # H_OR_C= 機能してない
+      L_dash_H_R_d_t, L_dash_CS_R_d_t, R_g, di)
   U_s = get_U_s()  # [W/m2・K]
 
   # 温度低下を加味した給気温度 ここでは使わないが後で使うために返す
