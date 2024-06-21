@@ -699,18 +699,45 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         X_req_d_t_i = dc.get_X_req_d_t_i(X_star_HBR_d_t, L_star_CL_d_t_i, V_dash_supply_d_t_i, region)
 
         # (21)　熱源機の出口における要求空気温度
-        if underfloor_air_conditioning_air_supply == True:
-            # NOTE: 床下空調を使用する(旧・新 両ロジックとも) 対象居室のみ損失分を補正する
-            Theta_req_d_t_i = dc.get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i,
-                                L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region, Theta_uf_supply_d_t)
+        Theta_req_d_t_i = dc.get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i,
+                            L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region)
+
+        # NOTE: 床下空調を使用する(旧・新 両ロジックとも) 対象居室のみ損失分を補正する
+        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+            assert Theta_uf_supply_d_t is not None, "1階居室の差替え用の床下温度が必要です"
+
+            # 対象居室 i=1,2(1階居室)の損失分を補正する
+            Theta_req_d_t_i = \
+              np.vstack((np.tile(Theta_uf_supply_d_t, (2, 1)), Theta_req_d_t_i[2:, :]))
+            assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
 
             survey_df_uf = di.get(UfVarsDataFrame)
             survey_df_uf.update_df({
                 "Theta_req_d_t_1": Theta_req_d_t_i[0], "Theta_req_d_t_2": Theta_req_d_t_i[1], "Theta_req_d_t_3": Theta_req_d_t_i[2], "Theta_req_d_t_4": Theta_req_d_t_i[3], "Theta_req_d_t_5": Theta_req_d_t_i[4],
             })
-        else:
-            Theta_req_d_t_i = dc.get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i,
-                                L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region, None)
+        elif underfloor_air_conditioning_air_supply == True:
+            for i in range(2):  # 1F居室のみ(i=0,1)損失分を補正
+                # CHECK: 床下温度が i(部屋) で変わるが問題ないか
+                Theta_uf_d_t, Theta_g_surf_d_t, *others = \
+                    uf.calc_Theta(
+                        region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
+                        Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
+                        '', L_H_d_t_i, L_CS_d_t_i, R_g)
+
+                if q_hs_rtd_H is not None:  # 暖房
+                  mask = Theta_req_d_t_i[i] > Theta_uf_d_t
+                elif q_hs_rtd_C is not None:  # 冷房
+                  mask = Theta_req_d_t_i[i] < Theta_uf_d_t
+                else:
+                    raise IOError("冷房時・暖房時の判断に失敗しました。")
+
+                Theta_req_d_t_i[i] = np.where(mask,
+                                            # 熱源機出口 -> 居室床下までの温度低下分を見込む
+                                            Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
+                                            Theta_req_d_t_i[i])
+            assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
+
+        _logger.NDdebug("Theta_req_d_t_1", Theta_req_d_t_i[0])
 
         # (15)　熱源機の出口における絶対湿度
         X_hs_out_d_t = dc.get_X_hs_out_d_t(X_NR_d_t, X_req_d_t_i, V_dash_supply_d_t_i, X_hs_out_min_C_d_t, L_star_CL_d_t_i, region)
@@ -766,6 +793,22 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 "Theta_hs_out_d_t": Theta_hs_out_d_t,
                 "Theta_supply_d_t_1": Theta_supply_d_t_i[0], "Theta_supply_d_t_2": Theta_supply_d_t_i[1], "Theta_supply_d_t_3": Theta_supply_d_t_i[2], "Theta_supply_d_t_4": Theta_supply_d_t_i[3], "Theta_supply_d_t_5": Theta_supply_d_t_i[4]
             })
+        elif underfloor_air_conditioning_air_supply:
+            for i in range(2):  #i=0,1
+                Theta_uf_d_t, Theta_g_surf_d_t, *others = \
+                    uf.calc_Theta(
+                        region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
+                        Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
+                        '', L_H_d_t_i, L_CS_d_t_i, R_g)
+
+                if q_hs_rtd_H is not None:  # 暖房
+                    mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
+                elif q_hs_rtd_C is not None:  # 冷房
+                    mask = Theta_supply_d_t_i[i] < Theta_uf_d_t
+                else:
+                    raise IOError("冷房時・暖房時の判断に失敗しました。")
+
+                Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
         # TODO: (46)(48) に貫流による熱損失の項を追加する
 

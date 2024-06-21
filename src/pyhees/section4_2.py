@@ -1270,8 +1270,9 @@ def get_X_star_hs_in_d_t(X_star_NR_d_t):
 # ============================================================================
 
 @constants.jjjexperiment_mod
+@log_res(['Theta_req_d_t_i'])
 def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i,
-                        l_duct_i, region, Theta_uf_supply_d_t = None):
+                        l_duct_i, region):
     """(21-1)(21-2)(21-3)
 
     Args:
@@ -1282,7 +1283,6 @@ def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i
       L_star_CS_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの熱取得を含む負荷バランス時の冷房顕熱負荷（MJ/h）
       l_duct_i: ダクトの長さ（m）
       region: 地域区分
-      Theta_uf_supply_d_t: 床下を通すことによる温度中和を見込んだ供給温度（℃）
 
     Returns:
       日付dの時刻tにおける暖冷房区画iの熱源機の出口における要求空気温度（℃）
@@ -1319,15 +1319,6 @@ def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i
 
     #中間期 (10-3)
     Theta_req_d_t_i[:, M] = Theta_star_HBR_d_t[M]
-
-    # 床下空調を使用するなら(旧・新 両ロジックとも)
-    if constants.underfloor_air_conditioning_air_supply == True:
-      assert Theta_uf_supply_d_t is not None, "1階居室の差替え用の床下温度が必要です"
-
-      # 対象居室 i=1,2(1階居室)の損失分を補正する
-      Theta_req_d_t_i = \
-        np.vstack((np.tile(Theta_uf_supply_d_t, (2, 1)), Theta_req_d_t_i[2:, :]))
-      assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
 
     return Theta_req_d_t_i
 
