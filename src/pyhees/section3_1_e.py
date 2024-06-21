@@ -394,9 +394,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Theta_dash_g_surf_A_m_d_t: 日付dの時刻tにおける指数項mの吸熱応答の項別成分 (℃)
       L_uf: 当該住戸の外気を導入する床下空間の基礎外周長さ
       H_floor: 床の温度差係数 (-)
-      phi: 基礎潜熱
-      Phi_A_0: 吸熱応答係数の初項
-      H_star_d_t_i: -
+      psi: Ψ基礎の線熱貫流率 (W/m2*K)
+      Phi_A_0: 吸熱応答係数の初項 (m2*K/W)
+      H_star_d_t_i: 温度差係数 (-)
       Theta_star_d_t_i: -
       Theta_supply_d_t: 日付dの時刻tにおける暖冷房区画iの吹き出し温度 (℃)
 
@@ -493,8 +493,8 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
 
     H_floor = 0.7
 
-    # 基礎の線熱貫流率 (W/mK) (5)
-    phi = get_phi(region, Q)
+    # 基礎の線熱貫流率Ψ (W/m*K) (5)
+    psi = get_phi(region, Q)
 
     Theta_star = np.zeros(12)
     H_star = np.zeros(12)
@@ -533,12 +533,12 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           # 当該住宅の床下温度 (1)
           theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa
                         + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, endi+1)])
-                          + phi * L_uf * Theta_ex_d_t[dt]
+                          + psi * L_uf * Theta_ex_d_t[dt]
                           + (A_s_ufvnt_A / R_g)
                             * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g)) * 3.6) \
                       / (ro_air * c_p_air * V_sa_d_t_A[dt]
                         + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, endi+1)])
-                          + phi * L_uf
+                          + psi * L_uf
                           + (A_s_ufvnt_A / R_g)
                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
           return theta_uf
@@ -617,7 +617,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           f"Theta_uf_d_t": Theta_uf_d_t,
         })
 
-    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
+    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
 
 @log_res(['Theta_uf_d_t'])
 def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_dash_supply_d_t_i, Theta_ex_d_t):
