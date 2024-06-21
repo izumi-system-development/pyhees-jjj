@@ -699,9 +699,8 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         X_req_d_t_i = dc.get_X_req_d_t_i(X_star_HBR_d_t, L_star_CL_d_t_i, V_dash_supply_d_t_i, region)
 
         # (21)　熱源機の出口における要求空気温度
-        # 床下を通して空調する場合、対象居室のみ損失分を補正する
-        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-            # 要求温度の再計算
+        if underfloor_air_conditioning_air_supply == True:
+            # NOTE: 床下空調を使用する(旧・新 両ロジックとも) 対象居室のみ損失分を補正する
             Theta_req_d_t_i = dc.get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i,
                                 L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region, Theta_uf_supply_d_t)
 
