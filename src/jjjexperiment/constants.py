@@ -5,7 +5,7 @@ def version_info() -> str:
   """
   # NOTE: subprocessモジュールによるコミット履歴からの生成は \
   # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
-  return '_20240613'
+  return '_20240621'
 
 # FIXME: このデコレータの定義箇所どこが最適か
 # NOTE: 関数ラベリング用のデコレータ ex. @jjjexperiment_fork()
@@ -56,7 +56,7 @@ change_V_supply_d_t_i_max: int = Vサプライの上限キャップ.外さない
 """V_supply_d_t_iの上限キャップを外す"""
 carry_over_heat: int = 過剰熱量繰越計算.行わない.value
 """過剰熱量を次の時刻に持ち越す"""
-change_underfloor_temperature: int = 1
+change_underfloor_temperature: int = 床下空調ロジック.変更しない.value
 """床下温度の計算式を変更"""
 
 #以下、潜熱評価モデル追加対応(暖房)
@@ -225,6 +225,8 @@ def set_constants(input: dict):
   if 'change_underfloor_temperature' in input:
     global change_underfloor_temperature
     change_underfloor_temperature = int(input['change_underfloor_temperature'])
+    global done_binsearch_newufac  # 制御用
+    done_binsearch_newufac = False
   #以下、潜熱評価モデル追加対応
   if 'H_A' in input:
     if 'A_f_hex_small' in input['H_A']:

@@ -363,6 +363,7 @@ def get_table_e_6():
 # E.5 地盤またはそれを覆う基礎
 # ============================================================================
 
+@constants.jjjexperiment_mod
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
                L_dash_H_R_d_t,
@@ -398,7 +399,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Phi_A_0: 吸熱応答係数の初項 (m2*K/W)
       H_star_d_t_i: 温度差係数 (-)
       Theta_star_d_t_i: -
-      Theta_supply_d_t: 日付dの時刻tにおける暖冷房区画iの吹き出し温度 (℃)
+      Theta_supply_d_t: 床下空調新案にて床下中和を見込んだ吹き出し温度 (℃)
 
     """
     # NOTE: 元コードからの利用もあるため、挙動を変えないように注意する
@@ -432,6 +433,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     Theta_uf_d_t = np.zeros(24 * 365)
     Theta_g_surf_d_t = np.zeros(24 * 365)
     Theta_dash_g_surf_A_m = np.zeros(M)
+    Theta_dash_g_surf_A_m_d_t_preparing = np.zeros((24 * 365, M))  # 助走時
     Theta_dash_g_surf_A_m_d_t = np.zeros((24 * 365, M))
     Theta_star_d_t_i = np.zeros((12, 24 * 365))
     H_star_d_t_i = np.zeros((12, 24 * 365))
@@ -467,6 +469,8 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
 
         # 日付dの時刻tにおける指数項mの吸熱応答の項別成分 (℃) (11)
         Theta_dash_g_surf_A_m = phi_1_A_m * q_g_prev + r_m * Theta_dash_g_surf_A_m_prev
+        # 床下空調(新案) 調査用
+        Theta_dash_g_surf_A_m_d_t_preparing[dt] = Theta_dash_g_surf_A_m
 
         # 地盤またはそれを覆う基礎の表面温度 (℃) (9)
         Theta_g_surf = (((Phi_A_0 / R_g) * Theta_uf + np.sum(Theta_dash_g_surf_A_m) + Theta_g_avg)
@@ -543,7 +547,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
           return theta_uf
 
-        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value \
+          and constants.done_binsearch_newufac == False:
+
           # NOTE: 床下空調新ロジックでは、Theta_sa_d_t として Theta_uf_d_t の目標値が来ています
           # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
           expected_Theta_uf = Theta_sa_d_t[dt]
@@ -603,7 +609,10 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_star_d_t_i[:, dt] = Theta_star
         H_star_d_t_i[:, dt] = H_star
 
-    if di is not None and constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    if di is not None \
+      and constants.change_underfloor_temperature == 床下空調ロジック.変更する.value \
+      and constants.done_binsearch_newufac == False:
+
       # 床下空調新ロジック調査用 変数出力
       hci = di.get(HaCaInputHolder)
       df_holder = di.get(UfVarsDataFrame)
@@ -612,6 +621,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           f"Theta_ex{hci.flg_char()}_d_t": Theta_ex_d_t,
           f"Theta_uf_EXP_d_t": Theta_sa_d_t,
           f"Theta_star_d_t": Theta_star_d_t_i[0, :],
+          f"Theta_dash_g_surf_A_d_t_preparing": Theta_dash_g_surf_A_m_d_t_preparing.sum(axis=1),
           f"Theta_dash_g_surf_A_d_t": Theta_dash_g_surf_A_m_d_t.sum(axis=1),  # shape(8760, 10) -> shape(8760, )
           f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
           f"Theta_uf_d_t": Theta_uf_d_t,
