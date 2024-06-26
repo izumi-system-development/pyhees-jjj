@@ -2491,7 +2491,7 @@ def get_X_HBR_d_t_i(X_star_HBR_d_t):
 # 11.2 実際の非居室の室温・絶対湿度
 # ============================================================================
 
-def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q):
+def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_uf_d_t = None, di = None):
     """(48a)(48b)(48c)(48d)
 
     Args:
@@ -2505,6 +2505,8 @@ def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_N
       U_prt: 間仕切りの熱貫流率（W/(m2・K)）
       A_prt_i: 暖冷房区画iから見た非居室の間仕切りの面積（m2）
       Q: 当該住戸の熱損失係数（W/(m2・K)）
+      Theta_uf_d_t: 日付dの時刻tにおける床下温度（℃）
+      di: DIコンテナー
 
     Returns:
       日付dの時刻tにおける実際の非居室の室温
@@ -2523,10 +2525,30 @@ def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_N
     k_evp_d_t = (Q - 0.35 * 0.5 * 2.4) * A_NR + c_p_air * rho_air * (V_vent_l_NR_d_t / 3600)
 
     # (48a)
-    Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) + \
-                   np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) / \
-                   (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0))
+    if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+      # 事前条件
+      assert Theta_uf_d_t is not None, "計算には床下空調温度が必要です."
+      assert di is not None, "DIコンテナを使用します."
 
+      house = di.get(SampleHouseInfo)
+
+      U_s = get_U_s()
+      # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
+      A_s_ufac_i = [calc_A_s_ufvnt_i(i, house.r_A_ufac, house.A_A, house.A_MR, house.A_OR) for i in range(1, 13)]
+      # 1F非居室(i=6,7,8,9) 床下→床上 熱貫流
+      Us_Asufvnt = U_s * np.sum(A_s_ufac_i[6:10]) * 3600  # [W/(m2・K) * m2] → [J/(K・h)]
+
+      Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
+                                          + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
+                                          + Us_Asufvnt * (Theta_uf_d_t - Theta_star_NR_d_t) \
+                                        / (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0) + Us_Asufvnt)
+    else:
+      Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
+                                          + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
+                                        / (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0))
+
+    # 事後条件:
+    assert np.shape(Theta_NR_d_t) == (8760, ), "想定外の行列数."
     return Theta_NR_d_t
 
 def get_Theta_NR_2023(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_NR_d_t, t: int):
