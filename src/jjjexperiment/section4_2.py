@@ -24,6 +24,7 @@ import jjjexperiment.constants as constants
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
 from jjjexperiment.options import *
+from jjjexperiment.helper import *
 
 # DIコンテナー
 from injector import Injector
@@ -39,7 +40,11 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
     # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_h, q_hs_rtd_C のどちらが None かで判別可能
 
-    di = Injector(JJJExperimentModule())  # こちらのインスタンスのみを使用する
+    dimodule = JJJExperimentModule()
+    dimodule.set_houseinfo(SampleHouseInfo(A_A, A_MR, A_OR, r_A_ufvnt, None))
+    di = Injector(dimodule)  # こちらのインスタンスのみを使用する
+
+    di.get(SampleHouseInfo)
     ha_ca_holder = di.get(HaCaInputHolder)
     ha_ca_holder.q_hs_rtd_H = q_hs_rtd_H
     ha_ca_holder.q_hs_rtd_C = q_hs_rtd_C
@@ -550,15 +555,22 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # NOTE: 以降では、r_A_ufvnt は床下空調ロジックのみに使用されているため、
         # 変数名を r_A_ufvnt -> r_A_ufac と変更して、統一して使用する
 
+        check_variable_undefined("r_A_ufac")
+
+        house_info = di.get(SampleHouseInfo)
+
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
             # 床下空調 新ロジック
             r_A_ufac = 1.0  # WG資料に一致させるため
+            house_info.r_A_ufac = r_A_ufac
         elif underfloor_air_conditioning_air_supply:
             # 床下空調 旧ロジック
             r_A_ufac = YUCACO_r_A_ufvnt  # (1.0 未満)
+            house_info.r_A_ufac = r_A_ufac
             # NOTE: ユカコは新ロジックには使用しない ('24/02 先生)
         else:  # 非床下空調
             r_A_ufac = r_A_ufvnt
+            house_info.r_A_ufac = r_A_ufac
         del r_A_ufvnt
 
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
@@ -810,21 +822,24 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
                 Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
-        # TODO: (46)(48) に貫流による熱損失の項を追加する
-
-        # (46)　暖冷房区画𝑖の実際の居室の室温
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+            # (46')　暖冷房区画𝑖の実際の居室の室温
             Theta_HBR_d_t_i = dc.get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
                                                      A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
                                                      r_A_ufac, A_A, A_MR, A_OR, Theta_uf_d_t)
+
+            # (48')　実際の非居室の室温
+            Theta_NR_d_t = dc.get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
+                                                V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_uf_d_t, di=di)
         else:
+            # (46)　暖冷房区画𝑖の実際の居室の室温
             Theta_HBR_d_t_i = dc.get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
                                                      A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                                                     r_A_ufac, A_A, A_MR, A_OR, Theta_uf_d_t = None)
+                                                     r_A_ufac, A_A, A_MR, A_OR)
 
-        # (48)　実際の非居室の室温
-        Theta_NR_d_t = dc.get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
-                                            V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q)
+            # (48)　実際の非居室の室温
+            Theta_NR_d_t = dc.get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
+                                                V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, di=di)
 
     ### 熱繰越 / 非熱繰越 の分岐が終了 -> 以降、共通の処理 ###
 

@@ -162,7 +162,7 @@ def get_heating(input: dict, region: int, A_A: float):
         H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_rtd_H'] = dc_spec.get_P_fan_rtd_H(H_A['V_fan_rtd_H'])
         H_A['P_fan_mid_H'] = dc_spec.get_P_fan_mid_H(H_A['V_fan_mid_H'])
-        H_A['P_hs_mid_H'] = np.NAN
+        H_A['P_hs_mid_H'] = np.nan
     elif int(input['H_A']['input']) == 2:
         H_A['EquipmentSpec'] = '定格能力試験の値を入力する'
         H_A['q_hs_rtd_H'] = float(input['H_A']['q_hs_rtd_H'])
@@ -173,7 +173,7 @@ def get_heating(input: dict, region: int, A_A: float):
         H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
         H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_mid_H'] = dc_spec.get_P_fan_mid_H(H_A['V_fan_mid_H'])
-        H_A['P_hs_mid_H'] = np.NAN
+        H_A['P_hs_mid_H'] = np.nan
     elif int(input['H_A']['input']) == 3:
         H_A['EquipmentSpec'] = '定格能力試験と中間能力試験の値を入力する'
         H_A['q_hs_rtd_H'] = float(input['H_A']['q_hs_rtd_H'])
@@ -268,7 +268,7 @@ def get_cooling(input: dict, region: int, A_A: float):
         C_A['V_fan_mid_C'] = dc_spec.get_V_fan_mid_C(C_A['q_hs_mid_C'])
         C_A['P_fan_rtd_C'] = dc_spec.get_P_fan_rtd_C(C_A['V_fan_rtd_C'])
         C_A['P_fan_mid_C'] = dc_spec.get_P_fan_mid_C(C_A['V_fan_mid_C'])
-        C_A['P_hs_mid_C'] = np.NAN
+        C_A['P_hs_mid_C'] = np.nan
     elif int(input['C_A']['input']) == 2:
         C_A['EquipmentSpec'] = '定格能力試験の値を入力する'
         C_A['q_hs_rtd_C'] = float(input['C_A']['q_hs_rtd_C'])
@@ -279,7 +279,7 @@ def get_cooling(input: dict, region: int, A_A: float):
         C_A['q_hs_min_C'] = dc_spec.get_q_hs_min_C(C_A['q_hs_rtd_C'])
         C_A['V_fan_mid_C'] = dc_spec.get_V_fan_mid_C(C_A['q_hs_mid_C'])
         C_A['P_fan_mid_C'] = dc_spec.get_P_fan_mid_C(C_A['V_fan_mid_C'])
-        C_A['P_hs_mid_C'] = np.NAN
+        C_A['P_hs_mid_C'] = np.nan
     elif int(input['C_A']['input']) == 3:
         C_A['EquipmentSpec'] = '定格能力試験と中間能力試験の値を入力する'
         C_A['q_hs_rtd_C'] = float(input['C_A']['q_hs_rtd_C'])
