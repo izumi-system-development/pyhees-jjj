@@ -810,17 +810,16 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
                 Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
-        # TODO: (46)(48) に貫流による熱損失の項を追加する
-
-        # (46)　暖冷房区画𝑖の実際の居室の室温
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+            # (46')　暖冷房区画𝑖の実際の居室の室温
             Theta_HBR_d_t_i = dc.get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
                                                      A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
                                                      r_A_ufac, A_A, A_MR, A_OR, Theta_uf_d_t)
         else:
+            # (46)　暖冷房区画𝑖の実際の居室の室温
             Theta_HBR_d_t_i = dc.get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
                                                      A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                                                     r_A_ufac, A_A, A_MR, A_OR, Theta_uf_d_t = None)
+                                                     r_A_ufac, A_A, A_MR, A_OR)
 
         # (48)　実際の非居室の室温
         Theta_NR_d_t = dc.get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
