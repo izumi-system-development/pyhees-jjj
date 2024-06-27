@@ -2536,7 +2536,7 @@ def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_N
       # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
       A_s_ufac_i = [calc_A_s_ufvnt_i(i, house.r_A_ufac, house.A_A, house.A_MR, house.A_OR) for i in range(1, 13)]
       # 1F非居室(i=6,7,8,9) 床下→床上 熱貫流
-      Us_Asufvnt = U_s * np.sum(A_s_ufac_i[6:10]) * 3600  # [W/(m2・K) * m2] → [J/(K・h)]
+      Us_Asufvnt = U_s * np.sum(A_s_ufac_i[5:9]) * 3600  # [W/(m2・K) * m2] → [J/(K・h)]
 
       Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
                                           + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
