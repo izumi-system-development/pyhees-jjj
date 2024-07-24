@@ -736,8 +736,10 @@ def get_L_star_newuf_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
 
     L_star_H_d_t_i = np.zeros((5, 24 * 365))
     L_star_H_d_t_i[Hf] = \
-      np.clip(L_H_d_t_i[:5][Hf] + Q_star_trs_prt_d_t_i[Hf] - L_normal_uf2room_d_t_i[Hf] \
-              + L_uf2outdoor_d_t_i[Hf] + L_uf2gnd_d_t_i[Hf], 0, None)
+      np.clip(L_H_d_t_i[:5][Hf] + Q_star_trs_prt_d_t_i[Hf] - L_normal_uf2room_d_t_i[Hf],
+              # NOTE: 送風経路の負荷は部屋の負荷には含めない(24'07)
+              # + L_uf2outdoor_d_t_i[Hf] + L_uf2gnd_d_t_i[Hf],
+              0, None)
     # 床下→居室全体の項はプラスに働くので負荷としてはマイナス
     return L_star_H_d_t_i, Theta_uf_supply_d_t
 
@@ -943,8 +945,10 @@ def get_L_star_newuf_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
 
     L_star_CS_d_t_i = np.zeros((5, 24 * 365))
     L_star_CS_d_t_i[Cf] = \
-      np.clip(L_CS_d_t_i[:5][Cf] + Q_star_trs_prt_d_t_i[Cf] \
-        - L_normal_uf2room_d_t_i[Cf] + L_uf2outdoor_d_t_i[Cf] + L_uf2gnd_d_t_i[Cf], 0, None)
+      np.clip(L_CS_d_t_i[:5][Cf] + Q_star_trs_prt_d_t_i[Cf] - L_normal_uf2room_d_t_i[Cf],
+              # NOTE: 送風経路の負荷は部屋の負荷には含めない(24'07)
+              # + L_uf2outdoor_d_t_i[Cf] + L_uf2gnd_d_t_i[Cf],
+              0, None)
     return L_star_CS_d_t_i
 
 def get_L_star_CS_i_2023(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, t: int):
