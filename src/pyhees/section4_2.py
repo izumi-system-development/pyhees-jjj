@@ -2352,13 +2352,13 @@ def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, 
       Theta_HBR_d_t_i[:, H] = Theta_star_HBR_d_t[H] + (CPV[:, H] * (Theta_supply_d_t_i[:, H] - Theta_star_HBR_d_t[H])
                                                       + Us_Asufvnt * (Theta_uf_d_t[H] - Theta_star_HBR_d_t[H])[np.newaxis, :]  # 床下->床上 貫流熱
                                                       - L_star_H_d_t_i[:, H] * 10 ** 6) \
-                                                    / (CPV[:, H] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600) + Us_Asufvnt
+                                                    / (CPV[:, H] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600 + Us_Asufvnt)
 
       # 冷房期 (46-2)
       Theta_HBR_d_t_i[:, C] = Theta_star_HBR_d_t[C] - (CPV[:, C] * (Theta_star_HBR_d_t[C] - Theta_supply_d_t_i[:, C])
                                                       + Us_Asufvnt * (Theta_star_HBR_d_t[C] - Theta_uf_d_t[C])[np.newaxis, :]  # 床下->床上 貫流熱
                                                       - L_star_CS_d_t_i[:, C] * 10 ** 6) \
-                                                    / (CPV[:, C] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600) + Us_Asufvnt
+                                                    / (CPV[:, C] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600 + Us_Asufvnt)
 
     else:
       Theta_HBR_d_t_i[:, H] = Theta_star_HBR_d_t[H] + (CPV[:, H] * (Theta_supply_d_t_i[:, H] - Theta_star_HBR_d_t[H])
@@ -2521,7 +2521,7 @@ def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_N
     # (48c)
     k_prt_d_t_i = c_p_air * rho_air * (V_supply_d_t_i / 3600) + U_prt * A_prt_i[:, np.newaxis]
 
-    # (48b)
+    # (48b) [J/(K・s)]
     k_evp_d_t = (Q - 0.35 * 0.5 * 2.4) * A_NR + c_p_air * rho_air * (V_vent_l_NR_d_t / 3600)
 
     # (48a)
@@ -2536,7 +2536,7 @@ def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_N
       # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
       A_s_ufac_i = [calc_A_s_ufvnt_i(i, house.r_A_ufac, house.A_A, house.A_MR, house.A_OR) for i in range(1, 13)]
       # 1F非居室(i=6,7,8,9) 床下→床上 熱貫流
-      Us_Asufvnt = U_s * np.sum(A_s_ufac_i[5:9]) * 3600  # [W/(m2・K) * m2] → [J/(K・h)]
+      Us_Asufvnt = U_s * np.sum(A_s_ufac_i[5:9])  # [W/(m2・K) * m2] → [J/(K・s)]
 
       Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
                                           + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
@@ -2546,6 +2546,8 @@ def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_N
       Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
                                           + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
                                         / (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0))
+
+    # CHECK: HBR同様のキャップロジックを行うか
 
     # 事後条件:
     assert np.shape(Theta_NR_d_t) == (8760, ), "想定外の行列数."
