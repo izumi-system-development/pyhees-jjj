@@ -2529,27 +2529,30 @@ def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_N
     k_evp_d_t = (Q - 0.35 * 0.5 * 2.4) * A_NR + c_p_air * rho_air * (V_vent_l_NR_d_t / 3600)
 
     # (48a)
-    if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-      # 事前条件
-      assert Theta_uf_d_t is not None, "計算には床下空調温度が必要です."
-      assert di is not None, "DIコンテナを使用します."
+    # TODO: 修正が必要です
+    # if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    #   raise NotImplementedError("過大となることが確認されているため要調整")
 
-      house = di.get(SampleHouseInfo)
+    #   # 事前条件
+    #   assert Theta_uf_d_t is not None, "計算には床下空調温度が必要です."
+    #   assert di is not None, "DIコンテナを使用します."
 
-      U_s = get_U_s()
-      # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
-      A_s_ufac_i = [calc_A_s_ufvnt_i(i, house.r_A_ufac, house.A_A, house.A_MR, house.A_OR) for i in range(1, 13)]
-      # 1F非居室(i=6,7,8,9) 床下→床上 熱貫流
-      Us_Asufvnt = U_s * np.sum(A_s_ufac_i[5:9])  # [W/(m2・K) * m2] → [J/(K・s)]
+    #   house = di.get(SampleHouseInfo)
 
-      Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
-                                          + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
-                                          + Us_Asufvnt * (Theta_uf_d_t - Theta_star_NR_d_t) \
-                                        / (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0) + Us_Asufvnt)
-    else:
-      Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
-                                          + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
-                                        / (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0))
+    #   U_s = get_U_s()
+    #   # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
+    #   A_s_ufac_i = [calc_A_s_ufvnt_i(i, house.r_A_ufac, house.A_A, house.A_MR, house.A_OR) for i in range(1, 13)]
+    #   # 1F非居室(i=6,7,8,9) 床下→床上 熱貫流
+    #   Us_Asufvnt = U_s * np.sum(A_s_ufac_i[5:9])  # [W/(m2・K) * m2] → [J/(K・s)]
+
+    #   Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
+    #                                       + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
+    #                                       + Us_Asufvnt * (Theta_uf_d_t - Theta_star_NR_d_t) \
+    #                                     / (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0) + Us_Asufvnt)
+
+    Theta_NR_d_t = Theta_star_NR_d_t + (-1 * np.sum(k_dash_d_t_i[:5] * (Theta_star_HBR_d_t - Theta_star_NR_d_t), axis=0) \
+                                        + np.sum(k_prt_d_t_i[:5] * (Theta_HBR_d_t_i[:5] - Theta_star_NR_d_t), axis=0)) \
+                                      / (k_evp_d_t + np.sum(k_prt_d_t_i[:5], axis=0))
 
     # CHECK: HBR同様のキャップロジックを行うか
 
