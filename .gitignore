@@ -10,7 +10,6 @@ __pycache__
 
 # Distribution / packaging
 .env
-.buildozer
 dist/
 build/
 *.egg-info/
