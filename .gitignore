@@ -9,7 +9,6 @@ __pycache__
 *.so
 
 # Distribution / packaging
-.Python
 .env
 .buildozer
 dist/
