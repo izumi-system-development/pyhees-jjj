@@ -3,7 +3,11 @@
 # pip の更新
 pip install -U pip
 
-# NOTE: requirements.txt ベースから pyproject.tomlベースへ変更
-# 参考: https://stackoverflow.com/a/77134290
-# pip install -r requirements.txt
-pip install '.[dev]'
+# Poetry をインストール
+pip install poetry
+
+# プロジェクトのルートに仮想環境を作成
+poetry config virtualenvs.in-project true
+
+# 開発用の依存関係をインストール
+poetry install --with dev
