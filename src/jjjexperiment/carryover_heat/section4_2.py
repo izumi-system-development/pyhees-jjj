@@ -82,6 +82,7 @@ def get_L_star_CS_i_2023(
 
     # 負荷から過剰熱量分を差し引く
     L_star_CS_i = L_CS_i + Q_star_trs_prt_d_t_i[:5, t:t+1] - carryover
+    L_star_CS_i = np.clip(L_star_CS_i, 0, None)
     L_star_CS_i = np.where(Cf, L_star_CS_i, np.zeros((5, 1)))
     return L_star_CS_i
 
@@ -116,5 +117,6 @@ def get_L_star_H_i_2023(
 
     # 負荷から過剰熱量分を差し引く
     L_star_H_i = L_H_i + Q_star_trs_prt_d_t_i[:5, t:t+1] - carryover
+    L_star_H_i = np.clip(L_star_H_i, 0, None)
     L_star_H_i = np.where(Hf, L_star_H_i, np.zeros((5, 1)))
     return L_star_H_i
