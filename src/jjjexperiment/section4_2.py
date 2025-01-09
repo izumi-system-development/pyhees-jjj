@@ -57,6 +57,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output2 = pd.DataFrame()
     df_output3 = pd.DataFrame()
 
+    # 熱繰越調査用出力ファイル
+    df_carryover_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
+
     # 気象条件
     if climateFile == '-':
         climate = load_climate(region)
@@ -364,8 +367,12 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
         Theta_NR_d_t = np.zeros(24 * 365)
 
+        carryovers = np.zeros((5, 24 * 365))
+
         for hour in range(0, 24 * 365):
-            carryover = jjj_car_dc.calc_carryover(A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            carryover = jjj_car_dc.calc_carryover(region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            carryovers[:, hour] = carryover[:, 0]  # 確認用
+
             # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
             L_star_CS_d_t_i[:, hour:hour+1]  \
                 = jjj_car_dc.get_L_star_CS_i_2023(
@@ -847,6 +854,21 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     ### 熱繰越 / 非熱繰越 の分岐が終了 -> 以降、共通の処理 ###
 
     # NOTE: 繰越の有無によってCSV出力が異ならないよう df_output の処理は以降に限定する
+
+    if constants.carry_over_heat == 過剰熱量繰越計算.行う.value:
+        df_carryover_output = df_carryover_output.assign(
+            carryovers_i_1 = carryovers[0],
+            carryovers_i_2 = carryovers[1],
+            carryovers_i_3 = carryovers[2],
+            carryovers_i_4 = carryovers[3],
+            carryovers_i_5 = carryovers[4]
+        )
+        if q_hs_rtd_H is not None and q_hs_rtd_C is None:
+            df_carryover_output.to_csv(case_name + constants.version_info() + '_H_carryover_output.csv', encoding = 'cp932')
+        elif q_hs_rtd_C is not None and q_hs_rtd_H is None:
+            df_carryover_output.to_csv(case_name + constants.version_info() + '_C_carryover_output.csv', encoding = 'cp932')
+        else:
+            raise IOError("冷房時・暖房時の判断に失敗しました。")
 
     """ 熱損失・熱取得を含む負荷バランス時の熱負荷 - 熱損失・熱取得を含む負荷バランス時(2) """
     df_output = df_output.assign(
