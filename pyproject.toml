@@ -17,10 +17,11 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.10"
-numpy = ">=1.24.3"
+numpy = "~1.26"  # 1.26系の最新版
 pandas = ">=2.0.1"
 scipy = ">=1.10.1"
 injector = "*"
+nptyping = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"

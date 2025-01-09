@@ -26,6 +26,8 @@ from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ
 from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
+import jjjexperiment.carryover_heat.section4_2 as jjj_cahe_dc
+
 # DIコンテナー
 from injector import Injector
 from jjjexperiment.di_container import *
@@ -364,13 +366,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         for hour in range(0, 24 * 365):
             # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
-            L_star_CS_d_t_i[:, hour:hour+1] = dc.get_L_star_CS_i_2023(
-                L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i,
-                Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            L_star_CS_d_t_i[:, hour:hour+1]  \
+                = jjj_cahe_dc.get_L_star_CS_i_2023(L_CS_d_t_i,
+                    Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
             # (8)　熱損失を含む負荷バランス時の暖房負荷
-            L_star_H_d_t_i[:, hour:hour+1] = dc.get_L_star_H_i_2023(
-                L_H_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i,
-                Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            L_star_H_d_t_i[:, hour:hour+1]  \
+                = jjj_cahe_dc.get_L_star_H_i_2023(L_H_d_t_i,
+                    Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
 
             ####################################################################################################################
             if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
