@@ -129,7 +129,7 @@ def change_testmode_VAV_cap2logic(inputs: dict):
 def change_testmode_carryover(inputs: dict):
     """ 熱繰越
     """
-    fixtures = {"carry_over_heat": 2}
+    fixtures = {"carry_over_heat": 過剰熱量繰越計算.行う.value}
     inputs_copied = copy.deepcopy(inputs)  # 複製しないと別テストで矛盾する
     return deep_update(inputs_copied, fixtures)
 
