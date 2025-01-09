@@ -4,6 +4,7 @@ from nptyping import NDArray, Float64, Shape
 from pyhees.section4_2 import *
 
 def calc_carryover(
+        region,
         A_HCZ_i: NDArray[Shape["5"], Float64],
         A_HCZ_R_i: NDArray[Shape["5"], Float64],
         Theta_star_HBR_d_t: NDArray[Shape["8760"], Float64],
@@ -24,10 +25,17 @@ def calc_carryover(
     A_HCZ_R_i = A_HCZ_R_i.reshape(-1,1)
     cbri = get_C_BR_i(A_HCZ_i, A_HCZ_R_i)
 
-    if np.any(Theta_star_HBR_d_t[t-1] < Theta_HBR_d_t_i[:, t-1:t]):
+    H, C, M = get_season_array_d_t(region)
+    if H[t] and C[t]:
+        raise ValueError("暖房期と冷房期は重複しない前提")
+    elif H[t]:
         temperature_diff = Theta_HBR_d_t_i[:, t-1:t] - Theta_star_HBR_d_t[t-1]
-    else:
+    elif C[t]:
         temperature_diff = Theta_star_HBR_d_t[t-1] - Theta_HBR_d_t_i[:, t-1:t]
+    else:
+        return np.zeros((5, 1))
+
+    temperature_diff = np.clip(temperature_diff, 0, None)
 
     # 事後条件:
     assert cbri.shape == (5, 1), "cbriの行列数が想定外"
