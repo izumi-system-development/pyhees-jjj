@@ -12,6 +12,7 @@ def calc_carryover(
         t: int) -> NDArray[Shape["5, 1"], Float64]:
     """過剰熱量 [MJ]
     Args:
+        region: 地域区分
         A_HCZ_i: 暖冷房区画iの床面積 [m2]
         A_HCZ_R_i: 標準住戸における暖冷房区画の床面積 [m2]
         Theta_star_HBR_d_t: 日付dの時刻tにおける 負荷バランス時の居室の室温 [℃]
@@ -24,6 +25,9 @@ def calc_carryover(
     A_HCZ_i = A_HCZ_i.reshape(-1,1)
     A_HCZ_R_i = A_HCZ_R_i.reshape(-1,1)
     cbri = get_C_BR_i(A_HCZ_i, A_HCZ_R_i)
+
+    # NOTE: region の代わりに temperature_diff の正負で暖冷を判断することも可能
+    # なお、デフォルト条件では結果に変化なし
 
     H, C, M = get_season_array_d_t(region)
     if H[t] and C[t]:
