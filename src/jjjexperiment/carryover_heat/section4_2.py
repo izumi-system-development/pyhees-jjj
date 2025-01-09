@@ -30,16 +30,16 @@ def calc_carryover(
     # なお、デフォルト条件では結果に変化なし
 
     H, C, M = get_season_array_d_t(region)
+    temperature_diff = Theta_HBR_d_t_i[:, t-1:t] - Theta_star_HBR_d_t[t-1]
+
     if H[t] and C[t]:
         raise ValueError("暖房期と冷房期は重複しない前提")
-    elif H[t]:
+    elif H[t] and Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]:
         temperature_diff = Theta_HBR_d_t_i[:, t-1:t] - Theta_star_HBR_d_t[t-1]
-    elif C[t]:
+    elif C[t] and Theta_HBR_d_t_i[:, t-1:t] < Theta_star_HBR_d_t[t-1]:
         temperature_diff = Theta_star_HBR_d_t[t-1] - Theta_HBR_d_t_i[:, t-1:t]
     else:
         return np.zeros((5, 1))
-
-    temperature_diff = np.clip(temperature_diff, 0, None)
 
     # 事後条件:
     assert cbri.shape == (5, 1), "cbriの行列数が想定外"
