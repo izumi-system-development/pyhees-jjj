@@ -26,6 +26,8 @@ from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ
 from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
+import jjjexperiment.carryover_heat.section4_2 as jjj_car_dc
+
 # DIコンテナー
 from injector import Injector
 from jjjexperiment.di_container import *
@@ -54,6 +56,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
     df_output2 = pd.DataFrame()
     df_output3 = pd.DataFrame()
+
+    # 熱繰越調査用出力ファイル
+    df_carryover_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
 
     # 気象条件
     if climateFile == '-':
@@ -362,15 +367,20 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
         Theta_NR_d_t = np.zeros(24 * 365)
 
+        carryovers = np.zeros((5, 24 * 365))
+
         for hour in range(0, 24 * 365):
+            carryover = jjj_car_dc.calc_carryover(region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            carryovers[:, hour] = carryover[:, 0]  # 確認用
+
             # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
-            L_star_CS_d_t_i[:, hour:hour+1] = dc.get_L_star_CS_i_2023(
-                L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i,
-                Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            L_star_CS_d_t_i[:, hour:hour+1]  \
+                = jjj_car_dc.get_L_star_CS_i_2023(
+                    L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, hour)
             # (8)　熱損失を含む負荷バランス時の暖房負荷
-            L_star_H_d_t_i[:, hour:hour+1] = dc.get_L_star_H_i_2023(
-                L_H_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i,
-                Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            L_star_H_d_t_i[:, hour:hour+1]  \
+                = jjj_car_dc.get_L_star_H_i_2023(
+                    L_H_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, hour)
 
             ####################################################################################################################
             if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
@@ -393,7 +403,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 SHF_dash_d_t = dc.get_SHF_dash_d_t(L_star_CS_d_t, L_star_dash_C_d_t)
 
                 # (27)
-                Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t(type, q_hs_rtd_C, input_C_af_C)
+                Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t_2024(type, q_hs_rtd_C, input_C_af_C)
 
                 # (26)
                 Q_hs_max_CL_d_t = dc.get_Q_hs_max_CL_d_t(Q_hs_max_C_d_t, SHF_dash_d_t, L_star_dash_CL_d_t)
@@ -509,9 +519,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                                     Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
             # (43)　暖冷房区画𝑖の吹き出し風量
-            V_supply_d_t_i = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
+            V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
                                                             V_vent_g_i, V_dash_supply_d_t_i, VAV, region, Theta_hs_out_d_t)
-            V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i, V_dash_supply_d_t_i, V_vent_g_i, region, V_hs_dsgn_H, V_hs_dsgn_C)
+            V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, region, V_hs_dsgn_H, V_hs_dsgn_C)
 
 
             # (41)　暖冷房区画𝑖の吹き出し温度
@@ -844,6 +854,21 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     ### 熱繰越 / 非熱繰越 の分岐が終了 -> 以降、共通の処理 ###
 
     # NOTE: 繰越の有無によってCSV出力が異ならないよう df_output の処理は以降に限定する
+
+    if constants.carry_over_heat == 過剰熱量繰越計算.行う.value:
+        df_carryover_output = df_carryover_output.assign(
+            carryovers_i_1 = carryovers[0],
+            carryovers_i_2 = carryovers[1],
+            carryovers_i_3 = carryovers[2],
+            carryovers_i_4 = carryovers[3],
+            carryovers_i_5 = carryovers[4]
+        )
+        if q_hs_rtd_H is not None and q_hs_rtd_C is None:
+            df_carryover_output.to_csv(case_name + constants.version_info() + '_H_carryover_output.csv', encoding = 'cp932')
+        elif q_hs_rtd_C is not None and q_hs_rtd_H is None:
+            df_carryover_output.to_csv(case_name + constants.version_info() + '_C_carryover_output.csv', encoding = 'cp932')
+        else:
+            raise IOError("冷房時・暖房時の判断に失敗しました。")
 
     """ 熱損失・熱取得を含む負荷バランス時の熱負荷 - 熱損失・熱取得を含む負荷バランス時(2) """
     df_output = df_output.assign(

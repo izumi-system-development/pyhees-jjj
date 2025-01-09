@@ -834,43 +834,6 @@ def get_delta_L_star_newuf(
 
   return L_normal_uf2room_d_t_i, L_newuf2room_d_t_i, L_uf2outdoor_d_t_i[:5], L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
 
-@log_res(['L_star_H_i'])
-def get_L_star_H_i_2023(L_H_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, t: int):
-    """get_L_star_H_d_t_i のループ用 時点単発計算 \n
-
-    前時刻の値を利用: \n
-      theta_star_HBR_d_t: 日付dの時刻tにおける負荷バランス時の居室の室温（℃） \n
-      Theta_HBR_d_t_i: xxx \n
-    Extended Args: \n
-      A_HCZ_i: xxx \n
-      A_HCZ_R_i: 標準住戸における暖冷房区画の床面積[m2] \n
-      idx: 時系列データにおけるインデックス \n
-    Returns: \n
-      一時点の 日付dの時刻tにおける暖冷房区画iの1時間当たりの熱損失を含む負荷バランス時の暖房負荷 \n
-
-    """
-    H, C, M = get_season_array_d_t(region)
-    L_H_d_t_i = L_H_d_t_i[:5]
-    f = L_H_d_t_i > 0
-    Hf = np.logical_and(H, f)[:, t:t+1]  # 5x1
-
-    A_HCZ_i = A_HCZ_i.reshape(-1,1)
-    A_HCZ_R_i = A_HCZ_R_i.reshape(-1,1)
-
-    if 0 < t:
-        cbri = get_C_BR_i(A_HCZ_i, A_HCZ_R_i)
-        arr_theta = np.clip(Theta_HBR_d_t_i[:, t-1:t] - Theta_star_HBR_d_t[t-1], 0, None)  # 5x1
-        carry_over = cbri * arr_theta / 1_000_000  # 過剰熱量: J/h -> MJ/h
-    else:
-        carry_over = np.zeros((5, 1))
-    assert np.all(np.greater_equal(carry_over, 0)), "想定外の計算結果(過剰熱量がマイナス)"
-
-    # <負荷バランス時の暖房負荷> - <過剰熱量>
-    arr = L_H_d_t_i[:, t:t+1] + Q_star_trs_prt_d_t_i[:, t:t+1] - carry_over
-
-    L_star_H_i = np.zeros((5, 1))
-    L_star_H_i[Hf] = arr[Hf]
-    return L_star_H_i
 
 @log_res(['L_star_CS_d_t_i'])
 def get_L_star_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region):
@@ -951,47 +914,6 @@ def get_L_star_newuf_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
               0, None)
     return L_star_CS_d_t_i
 
-def get_L_star_CS_i_2023(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, t: int):
-    """get_L_star_CS_d_t_i のループ用 時点単発計算 \n
-
-    前時刻の値を利用: \n
-      Theta_star_HBR_d_t: xxx \n
-      Theta_HBR_d_t_i: xxx \n
-    Extended Args: \n
-      A_HCZ_i: xxx  \n
-      A_HCZ_R_i: 標準住戸における暖冷房区画の床面積[m2]  \n
-      t: 時系列データにおけるインデックス \n
-
-    Returns: \n
-      一時点の 日付dの時刻tにおける暖冷房区画iの1時間当たりの熱損失を含む負荷バランス時の冷房顕熱負荷 \n
-
-    """
-    H, C, M = get_season_array_d_t(region)
-    L_CS_d_t_i = L_CS_d_t_i[:5]
-    f = L_CS_d_t_i > 0
-    Cf = np.logical_and(C, f)[:, t]  # 5x1
-
-    A_HCZ_i = A_HCZ_i.reshape(-1,1)
-    A_HCZ_R_i = A_HCZ_R_i.reshape(-1,1)
-
-    if 0 < t:
-        cbri = get_C_BR_i(A_HCZ_i, A_HCZ_R_i)
-        arr_theta = np.clip(Theta_star_HBR_d_t[t-1] - Theta_HBR_d_t_i[:, t-1:t], 0, None)  # 5x1
-        carry_over = cbri * arr_theta / 1_000_000  # 過剰熱量: J/h -> MJ/h
-    else:
-        carry_over = np.zeros((5, 1))
-
-    if np.any(carry_over < 0):
-        pass
-    assert np.all(np.greater_equal(carry_over, 0)), "想定外の計算結果(過剰熱量がマイナス)"
-
-    # <負荷バランス時の暖房負荷> - <過剰熱量>
-    # NOTE: MATRIX[:, 0] だと shape(5, ) となりダメ MATRIX[:, 0:1] と書くと shape(5,1)
-    arr = L_CS_d_t_i[:, t:t+1] + Q_star_trs_prt_d_t_i[:, t:t+1] - carry_over
-
-    L_star_CS_i = np.zeros((5, 1))
-    L_star_CS_i[Cf] = np.clip(arr, 0, None)[Cf]
-    return L_star_CS_i
 
 def get_L_star_CL_d_t_i(L_CS_d_t_i, L_CL_d_t_i, region):
     """(10-1)(10-2)(10-3)
