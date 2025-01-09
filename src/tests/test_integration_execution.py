@@ -48,7 +48,7 @@ class Test既存計算維持_デフォルト入力時:
         """
 
         inputs = copy.deepcopy(self._inputs1)
-        inputs = change_testmode_carryover(inputs)
+        # inputs = change_testmode_carryover(inputs)
         # inputs = change_testmode_underfloor_old(inputs)
         # inputs = change_testmode_underfloor_new(inputs)
         result = calc(inputs, test_mode=True)
