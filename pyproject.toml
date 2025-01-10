@@ -23,7 +23,7 @@ scipy = ">=1.10.1"
 injector = "*"
 nptyping = "*"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "*"
 
 [tool.pytest.ini_options]
