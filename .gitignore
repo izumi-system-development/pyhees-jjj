@@ -18,5 +18,5 @@ dist/
 .env
 .venv/
 
-# Poetry specific
-poetry.lock
+# Poetry
+# NOTE: poetry.lock は除外しない(依存バージョンを固定しており開発者間で共有すべきものです)
