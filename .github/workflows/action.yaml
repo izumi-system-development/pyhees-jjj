@@ -11,7 +11,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # NOTE: Poetry仮想環境を使用している時 actions/setup-python は不要
+      # NOTE: Poetry仮想環境を使用している時であってもバージョン指定する場合には必要
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
       - name: Install dependencies
         run: .devcontainer/post-create.sh
