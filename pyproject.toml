@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "pyhees-jjj"
-version = "0.0.1"
+version = "0.1.0"
 description = "Pyheesの検証用のフォークプロジェクトです"
 homepage = "https://github.com/izumi-system-development/pyhees-jjj"
 authors = ["Pyhees Development Team"]
@@ -16,7 +16,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10"
+python = ">=3.10,<3.11"  # 3.10.x (google colab に合わせる)
 numpy = "~1.26"  # 1.26系の最新版
 pandas = ">=2.0.1"
 scipy = ">=1.10.1"

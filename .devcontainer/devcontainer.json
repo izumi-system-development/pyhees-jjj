@@ -1,10 +1,10 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/python
 {
-	"name": "Python 3",
+	"name": "Python 3.10",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:1-3-bookworm",
-	// CHECK: google colaboratory とバージョンを合わせた方がよいか
+	"image": "mcr.microsoft.com/devcontainers/python:3.10-bookworm",
+	// NOTE: google colab にインポートして使用するのでバージョンを合わせる
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
