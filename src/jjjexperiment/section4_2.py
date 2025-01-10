@@ -26,7 +26,7 @@ from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ
 from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
-import jjjexperiment.carryover_heat.section4_2 as jjj_car_dc
+import jjjexperiment.carryover_heat as jjj_carryover_heat
 
 # DIコンテナー
 from injector import Injector
@@ -364,23 +364,45 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # インデックス順に更新対象
         L_star_CS_d_t_i = np.zeros((5, 24 * 365))
         L_star_H_d_t_i = np.zeros((5, 24 * 365))
+
+        # 実際の居室・非居室の室温
         Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
         Theta_NR_d_t = np.zeros(24 * 365)
+        # 空でよいのか? 先頭から利用されるのか?
+        # (46)(48)で計算されるものだが、それらの式は後ろであるため、
+        # ここでは空(ただし先頭から利用)でよいのかチェックする
 
         carryovers = np.zeros((5, 24 * 365))
 
-        for hour in range(0, 24 * 365):
-            carryover = jjj_car_dc.calc_carryover(region, A_HCZ_i, A_HCZ_R_i, Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
-            carryovers[:, hour] = carryover[:, 0]  # 確認用
+        for t in range(0, 24 * 365):
+            # TODO: 先頭時の扱いを考慮
+
+            # 季節から計算の必要性を判断
+            H, C, M = dc.get_season_array_d_t(region)
+
+            if H[t] and C[t]:
+                raise ValueError("想定外の季節")
+            # 暖房期 前時刻にて 暖かさに余裕があるとき
+            elif H[t] and Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]:
+                carryover = jjj_carryover_heat.calc_carryover_H(A_HCZ_i, Theta_star_HBR_d_t[t], Theta_HBR_d_t_i[:, t-1:t])
+            # 冷房期 前時刻にて 涼しさに余裕があるとき
+            elif C[t] and Theta_HBR_d_t_i[:, t-1:t] < Theta_star_HBR_d_t[t-1]:
+                carryover = jjj_carryover_heat.calc_carryover_C(A_HCZ_i, Theta_star_HBR_d_t[t-1], Theta_HBR_d_t_i[:, t:t+1])
+            else:
+                carryover = np.zeros((5, 1))
+                continue  # これができるとよいが可能かチェックする
+
+            carryovers[:, t] = carryover[:, 0]  # 確認用
 
             # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
-            L_star_CS_d_t_i[:, hour:hour+1]  \
-                = jjj_car_dc.get_L_star_CS_i_2023(
-                    L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, hour)
+            L_star_CS_d_t_i[:, t:t+1]  \
+                = jjj_carryover_heat.get_L_star_CS_i_2023(
+                    L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, t)
+
             # (8)　熱損失を含む負荷バランス時の暖房負荷
-            L_star_H_d_t_i[:, hour:hour+1]  \
-                = jjj_car_dc.get_L_star_H_i_2023(
-                    L_H_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, hour)
+            L_star_H_d_t_i[:, t:t+1]  \
+                = jjj_carryover_heat.get_L_star_H_i_2023(
+                    L_H_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, t)
 
             ####################################################################################################################
             if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
@@ -548,13 +570,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # 順次 一時点のみ更新
 
             # (46)　暖冷房区画𝑖の実際の居室の室温
-            Theta_HBR_d_t_i[:, hour:hour+1] = dc.get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
+            Theta_HBR_d_t_i[:, t:t+1] = dc.get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
                                                         A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                                                        A_HCZ_R_i, Theta_HBR_d_t_i, hour)
+                                                        A_HCZ_R_i, Theta_HBR_d_t_i, t)
 
             # (48)　実際の非居室の室温
-            Theta_NR_d_t[hour] = dc.get_Theta_NR_2023(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
-                                                V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_NR_d_t, hour)
+            Theta_NR_d_t[t] = dc.get_Theta_NR_2023(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
+                                                V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_NR_d_t, t)
 
     else:  # 過剰熱繰越ナシ(一般的なパターン)
 

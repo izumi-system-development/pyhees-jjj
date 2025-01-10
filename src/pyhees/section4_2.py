@@ -59,6 +59,8 @@ from jjjexperiment.options import *
 from jjjexperiment.di_container import *
 from injector import Injector
 
+import jjjexperiment.carryover_heat as jjj_carryover_heat
+
 # NOTE: こちらは使用しておらず、jjjexperimentに複製したものを使用しています
 # 未処理負荷と機器の計算に必要な変数を取得
 def calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, V_hs_dsgn_H, V_hs_dsgn_C, Q,
@@ -2309,6 +2311,7 @@ def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, 
     assert np.shape(Theta_HBR_d_t_i) == (5, 8760), "想定外の行列数."
     return Theta_HBR_d_t_i
 
+
 def get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q, A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
                          A_HCZ_R_i, Theta_HBR_d_t_i, t: int):
     """ get_Theta_HBR_d_t_i のループ用 時点単発計算
@@ -2346,7 +2349,7 @@ def get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i,
     # 暖房期 (46-1)
     if H[t]:
       # NOTE: 時系列データの最初の計算では繰り越し:なしとしています
-      cbri = get_C_BR_i(A_HCZ_i, A_HCZ_R_i)
+      cbri = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
       arr_theta = (Theta_HBR_d_t_i[:, t-1:t] - Theta_star_HBR_d_t[t]) if 0 < t else 0
       capacity = cbri * arr_theta  # 熱容量[J]
 
@@ -2365,7 +2368,7 @@ def get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i,
 
     # 冷房期 (46-2)
     elif C[t]:
-      cbri = get_C_BR_i(A_HCZ_i, A_HCZ_R_i)
+      cbri = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
       arr_theta = (Theta_star_HBR_d_t[t] - Theta_HBR_d_t_i[:, t-1:t])
       capacity = cbri * arr_theta  # 熱容量[J]
 
@@ -2387,17 +2390,6 @@ def get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i,
 
     return Theta_HBR_i
 
-def get_C_BR_i(A_HCZ_i, A_HCZ_R_i):
-    """区画i毎の居室の熱容量[J/K]"""
-    Alpha_HCZ_i = np.array([
-        [constants.Alpha_HCZ_i[0]],
-        [constants.Alpha_HCZ_i[1]],
-        [constants.Alpha_HCZ_i[2]],
-        [constants.Alpha_HCZ_i[3]],
-        [constants.Alpha_HCZ_i[4]]
-      ])
-    C_BR_R_i = 12.6 * 1000 * A_HCZ_R_i * 2.4 + Alpha_HCZ_i * 1000
-    return A_HCZ_i / A_HCZ_R_i * C_BR_R_i  # 5x1
 
 def get_X_HBR_d_t_i(X_star_HBR_d_t):
     """(47)
@@ -2511,19 +2503,15 @@ def get_Theta_NR_2023(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_
     # CHECK: 資料 Theta_NR_d_t_i -> Theta_NR_d_t が正かな?
     arr1 = -1 * np.sum(k_dash_i, axis=0) * (Theta_star_HBR_d_t[t] - Theta_star_NR_d_t[t])
     arr2 = np.sum(k_prt_i * (Theta_HBR_d_t_i[:, t:t+1] - Theta_star_NR_d_t[t]), axis=0)
-    arr3 = np.sum(get_C_NR_i(A_NR) * (Theta_NR_d_t[t-1:t] - Theta_star_NR_d_t[t]), axis=0)
+    arr3 = np.sum(jjj_carryover_heat.get_C_NR(A_NR) * (Theta_NR_d_t[t-1:t] - Theta_star_NR_d_t[t]), axis=0)
 
     # (48a)
     arr_above = arr1 + arr2 + arr3
-    arr_below = k_evp + np.sum(k_prt_i, axis=0) + np.sum(get_C_NR_i(A_NR), axis=0)
+    arr_below = k_evp + np.sum(k_prt_i, axis=0) + np.sum(jjj_carryover_heat.get_C_NR(A_NR), axis=0)
     Theta_NR = Theta_star_NR_d_t[t] + arr_above / arr_below
 
     return Theta_NR
 
-def get_C_NR_i(A_NR) -> float:
-    """区画i毎の非居室の熱容量[J/K]"""
-    C_NR_R_i = 12.6 * 1000 * constants.A_NR_R * 2.4 + constants.Alpha_NR_i * 1000  # 5x1
-    return A_NR / constants.A_NR_R * C_NR_R_i
 
 def get_X_NR_d_t(X_star_NR_d_t):
     """(49)
