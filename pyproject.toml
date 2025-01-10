@@ -16,8 +16,8 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.11"  # 3.10.x (google colab に合わせる)
-numpy = "~1.26"  # 1.26系の最新版
+python = "~3.10"  # 3.10.x (= google colab ver.)
+numpy = "~1.26"  # 1.26.x
 pandas = ">=2.0.1"
 scipy = ">=1.10.1"
 injector = "*"
