@@ -51,71 +51,64 @@ def calc_carryover(
 # MATRIX[:, t] -> Shape(5, )
 # MATRIX[:, t:t+1] -> Shape(5, 1)
 
-@log_res(['L_star_CS_i'])
-def get_L_star_CS_i_2023(
-        L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
-        carryover: NDArray[Shape["5, 1"], Float64],
-        t: int
-    )-> NDArray[Shape["5, 1"], Float64]:
-    """t時点計算版 (9-1)(9-2)(9-3) get_L_star_CS_d_t_i
-
-    Args:
-        L_CS_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの 冷房顕熱負荷 [MJ/h]
-        Q_star_trs_prt_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの 熱損失を含む負荷バランス時の非居室への熱移動 [MJ/h]
-        region: 地域区分
-        carryover: 過剰熱量 [MJ]
-        t: 日付時刻インデックス
-
-    Returns:
-        暖冷房区画iの一時点の 熱損失を含む負荷バランス時の冷房顕熱負荷 [MJ]
-    """
-    # 実行条件: 指定時刻tが冷房期である
-    H, C, M = dc.get_season_array_d_t(region)
-    if not C[t]: return np.zeros((5, 1))
-
-    L_CS_i = L_CS_d_t_i[:5, t:t+1]
-    assert L_CS_i.shape == (5, 1), "L_CS_iの行列数が想定外"
-    Cf = 0 < L_CS_i
-
-    # マスクが二次元のときは L_star_CS_i[Cf] ではなく np.where を使用した方が簡潔なコードになる
-
-    # 負荷から過剰熱量分を差し引く
-    L_star_CS_i = L_CS_i + Q_star_trs_prt_d_t_i[:5, t:t+1] - carryover
-    L_star_CS_i = np.clip(L_star_CS_i, 0, None)
-    L_star_CS_i = np.where(Cf, L_star_CS_i, np.zeros((5, 1)))
-    return L_star_CS_i
-
-
 @log_res(['L_star_H_i'])
-def get_L_star_H_i_2023(
-        L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
+def get_L_star_H_i_2024(
+        H: bool,
+        L_H_i: NDArray[Shape["5, 1"], Float64],
+        Q_star_trs_prt_i: NDArray[Shape["5, 1"], Float64],
         carryover: NDArray[Shape["5, 1"], Float64],
-        t: int
     )-> NDArray[Shape["5, 1"], Float64]:
-    """t時点計算版 (8-1)(8-2)(8-3) get_L_star_H_d_t_i
+    """(8-1)(8-2)(8-3) -> 時点版, 過剰熱量を考慮
 
     Args:
-        L_H_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの 暖房負荷 [MJ/h]
-        Q_star_trs_prt_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの 熱損失を含む負荷バランス時の非居室への熱移動 [MJ/h]
-        region: 地域区分
+        H: 暖房期
+        L_H_i: (時点)暖冷房区画iの1時間当たりの 暖房負荷 [MJ/h]
+        Q_star_trs_prt_i: (時点)暖冷房区画iの1時間当たりの 熱損失を含む負荷バランス時の非居室への熱移動 [MJ/h]
         carryover: 過剰熱量 [MJ]
-        t: 日付時刻インデックス
 
     Returns:
         暖冷房区画iの一時点の 熱損失を含む負荷バランス時の暖房負荷 [MJ]
     """
     # 実行条件: 指定時刻tが暖房期である
-    H, C, M = dc.get_season_array_d_t(region)
-    if not H[t]: return np.zeros((5, 1))
-
-    L_H_i = L_H_d_t_i[:5, t:t+1]
     assert L_H_i.shape == (5, 1), "L_H_iの行列数が想定外"
-    Hf = 0 < L_H_i
+    if not H or np.all(L_H_i <= 0):
+        return np.zeros((5, 1))
 
-    # マスクが二次元のときは L_star_H_i[Hf] ではなく np.where を使用した方が簡潔なコードになる
-
-    # 負荷から過剰熱量分を差し引く
-    L_star_H_i = L_H_i + Q_star_trs_prt_d_t_i[:5, t:t+1] - carryover
+    # 繰越熱量は負荷低減に働く
+    L_star_H_i = L_H_i + Q_star_trs_prt_i - carryover
     L_star_H_i = np.clip(L_star_H_i, 0, None)
-    L_star_H_i = np.where(Hf, L_star_H_i, np.zeros((5, 1)))
+
+    # 事後条件:
+    assert np.all(0 <= L_star_H_i), "負荷バランス時の暖房負荷は負にならない"
     return L_star_H_i
+
+@log_res(['L_star_CS_i'])
+def get_L_star_CS_i_2024(
+        C: bool,
+        L_CS_i: NDArray[Shape["5, 1"], Float64],
+        Q_star_trs_prt_i: NDArray[Shape["5, 1"], Float64],
+        carryover: NDArray[Shape["5, 1"], Float64],
+    )-> NDArray[Shape["5, 1"], Float64]:
+    """(9-1)(9-2)(9-3) -> 時点版, 過剰熱量を考慮
+
+    Args:
+        C: 冷房期
+        L_CS_i: (時点)暖冷房区画iの1時間当たりの 冷房顕熱負荷 [MJ/h]
+        Q_star_trs_prt_i: (時点)暖冷房区画iの1時間当たりの 熱損失を含む負荷バランス時の非居室への熱移動 [MJ/h]
+        carryover: 過剰熱量 [MJ]
+
+    Returns:
+        暖冷房区画iの一時点の 熱損失を含む負荷バランス時の冷房顕熱負荷 [MJ]
+    """
+    # 実行条件: 指定時刻tが暖房期である
+    assert L_CS_i.shape == (5, 1), "L_CS_iの行列数が想定外"
+    if not C or np.all(L_CS_i <= 0):
+        return np.zeros((5, 1))
+
+    # 繰越熱量は負荷低減に働く
+    L_star_CS_i = L_CS_i + Q_star_trs_prt_i - carryover
+    L_star_CS_i = np.clip(L_star_CS_i, 0, None)
+
+    # 事後条件:
+    assert np.all(0 <= L_star_CS_i), "負荷バランス時の冷房顕熱負荷は負にならない"
+    return L_star_CS_i

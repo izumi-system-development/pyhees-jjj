@@ -401,15 +401,21 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
             carryovers[:, t] = carryover[:, 0]  # 確認用
 
-            # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
-            L_star_CS_d_t_i[:, t:t+1]  \
-                = jjj_carryover_heat.get_L_star_CS_i_2023(
-                    L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, t)
-
             # (8)　熱損失を含む負荷バランス時の暖房負荷
             L_star_H_d_t_i[:, t:t+1]  \
-                = jjj_carryover_heat.get_L_star_H_i_2023(
-                    L_H_d_t_i, Q_star_trs_prt_d_t_i, region, carryover, t)
+                = jjj_carryover_heat.get_L_star_H_i_2024(
+                    H[t],
+                    L_H_d_t_i[:5, t:t+1],
+                    Q_star_trs_prt_d_t_i[:5, t:t+1],
+                    carryover)
+
+            # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
+            L_star_CS_d_t_i[:, t:t+1]  \
+                = jjj_carryover_heat.get_L_star_CS_i_2024(
+                    C[t],
+                    L_CS_d_t_i[:5, t:t+1],
+                    Q_star_trs_prt_d_t_i[:5, t:t+1],
+                    carryover)
 
             ####################################################################################################################
             if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
