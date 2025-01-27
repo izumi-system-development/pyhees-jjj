@@ -113,118 +113,149 @@ def get_L_star_CS_i_2024(
     assert np.all(0 <= L_star_CS_i), "負荷バランス時の冷房顕熱負荷は負にならない"
     return L_star_CS_i
 
-def get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q, A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                         A_HCZ_R_i, Theta_HBR_d_t_i, t: int):
-    """ (46-1)(46-2)(46-3) -> 時点版, 過剰熱量を考慮
+def get_Theta_HBR_i_2023(
+        isFirst: bool, H: bool, C: bool, M: bool,
+        Theta_star_HBR: float,
+        V_supply_i: NDArray[Shape["5, 1"], Float64],
+        Theta_supply_i: NDArray[Shape["5, 1"], Float64],
+        U_prt: float,
+        A_prt_i: NDArray[Shape["5, 1"], Float64],
+        Q: float,
+        A_HCZ_i: NDArray[Shape["5, 1"], Float64],
+        L_star_H_i: NDArray[Shape["5, 1"], Float64],
+        L_star_CS_i: NDArray[Shape["5, 1"], Float64],
+        Theta_HBR_before_i: NDArray[Shape["5, 1"], Float64]
+        ) -> NDArray[Shape["5, 1"], Float64]:
+    """(46-1)(46-2)(46-3) -> 時点版, 過剰熱量を考慮
 
-    前時刻の値を利用: \n
-      Theta_star_HBR_d_t: 日付dの時刻tにおける負荷バランス時の居室の室温（℃） \n
-      Theta_HBR_d_t_i: xxx \n
-      V_supply_d_t_i: 日付dの時刻tにおける暖冷房区画iの吹き出し風量（m3/h） \n
-      Theta_supply_d_t_i: 日付dの時刻tにおける負荷バランス時の居室の室温（℃） \n
-      U_prt: 間仕切りの熱貫流率（W/(m2・K)） \n
-      A_prt_i: 暖冷房区画iから見た非居室の間仕切りの面積（m2） \n
-      Q: 当該住戸の熱損失係数（W/(m2・K)） \n
-      A_HCZ_i: 暖冷房区画iの床面積（m2） \n
-      L_star_H_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの間仕切りの熱取得を含む実際の暖房負荷（MJ/h） \n
-      L_star_CS_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの間仕切りの熱取得を含む実際の冷房顕熱負荷（MJ/h） \n
-      region: 地域区分 \n
-
-    Extended Args: \n
-      A_HCZ_R_i: 標準住戸における暖冷房区画の床面積[m2] \n
-      idx: 時系列データにおけるインデックス \n
-
-    Returns: \n
-      (日付dの時刻tにおける)暖冷房区画iの実際の居室の室温[℃] \n
-
-    """
-    H, C, M = dc.get_season_array_d_t(region)
-    c_p_air = dc.get_c_p_air()
-    rho_air = dc.get_rho_air()
-
-    # NOTE: shape(5,) -> shape(5,1)
-    A_prt_i = A_prt_i.reshape(-1,1)
-    A_HCZ_i = A_HCZ_i.reshape(-1,1)
-    A_HCZ_R_i = A_HCZ_R_i.reshape(-1,1)
-
-    # 暖房期 (46-1)
-    if H[t]:
-      # NOTE: 時系列データの最初の計算では繰り越し:なしとしています
-      cbri = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
-      arr_theta = (Theta_HBR_d_t_i[:, t-1:t] - Theta_star_HBR_d_t[t]) if 0 < t else 0
-      capacity = cbri * arr_theta  # 熱容量[J]
-
-      arr_above_1 = c_p_air * rho_air * V_supply_d_t_i[:, t:t+1] * (Theta_supply_d_t_i[:, t:t+1] - Theta_star_HBR_d_t[t])
-      arr_above_2 = -1 * L_star_H_d_t_i[:, t:t+1] * 10 ** 6  # MJ/h -> J/h
-
-      arr_below_1 = c_p_air * rho_air * V_supply_d_t_i[:, t:t+1]
-      arr_below_2 = (U_prt * A_prt_i + Q * A_HCZ_i) * 3600
-
-      Theta_HBR_i = Theta_star_HBR_d_t[t:t+1] \
-        + (arr_above_1 + capacity + arr_above_2) / (arr_below_1 + arr_below_2 + cbri)
-
-      # 暖冷房区画iの実際の居室の室温θ_(HBR,d,t,i)は、暖房期において負荷バランス時の居室の室温θ_(HBR,d,t)^*を下回る場合、
-      # 負荷バランス時の居室の室温θ_(HBR,d,t)^*に等しい
-      Theta_HBR_i = np.clip(Theta_HBR_i, Theta_star_HBR_d_t[t], None)
-
-    # 冷房期 (46-2)
-    elif C[t]:
-      cbri = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
-      arr_theta = (Theta_star_HBR_d_t[t] - Theta_HBR_d_t_i[:, t-1:t])
-      capacity = cbri * arr_theta  # 熱容量[J]
-
-      arr_above_1 = c_p_air * rho_air * V_supply_d_t_i[:, t:t+1] * (Theta_star_HBR_d_t[t] - Theta_supply_d_t_i[:, t:t+1])
-      arr_above_2 = -1 * L_star_CS_d_t_i[:, t:t+1] * 10 ** 6
-
-      arr_below_1 = c_p_air * rho_air * V_supply_d_t_i[:, t:t+1]
-      arr_below_2 = (U_prt * A_prt_i + Q * A_HCZ_i) * 3600
-
-      Theta_HBR_i = Theta_star_HBR_d_t[t:t+1] \
-        -1 * (arr_above_1 + capacity + arr_above_2) / (arr_below_1 + arr_below_2 + cbri)
-
-      # 冷房期において負荷バランス時の居室の室温θ_(HBR,d,t)^*を上回る場合、負荷バランス時の居室の室温θ_(HBR,d,t)^*に等しい
-      Theta_HBR_i = np.clip(Theta_HBR_i, None, Theta_star_HBR_d_t[t])
-
-    # 中間期 (46-3)
-    elif M[t]:
-      Theta_HBR_i = Theta_star_HBR_d_t[t:t+1]
-
-    return Theta_HBR_i
-
-def get_Theta_NR_2023(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_NR_d_t, t: int):
-    """ (48a)(48b)(48c)(48d) -> 時点版, 過剰熱量を考慮
-
-    前時刻の値を利用: \
-      Theta_star_NR_d_t: 日付dの時刻tにおける実際の非居室の室温（℃） \
-      Theta_NR_d_t_i: xxx \
-    Extended Args:
-      idx: 時系列データにおけるインデックス
+    Args:
+        Theta_star_HBR: (時点)負荷バランス時の居室の室温 [℃]
+        V_supply_i: 日付dの時刻tにおける暖冷房区画iの吹き出し風量 [m3/h]
+        Theta_supply_i: 日付dの時刻tにおける負荷バランス時の居室の室温 [℃]
+        U_prt: 間仕切りの熱貫流率 [W/(m2・K)]
+        A_prt_i: 暖冷房区画iから見た非居室の間仕切りの面積 [m2]
+        Q: 当該住戸の熱損失係数 [W/(m2・K)]
+        A_HCZ_i: 暖冷房区画iの 床面積 [m2]
+        L_star_H_i: (時点)暖冷房区画iの 間仕切りの熱取得を含む実際の暖房負荷 [MJ/h]
+        L_star_CS_i: (時点)暖冷房区画iの 間仕切りの熱取得を含む実際の冷房顕熱負荷 [MJ/h]
+        Theta_HBR_before_i: (※前時点)暖冷房区画iの 実際の居室の室温 [℃]
 
     Returns:
-      (日付dの時刻tにおける)実際の非居室の室温 [℃]
-
+        (時点)暖冷房区画iの 実際の居室の室温 [℃]
     """
+    # 事前条件: 次数チェック
+    assert V_supply_i.shape == (5, 1), "V_supply_iの行列数が想定外"
+    assert Theta_supply_i.shape == (5, 1), "Theta_supply_iの行列数が想定外"
+    assert A_prt_i.shape == (5, 1), "A_prt_iの行列数が想定外"
+    assert A_HCZ_i.shape == (5, 1), "A_HCZ_iの行列数が想定外"
+    assert L_star_H_i.shape == (5, 1), "L_star_H_iの行列数が想定外"
+    assert L_star_CS_i.shape == (5, 1), "L_star_CS_iの行列数が想定外"
+    assert Theta_HBR_before_i.shape == (5, 1), "Theta_HBR_before_iの行列数が想定外"
+
+    # NOTE: t = 1時間区切りなので必ずhで整理
+
+    # 熱容量(空調空気) [J/(K・h)]
+    c_ac_air = dc.get_c_p_air() * dc.get_rho_air() * V_supply_i
+
+    # 熱容量(間仕切り) [J/(K・h)]
+    c_prt = U_prt * A_prt_i * 3600
+
+    # 熱損失 [J/(K・h)]
+    heat_loss = Q * A_HCZ_i * 3600
+
+    # 熱容量(居室) [J/K]
+    cbri = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
+
+    carryover_theta_diff = np.abs(Theta_HBR_before_i - Theta_star_HBR)
+    # 熱繰越による熱容量[J] (1/1/0:00 なしとする)
+    carryover_capacity = 0 if isFirst else cbri * carryover_theta_diff
+
+    ac_theta_diff = np.abs(Theta_supply_i - Theta_star_HBR)
+    ac_capacity = c_ac_air * ac_theta_diff
+
+    if (H and C):
+        raise ValueError("想定外の季節")
+    elif H:  # 暖房期 (46-1)
+        load_capacity = L_star_H_i * 10**6  # [MJ/h] -> [J/h]
+        Theta_HBR_i = Theta_star_HBR \
+                    + (ac_capacity + carryover_capacity - load_capacity) \
+                    / (c_ac_air + c_prt + heat_loss + cbri)
+        # 負荷バランス時の居室の室温で下限を設定
+        Theta_HBR_i = np.clip(Theta_HBR_i, Theta_star_HBR, None)
+    elif C:  # 冷房期 (46-2)
+        load_capacity = L_star_CS_i * 10**6  # [MJ/h] -> [J/h]
+        Theta_HBR_i = Theta_star_HBR \
+                    -1 * (ac_capacity + carryover_capacity - load_capacity) \
+                    / (c_ac_air + c_prt + heat_loss + cbri)
+        # 負荷バランス時の居室の室温で上限を設定
+        Theta_HBR_i = np.clip(Theta_HBR_i, None, Theta_star_HBR)
+    elif M:  # 中間期 (46-3)
+        Theta_HBR_i = Theta_star_HBR * np.ones((5, 1))
+
+    # 事後条件:
+    assert Theta_HBR_i.shape == (5, 1), "Theta_HBR_iの行列数が想定外"
+    return Theta_HBR_i
+
+def get_Theta_NR_2023(
+        isFirst: bool,
+        Theta_star_NR: float,
+        Theta_star_HBR: float,
+        Theta_HBR_i: NDArray[Shape["5, 1"], Float64],
+        A_NR: float,
+        V_vent_l_NR: float,
+        V_dash_supply_i: NDArray[Shape["5, 1"], Float64],
+        V_supply_i: NDArray[Shape["5, 1"], Float64],
+        U_prt: float,
+        A_prt_i: NDArray[Shape["5, 1"], Float64],
+        Q: float,
+        Theta_NR_before: float
+        ) -> float:
+    """ (48a)(48b)(48c)(48d) -> 時点版, 過剰熱量を考慮
+
+    Args:
+        Theta_star_NR: (時点)実際の非居室の室温 [℃]
+        Theta_star_HBR: (時点)負荷バランス時の居室の室温 [℃]
+        Theta_HBR_i: (時点)暖冷房区画iの 実際の居室の室温 [℃]
+        A_NR: 非居室の床面積 [m2]
+        V_vent_l_NR: (時点)非居室の局所換気量 [m3/h]
+        V_dash_supply_i: (時点)暖冷房区画iの VAV調整前の吹き出し風量 [m3/h]
+        V_supply_i: (時点)暖冷房区画iの 吹き出し風量 [m3/h]
+        U_prt: 間仕切りの熱貫流率 [W/(m2・K)]
+        A_prt_i: 暖冷房区画iから見た非居室の間仕切りの面積 [m2]
+        Q: 当該住戸の熱損失係数 [W/(m2・K)]
+
+    Returns:
+        (時点)実際の非居室の室温 [℃]
+    """
+    # 事前条件: 次数チェック
+    assert Theta_HBR_i.shape == (5, 1), "Theta_HBR_iの行列数が想定外"
+    assert V_dash_supply_i.shape == (5, 1), "V_dash_supply_iの行列数が想定外"
+    assert V_supply_i.shape == (5, 1), "V_supply_iの行列数が想定外"
+    assert A_prt_i.shape == (5, 1), "A_prt_iの行列数が想定外"
+
+    # 熱容量(間仕切り) [J/(K・h)]
+    c_prt = U_prt * A_prt_i * 3600
+
     c_p_air = dc.get_c_p_air()
     rho_air = dc.get_rho_air()
 
-    # NOTE: shape(5,) -> shape(5,1)
-    A_prt_i = A_prt_i.reshape(-1,1)
-
     # (48d)
-    k_dash_i = c_p_air * rho_air * (V_dash_supply_d_t_i[:, t:t+1] / 3600) + U_prt * A_prt_i  # 5x1
+    k_dash_i = c_p_air * rho_air * (V_dash_supply_i / 3600) + c_prt
     # (48c)
-    k_prt_i = c_p_air * rho_air * (V_supply_d_t_i[:, t:t+1] / 3600) + U_prt * A_prt_i  # 5x1
+    k_prt_i = c_p_air * rho_air * (V_supply_i / 3600) + c_prt
     # (48b)
-    k_evp = (Q - 0.35 * 0.5 * 2.4) * A_NR + c_p_air * rho_air * (V_vent_l_NR_d_t[t] / 3600)  # 5x1
+    k_evp = (Q - 0.35 * 0.5 * 2.4) * A_NR \
+        + c_p_air * rho_air * (V_vent_l_NR / 3600)
 
     # CHECK: 資料 Theta_NR_d_t_i -> Theta_NR_d_t が正かな?
-    arr1 = -1 * np.sum(k_dash_i, axis=0) * (Theta_star_HBR_d_t[t] - Theta_star_NR_d_t[t])
-    arr2 = np.sum(k_prt_i * (Theta_HBR_d_t_i[:, t:t+1] - Theta_star_NR_d_t[t]), axis=0)
-    arr3 = np.sum(jjj_carryover_heat.get_C_NR(A_NR) * (Theta_NR_d_t[t-1:t] - Theta_star_NR_d_t[t]), axis=0)
+    val1 = -1 * np.sum(k_dash_i, axis=0) * (Theta_star_HBR - Theta_star_NR)
+    val2 = np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR), axis=0)
+
+    val3 = jjj_carryover_heat.get_C_NR(A_NR) * (Theta_NR_before - Theta_star_NR)
+    val3 = 0 if isFirst else val3  # (1/1/0:00 なしとする)
 
     # (48a)
-    arr_above = arr1 + arr2 + arr3
-    arr_below = k_evp + np.sum(k_prt_i, axis=0) + np.sum(jjj_carryover_heat.get_C_NR(A_NR), axis=0)
-    Theta_NR = Theta_star_NR_d_t[t] + arr_above / arr_below
-
+    Theta_NR = Theta_star_NR \
+        + (val1 + val2 + val3) \
+        / (k_evp + np.sum(k_prt_i, axis=0) + jjj_carryover_heat.get_C_NR(A_NR))
     return Theta_NR

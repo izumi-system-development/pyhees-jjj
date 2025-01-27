@@ -585,15 +585,33 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # (46)　暖冷房区画𝑖の実際の居室の室温
             Theta_HBR_d_t_i[:, t:t+1] \
                 = jjj_carryover_heat.get_Theta_HBR_i_2023(
-                    Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
-                    A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                    A_HCZ_R_i, Theta_HBR_d_t_i, t)
+                    t==0, H[t], C[t], M[t],
+                    Theta_star_HBR_d_t[t],
+                    V_supply_d_t_i[:, t:t+1],  # (5,1)
+                    Theta_supply_d_t_i[:, t:t+1],  # (5,1)
+                    U_prt,
+                    A_prt_i.reshape(-1,1),  # (5,1)
+                    Q,
+                    A_HCZ_i.reshape(-1,1),  # (5,1)
+                    L_star_H_d_t_i[:5, t:t+1],  # (5,1)
+                    L_star_CS_d_t_i[:5, t:t+1],  # (5,1)
+                    np.zeros((5,1)) if t==0 else Theta_HBR_d_t_i[:5, t-1:t])  # (5,1)
 
             # (48)　実際の非居室の室温
             Theta_NR_d_t[t] \
                 = jjj_carryover_heat.get_Theta_NR_2023(
-                    Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
-                    V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_NR_d_t, t)
+                    t==0,
+                    Theta_star_NR_d_t[t],
+                    Theta_star_HBR_d_t[t],
+                    Theta_HBR_d_t_i[:, t:t+1],  # (5,1)
+                    A_NR,
+                    V_vent_l_NR_d_t[t],
+                    V_dash_supply_d_t_i[:, t:t+1],  # (5,1)
+                    V_supply_d_t_i[:, t:t+1],  # (5,1)
+                    U_prt,
+                    A_prt_i.reshape(-1,1),  # (5,1)
+                    Q,
+                    0 if t==0 else Theta_NR_d_t[t-1:t])
 
     else:  # 過剰熱繰越ナシ(一般的なパターン)
 
