@@ -383,14 +383,21 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             if H[t] and C[t]:
                 raise ValueError("想定外の季節")
             # 暖房期 前時刻にて 暖かさに余裕があるとき
-            elif H[t] and Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]:
-                carryover = jjj_carryover_heat.calc_carryover_H(A_HCZ_i, Theta_star_HBR_d_t[t], Theta_HBR_d_t_i[:, t-1:t])
+            elif H[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]):
+                carryover = jjj_carryover_heat \
+                    .calc_carryover(H[t], C[t], A_HCZ_i,
+                                    Theta_HBR_d_t_i[:, t-1:t],
+                                    Theta_star_HBR_d_t[t])
             # 冷房期 前時刻にて 涼しさに余裕があるとき
-            elif C[t] and Theta_HBR_d_t_i[:, t-1:t] < Theta_star_HBR_d_t[t-1]:
-                carryover = jjj_carryover_heat.calc_carryover_C(A_HCZ_i, Theta_star_HBR_d_t[t-1], Theta_HBR_d_t_i[:, t:t+1])
+            elif C[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] < Theta_star_HBR_d_t[t-1]):
+                carryover = jjj_carryover_heat \
+                    .calc_carryover(H[t], C[t], A_HCZ_i,
+                                    Theta_HBR_d_t_i[:, t:t+1],
+                                    Theta_star_HBR_d_t[t-1])
             else:
                 carryover = np.zeros((5, 1))
-                continue  # これができるとよいが可能かチェックする
+                # 前時刻の Theta_HBR_d_t_i を使用するため
+                # 空調がなくてもすぐ次のループに行かず (46)(48)式の計算は行う
 
             carryovers[:, t] = carryover[:, 0]  # 確認用
 

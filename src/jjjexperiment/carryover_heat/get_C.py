@@ -41,9 +41,16 @@ def get_C_BR_i(
         [jjj_consts.C2_BR_R_i[4]],
     ])
 
+    # 事前条件: 次数チェック
+    assert A_HCZ_i.shape == (5, 1), "A_HCZ_iの行列数が想定外"
+
     # CHECK: 床面積比で計算しており、天井高は共通という前提となっています
-    return (A_HCZ_i / A_HCZ_R_i) * C_BR_R_i
+    cbri = (A_HCZ_i / A_HCZ_R_i) * C_BR_R_i
     # ([m2] / [m2]) * [J/K] = [J/K]
+
+    # 事後条件: 次数チェック
+    assert cbri.shape == (5, 1), "cbriの行列数が想定外"
+    return cbri
 
 
 def get_C_NR(
