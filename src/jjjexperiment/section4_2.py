@@ -377,13 +377,14 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         for t in range(0, 24 * 365):
             # TODO: 先頭時の扱いを考慮
+            isFirst = (t == 0)
 
             # 季節から計算の必要性を判断
             H, C, M = dc.get_season_array_d_t(region)
 
             if H[t] and C[t]:
                 raise ValueError("想定外の季節")
-            elif t==0:
+            elif isFirst:
                 carryover = np.zeros((5, 1))
             # 暖房期 前時刻にて 暖かさに余裕があるとき
             elif H[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]):
@@ -505,6 +506,8 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # (20)　負荷バランス時の熱源機の入口における絶対湿度
             X_star_hs_in_d_t = dc.get_X_star_hs_in_d_t(X_star_NR_d_t)
 
+            # TODO: ここに前時刻の非居室の温度を使用して負荷を下げる
+
             # (19)　負荷バランス時の熱源機の入口における空気温度
             Theta_star_hs_in_d_t = dc.get_Theta_star_hs_in_d_t(Theta_star_NR_d_t)
 
@@ -588,7 +591,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # (46)　暖冷房区画𝑖の実際の居室の室温
             Theta_HBR_d_t_i[:, t:t+1] \
                 = jjj_carryover_heat.get_Theta_HBR_i_2023(
-                    t==0, H[t], C[t], M[t],
+                    isFirst, H[t], C[t], M[t],
                     Theta_star_HBR_d_t[t],
                     V_supply_d_t_i[:, t:t+1],  # (5,1)
                     Theta_supply_d_t_i[:, t:t+1],  # (5,1)
@@ -603,7 +606,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # (48)　実際の非居室の室温
             Theta_NR_d_t[t] \
                 = jjj_carryover_heat.get_Theta_NR_2023(
-                    t==0,
+                    isFirst, H[t], C[t], M[t],
                     Theta_star_NR_d_t[t],
                     Theta_star_HBR_d_t[t],
                     Theta_HBR_d_t_i[:, t:t+1],  # (5,1)

@@ -67,7 +67,7 @@ def test_過剰熱量繰越を考慮した室温_非居室_式48():
     # Act
     theta_NR \
         = jjj_carryover_heat.get_Theta_NR_2023(
-            isFirst = (2==0),
+            isFirst = (2==0), H = True, C = False, M = False,
             Theta_star_NR = 17.99,  # ℃
             Theta_star_HBR = 20.0,  # ℃
             Theta_HBR_i = theta_HBR_i,

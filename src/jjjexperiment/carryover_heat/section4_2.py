@@ -201,7 +201,7 @@ def get_Theta_HBR_i_2023(
     return Theta_HBR_i
 
 def get_Theta_NR_2023(
-        isFirst: bool,
+        isFirst: bool, H: bool, C: bool, M: bool,
         Theta_star_NR: float,
         Theta_star_HBR: float,
         Theta_HBR_i: NDArray[Shape["5, 1"], Float64],
@@ -254,15 +254,37 @@ def get_Theta_NR_2023(
 
     val1 = -1 * np.sum(k_dash_i) * (Theta_star_HBR - Theta_star_NR)
     val2 = np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR))
-    val3 = 0 if isFirst else jjj_carryover_heat.get_C_NR(A_NR) / 3600 \
-        * (Theta_NR_before - Theta_star_NR)
 
-    # (48a) NOTE: isFirst のとき元式と一致すること
+    # 過剰熱量発生条件
+    H = H and (Theta_NR_before >= Theta_star_NR)
+    C = C and (Theta_NR_before <= Theta_star_NR)
+
+    if isFirst:
+        ac_theta_diff = 0
+    elif (H and C):
+        raise ValueError("想定外の季節")
+    # 暖房期に 過剰熱量が有効
+    elif H:
+        ac_theta_diff = Theta_NR_before - Theta_star_NR
+        assert ac_theta_diff >= 0, "想定外の温度差"
+    # 冷房期に 過剰熱量が有効
+    elif C:
+        ac_theta_diff = Theta_NR_before - Theta_star_NR
+        assert ac_theta_diff <= 0, "想定外の温度差"
+    else:
+        ac_theta_diff = 0
+
+    val3 = jjj_carryover_heat.get_C_NR(A_NR) / 3600 * ac_theta_diff
+
+    # (48a) NOTE: isFirst と過剰熱量無効のとき元式と一致するべき
     Theta_NR = Theta_star_NR \
         + (val1 + val2 + val3) \
         / (k_evp \
            + np.sum(k_prt_i)
-           + 0 if isFirst else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
+           # val3 と同じ条件で有効・無効切替
+           + 0 if (isFirst or not (H or C)) else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
+
+    # TODO: Theta_NR が単増加してしまう問題がある
 
     # NOTE: axis オプションによる次数の変化
     # 次数を意識せずにfloatに総計するなら axisなしがよい
