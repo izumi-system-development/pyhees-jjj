@@ -19,8 +19,8 @@ def calc_carryover(
         H: 暖房期
         C: 冷房期
         A_HCZ_i: 暖冷房区画iの床面積 [m2]
-        Theta_star_HBR: 負荷バランス時の居室の室温 [℃]
-        Theta_HBR_d_t_i: 暖冷房区画iの室温 [℃]
+        Theta_HBR_i: (時点)暖冷房区画iの実際の居室の室温 [℃]
+        Theta_star_HBR: (時点)負荷バランス時の居室の室温 [℃]
     """
     # 事前条件: 次数チェック
     assert A_HCZ_i.shape == (5,), "A_HCZ_iの次数が想定外"
@@ -113,6 +113,10 @@ def get_L_star_CS_i_2024(
     assert np.all(0 <= L_star_CS_i), "負荷バランス時の冷房顕熱負荷は負にならない"
     return L_star_CS_i
 
+# NOTE: d_t 長の配列を引数に渡さず、時点のみの引数にするメリット
+# 意図しない前後インデックスの利用・上書きがないことが保証される
+# デメリットは、クライアントコードに知識が必要になる(時点の選択)
+
 def get_Theta_HBR_i_2023(
         isFirst: bool, H: bool, C: bool, M: bool,
         Theta_star_HBR: float,
@@ -141,7 +145,7 @@ def get_Theta_HBR_i_2023(
         Theta_HBR_before_i: (※前時点)暖冷房区画iの 実際の居室の室温 [℃]
 
     Returns:
-        (時点)暖冷房区画iの 実際の居室の室温 [℃]
+        (時点)暖冷房区画iの 過剰熱量繰越を考慮した 実際の居室の室温 [℃]
     """
     # 事前条件: 次数チェック
     assert V_supply_i.shape == (5, 1), "V_supply_iの行列数が想定外"
@@ -153,9 +157,6 @@ def get_Theta_HBR_i_2023(
     assert Theta_HBR_before_i.shape == (5, 1), "Theta_HBR_before_iの行列数が想定外"
 
     # NOTE: t = 1時間区切りなので必ずhで整理
-
-    # 熱容量(空調空気) [J/(K・h)]
-    c_ac_air = dc.get_c_p_air() * dc.get_rho_air() * V_supply_i
 
     # 熱容量(間仕切り) [J/(K・h)]
     c_prt = U_prt * A_prt_i * 3600
@@ -170,8 +171,11 @@ def get_Theta_HBR_i_2023(
     # 熱繰越による熱容量[J] (1/1/0:00 なしとする)
     carryover_capacity = 0 if isFirst else cbri * carryover_theta_diff
 
-    ac_theta_diff = np.abs(Theta_supply_i - Theta_star_HBR)
-    ac_capacity = c_ac_air * ac_theta_diff
+    # 熱容量(空調空気) [J/(K・h)]
+    c_ac_air = dc.get_c_p_air() * dc.get_rho_air() * V_supply_i
+
+    ac_theta_diff = np.abs(Theta_supply_i - Theta_star_HBR)  # [K]
+    ac_capacity = c_ac_air * ac_theta_diff  # [J/h]
 
     if (H and C):
         raise ValueError("想定外の季節")
@@ -223,9 +227,10 @@ def get_Theta_NR_2023(
         U_prt: 間仕切りの熱貫流率 [W/(m2・K)]
         A_prt_i: 暖冷房区画iから見た非居室の間仕切りの面積 [m2]
         Q: 当該住戸の熱損失係数 [W/(m2・K)]
+        Theta_NR_before: (※前時点)非居室の室温 [℃]
 
     Returns:
-        (時点)実際の非居室の室温 [℃]
+        (時点)過剰熱量繰越を考慮した 実際の非居室の室温 [℃]
     """
     # 事前条件: 次数チェック
     assert Theta_HBR_i.shape == (5, 1), "Theta_HBR_iの行列数が想定外"
@@ -233,29 +238,37 @@ def get_Theta_NR_2023(
     assert V_supply_i.shape == (5, 1), "V_supply_iの行列数が想定外"
     assert A_prt_i.shape == (5, 1), "A_prt_iの行列数が想定外"
 
-    # 熱容量(間仕切り) [J/(K・h)]
-    c_prt = U_prt * A_prt_i * 3600
+    # 熱容量(間仕切り) [W/K]
+    c_prt = U_prt * A_prt_i
 
-    c_p_air = dc.get_c_p_air()
-    rho_air = dc.get_rho_air()
+    c_p_air = dc.get_c_p_air()  # [J/(kg・K)]
+    rho_air = dc.get_rho_air()  # [kg/m3]
 
-    # (48d)
+    # (48d) [W/K]
     k_dash_i = c_p_air * rho_air * (V_dash_supply_i / 3600) + c_prt
-    # (48c)
+    # (48c) [W/K]
     k_prt_i = c_p_air * rho_air * (V_supply_i / 3600) + c_prt
-    # (48b)
+    # (48b) [W/K]
     k_evp = (Q - 0.35 * 0.5 * 2.4) * A_NR \
         + c_p_air * rho_air * (V_vent_l_NR / 3600)
 
-    # CHECK: 資料 Theta_NR_d_t_i -> Theta_NR_d_t が正かな?
-    val1 = -1 * np.sum(k_dash_i, axis=0) * (Theta_star_HBR - Theta_star_NR)
-    val2 = np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR), axis=0)
+    val1 = -1 * np.sum(k_dash_i) * (Theta_star_HBR - Theta_star_NR)
+    val2 = np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR))
+    val3 = 0 if isFirst else jjj_carryover_heat.get_C_NR(A_NR) / 3600 \
+        * (Theta_NR_before - Theta_star_NR)
 
-    val3 = jjj_carryover_heat.get_C_NR(A_NR) * (Theta_NR_before - Theta_star_NR)
-    val3 = 0 if isFirst else val3  # (1/1/0:00 なしとする)
-
-    # (48a)
+    # (48a) NOTE: isFirst のとき元式と一致すること
     Theta_NR = Theta_star_NR \
         + (val1 + val2 + val3) \
-        / (k_evp + np.sum(k_prt_i, axis=0) + jjj_carryover_heat.get_C_NR(A_NR))
+        / (k_evp \
+           + np.sum(k_prt_i)
+           + 0 if isFirst else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
+
+    # NOTE: axis オプションによる次数の変化
+    # 次数を意識せずにfloatに総計するなら axisなしがよい
+    # np.sum(k_prt_i, axis=0) -> shape(5,1) -> shape(1,)
+    # np.sum(k_prt_i) -> shape(5,1) -> float
+
+    # 事後条件: 次数チェック
+    assert isinstance(Theta_NR, float), "Theta_NRの次数が想定外"
     return Theta_NR

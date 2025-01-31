@@ -7,7 +7,7 @@ def get_C_BR_i(
         A_HCZ_i: NDArray[Shape["5, 1"], Float64],
         calc_mode: int = 1
     )-> NDArray[Shape["5, 1"], Float64]:
-    """標準住戸との比較で熱容量を求める
+    """標準住戸との床面積比率で熱容量を求める
 
     Args:
         A_HCZ_i: 暖冷房区画i毎の居室の床面積 [m2]
@@ -33,6 +33,7 @@ def get_C_BR_i(
         [jjj_consts.C1_BR_R_i[2]],
         [jjj_consts.C1_BR_R_i[3]],
         [jjj_consts.C1_BR_R_i[4]],
+    # TODO: 使用予定がなくなったので削除してもよい
     ] if is_default else [
         [jjj_consts.C2_BR_R_i[0]],
         [jjj_consts.C2_BR_R_i[1]],

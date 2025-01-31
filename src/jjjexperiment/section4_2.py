@@ -357,7 +357,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         # NOTE: 過剰熱繰越と併用しないオプションはここで実行を拒否します
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-            raise TimeoutError("この操作は実行に時間がかかるため併用できません。[過剰熱繰越と床下空調ロジック変更]")
+            raise PermissionError("この操作は実行に時間がかかるため併用できません。[過剰熱繰越と床下空調ロジック変更]")
             # NOTE: 過剰熱繰越の8760ループと床下空調ロジック変更の8760ループが合わさると
             # 一時間を超える実行時間になることを確認したため回避しています(2024/02)
 
@@ -366,6 +366,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         L_star_H_d_t_i = np.zeros((5, 24 * 365))
 
         # 実際の居室・非居室の室温
+        # TODO: 空からappendで0を誤利用しないロジックに書き換えてみる
         Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
         Theta_NR_d_t = np.zeros(24 * 365)
         # 空でよいのか? 先頭から利用されるのか?
@@ -382,17 +383,19 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
             if H[t] and C[t]:
                 raise ValueError("想定外の季節")
+            elif t==0:
+                carryover = np.zeros((5, 1))
             # 暖房期 前時刻にて 暖かさに余裕があるとき
             elif H[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]):
                 carryover = jjj_carryover_heat \
                     .calc_carryover(H[t], C[t], A_HCZ_i,
                                     Theta_HBR_d_t_i[:, t-1:t],
-                                    Theta_star_HBR_d_t[t])
+                                    Theta_star_HBR_d_t[t-1])
             # 冷房期 前時刻にて 涼しさに余裕があるとき
             elif C[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] < Theta_star_HBR_d_t[t-1]):
                 carryover = jjj_carryover_heat \
                     .calc_carryover(H[t], C[t], A_HCZ_i,
-                                    Theta_HBR_d_t_i[:, t:t+1],
+                                    Theta_HBR_d_t_i[:, t-1:t],
                                     Theta_star_HBR_d_t[t-1])
             else:
                 carryover = np.zeros((5, 1))
@@ -558,7 +561,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                                             V_vent_g_i, V_dash_supply_d_t_i, VAV, region, Theta_hs_out_d_t)
             V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, region, V_hs_dsgn_H, V_hs_dsgn_C)
 
-
             # (41)　暖冷房区画𝑖の吹き出し温度
             Theta_supply_d_t_i = dc.get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
                                                        V_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i, region)
@@ -580,7 +582,8 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
                     Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
-            # 順次 一時点のみ更新
+            # NOTE: t==0 でも最後までループを走ることに注意(途中で continue しない)
+            # 0 の扱いは全てのメソッドで考慮されていること
 
             # (46)　暖冷房区画𝑖の実際の居室の室温
             Theta_HBR_d_t_i[:, t:t+1] \
