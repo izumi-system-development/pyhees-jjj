@@ -6,7 +6,7 @@ import jjjexperiment.carryover_heat as jjj_carryover_heat
 
 # 先生から提供いただいたPDFの計算例に基づくテストです
 
-def test_過剰熱量繰越を考慮した室温_居室():
+def test_過剰熱量繰越を考慮した室温_居室_式46():
     # Arrange
     L_star_H_i = np.array([6.545, 2.474, 1.469, 1.745, 2.168]).reshape(-1,1)
     assert L_star_H_i.shape == (5, 1), "L_star_H_iの次数が想定外"
@@ -51,7 +51,7 @@ def test_過剰熱量繰越を考慮した室温_居室():
     np.testing.assert_almost_equal(Theta_HBR_i, exp_Theta_HBR_i, decimal=2), "Theta_HBR_iの計算がおかしい"
     # assert つかないの間違えやすいので注意
 
-def test_過剰熱量繰越を考慮した室温_非居室():
+def test_過剰熱量繰越を考慮した室温_非居室_式48():
     # Arrange
     # ℃
     theta_HBR_i = np.array([19.63, 21.29, 21.48, 19.96, 19.59]).reshape(-1,1)
