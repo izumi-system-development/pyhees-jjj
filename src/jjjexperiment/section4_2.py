@@ -614,7 +614,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     U_prt,
                     A_prt_i.reshape(-1,1),  # (5,1)
                     Q,
-                    0 if t==0 else Theta_NR_d_t[t-1:t])
+                    0 if t==0 else Theta_NR_d_t[t-1])
 
     else:  # 過剰熱繰越ナシ(一般的なパターン)
 
