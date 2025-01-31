@@ -285,6 +285,13 @@ def get_Theta_NR_2023(
            + 0 if (isFirst or not (H or C)) else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
 
     # TODO: Theta_NR が単増加してしまう問題がある
+    # Theta_NR の増加を抑制する、何らかの下げ要因が必要だと思われる
+
+    # 空調されている部屋以上に過剰熱量繰越が効くことはないため
+    if H:
+        Theta_NR = np.clip(Theta_NR, None, Theta_star_HBR)
+    elif C:
+        Theta_NR = np.clip(Theta_NR, Theta_star_HBR, None)
 
     # NOTE: axis オプションによる次数の変化
     # 次数を意識せずにfloatに総計するなら axisなしがよい

@@ -375,6 +375,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         carryovers = np.zeros((5, 24 * 365))
 
+        # (19)　負荷バランス時の熱源機の入口における空気温度
+        Theta_star_hs_in_d_t = dc.get_Theta_star_hs_in_d_t(Theta_star_NR_d_t)
+
         for t in range(0, 24 * 365):
             # TODO: 先頭時の扱いを考慮
             isFirst = (t == 0)
@@ -506,11 +509,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # (20)　負荷バランス時の熱源機の入口における絶対湿度
             X_star_hs_in_d_t = dc.get_X_star_hs_in_d_t(X_star_NR_d_t)
 
-            # TODO: ここに前時刻の非居室の温度を使用して負荷を下げる
-
-            # (19)　負荷バランス時の熱源機の入口における空気温度
-            Theta_star_hs_in_d_t = dc.get_Theta_star_hs_in_d_t(Theta_star_NR_d_t)
-
             # (18)　熱源機の出口における空気温度の最低値
             X_hs_out_min_C_d_t = dc.get_X_hs_out_min_C_d_t(X_star_hs_in_d_t, Q_hs_max_CL_d_t, V_dash_supply_d_t_i)
 
@@ -540,9 +538,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                                   Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
                                                   Theta_req_d_t_i[i])
 
-            # 式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
-            # NOTE: 繰り返し計算時には初期化してはならない
+            # TODO: ここに前時刻の非居室の温度を使用して負荷を下げる
+            Theta_star_hs_in_d_t[t] = Theta_star_hs_in_d_t[0] if (isFirst or not (H[t] or C[t]))  \
+                else Theta_NR_d_t[t-1]
+
+            # NOTE: 過剰熱量繰越 未利用の場合では、式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
             # Theta_NR_d_t = np.zeros(24 * 365)
+            # 過剰熱量繰越 利用時には、初期化せず再利用する
 
             # (15)　熱源機の出口における絶対湿度
             X_hs_out_d_t = dc.get_X_hs_out_d_t(X_NR_d_t, X_req_d_t_i, V_dash_supply_d_t_i, X_hs_out_min_C_d_t, L_star_CL_d_t_i, region)
