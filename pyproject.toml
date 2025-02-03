@@ -16,7 +16,7 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "~3.10"  # 3.10.x (= google colab ver.)
+python = "~3.11"  # 3.11.x (= google colab ver.)
 numpy = "~1.26"  # 1.26.x
 pandas = ">=2.0.1"
 scipy = ">=1.10.1"
