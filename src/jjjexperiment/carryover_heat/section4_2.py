@@ -273,6 +273,7 @@ def get_Theta_NR_2023(
         ac_theta_diff = Theta_NR_before - Theta_star_NR
         assert ac_theta_diff <= 0, "想定外の温度差"
     else:
+        ac_theta_diff = 0  # 使用されないが定義は必要
         pass
 
     # val3, 4 は同じ条件で有効・無効切替
@@ -285,7 +286,8 @@ def get_Theta_NR_2023(
     Theta_NR = Theta_star_NR + (val1 + val2 + val3) / val4
 
     # TODO: Theta_NR が単増加してしまう問題がある
-    # Theta_NR の増加を抑制する、何らかの下げ要因が必要だと思われる
+    # -> 過剰熱量持越しの追い空調の停止条件を追加することが考えられる
+    # 今は、下のキャップロジックで仮対応しています
 
     # 空調されている部屋以上に過剰熱量繰越が効くことはないため
     if H:

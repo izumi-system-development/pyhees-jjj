@@ -374,12 +374,16 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # 過剰熱繰越の項(確認用)
         carryovers = np.zeros((5, 24 * 365))
 
+        # 季節から計算の必要性を判断
+        H, C, M = dc.get_season_array_d_t(region)
+
         for t in range(0, 24 * 365):
             # TODO: 先頭時の扱いを考慮
             isFirst = (t == 0)
 
-            # 季節から計算の必要性を判断
-            H, C, M = dc.get_season_array_d_t(region)
+            # CHECK: 過剰熱量持越し時の追い空調の停止条件を追加することも検討
+            # H[t] = ...
+            # C[t] = ...
 
             if H[t] and C[t]:
                 raise ValueError("想定外の季節")
