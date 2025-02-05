@@ -366,17 +366,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         L_star_H_d_t_i = np.zeros((5, 24 * 365))
 
         # 実際の居室・非居室の室温
-        # TODO: 空からappendで0を誤利用しないロジックに書き換えてみる
         Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
         Theta_NR_d_t = np.zeros(24 * 365)
-        # 空でよいのか? 先頭から利用されるのか?
-        # (46)(48)で計算されるものだが、それらの式は後ろであるため、
-        # ここでは空(ただし先頭から利用)でよいのかチェックする
+        # TODO: 空からappendしていくロジックに変更することで
+        # tインデックスの誤用がないことを保証できる
 
+        # 過剰熱繰越の項(確認用)
         carryovers = np.zeros((5, 24 * 365))
-
-        # (19)　負荷バランス時の熱源機の入口における空気温度
-        Theta_star_hs_in_d_t = dc.get_Theta_star_hs_in_d_t(Theta_star_NR_d_t)
 
         for t in range(0, 24 * 365):
             # TODO: 先頭時の扱いを考慮
@@ -508,6 +504,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
             # (20)　負荷バランス時の熱源機の入口における絶対湿度
             X_star_hs_in_d_t = dc.get_X_star_hs_in_d_t(X_star_NR_d_t)
+
+            # (19)　負荷バランス時の熱源機の入口における空気温度
+            Theta_star_hs_in_d_t = dc.get_Theta_star_hs_in_d_t(Theta_star_NR_d_t)
 
             # (18)　熱源機の出口における空気温度の最低値
             X_hs_out_min_C_d_t = dc.get_X_hs_out_min_C_d_t(X_star_hs_in_d_t, Q_hs_max_CL_d_t, V_dash_supply_d_t_i)
