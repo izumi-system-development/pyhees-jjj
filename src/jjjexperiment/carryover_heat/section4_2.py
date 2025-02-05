@@ -253,9 +253,7 @@ def get_Theta_NR_2023(
         + c_p_air * rho_air * (V_vent_l_NR / 3600)
 
     val1 = -1 * np.sum(k_prt_dash_i) * (Theta_star_HBR - Theta_star_NR)
-    val2 = np.sum(k_prt_i * \
-                # Theta_star_NR の次数を合わせないと正しい計算にならないので注意
-                (Theta_HBR_i - np.full((5,1), Theta_star_NR)))
+    val2 = np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR))
 
     # 過剰熱量発生条件
     H = H and (Theta_NR_before >= Theta_star_NR)
