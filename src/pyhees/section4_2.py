@@ -3483,7 +3483,8 @@ def get_X_set_C():
 # 空気の比熱 (J/Kg・K)
 def get_c_p_air():
     """ """
-    return 1006.0
+    return 1005.0
+    # NOTE: 先生提供の計算例を根拠に変更(1006 -> 1005)
 
 
 # 空気の密度 (kg/m3)

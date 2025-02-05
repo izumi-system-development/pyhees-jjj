@@ -54,7 +54,7 @@ def test_過剰熱量繰越を考慮した室温_居室_式46():
 def test_過剰熱量繰越を考慮した室温_非居室_式48():
     # Arrange
     # ℃
-    theta_HBR_i = np.array([19.63, 21.29, 21.48, 19.96, 19.59]).reshape(-1,1)
+    theta_HBR_i = np.array([20.0, 20.79, 20.98, 20.0, 20.0]).reshape(-1,1)
     assert theta_HBR_i.shape == (5, 1), "theta_HBR_iの次数が想定外"
     # m3/h
     v_dash_supply_i = np.array([333.85, 185.46, 148.39, 120.51, 120.62]).reshape(-1,1)
@@ -68,7 +68,7 @@ def test_過剰熱量繰越を考慮した室温_非居室_式48():
     theta_NR \
         = jjj_carryover_heat.get_Theta_NR_2023(
             isFirst = (2==0), H = True, C = False, M = False,
-            Theta_star_NR = 17.99,  # ℃
+            Theta_star_NR = 17.68,  # ℃
             Theta_star_HBR = 20.0,  # ℃
             Theta_HBR_i = theta_HBR_i,
             A_NR = 38.93,  # m2
@@ -78,10 +78,10 @@ def test_過剰熱量繰越を考慮した室温_非居室_式48():
             U_prt = 2.17, # W/(m2・K)
             A_prt_i = a_prt_i,
             Q = 2.6472,  # W/m2
-            Theta_NR_before = 18.03  # ℃
+            Theta_NR_before = 17.88  # ℃
             )
 
     # Assert
     # NOTE: 資料ではキャップされていないが、実装ではキャップされている
-    exp_theta_NR = 18.58  # ℃
+    exp_theta_NR = 17.94  # ℃
     np.testing.assert_almost_equal(theta_NR, exp_theta_NR, decimal=2)

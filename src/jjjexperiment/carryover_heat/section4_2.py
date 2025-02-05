@@ -245,23 +245,24 @@ def get_Theta_NR_2023(
     rho_air = dc.get_rho_air()  # [kg/m3]
 
     # (48d) [W/K]
-    k_dash_i = c_p_air * rho_air * (V_dash_supply_i / 3600) + c_prt
+    k_prt_dash_i = c_p_air * rho_air * (V_dash_supply_i / 3600) + c_prt
     # (48c) [W/K]
     k_prt_i = c_p_air * rho_air * (V_supply_i / 3600) + c_prt
     # (48b) [W/K]
     k_evp = (Q - 0.35 * 0.5 * 2.4) * A_NR \
         + c_p_air * rho_air * (V_vent_l_NR / 3600)
 
-    val1 = -1 * np.sum(k_dash_i) * (Theta_star_HBR - Theta_star_NR)
-    val2 = np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR))
+    val1 = -1 * np.sum(k_prt_dash_i) * (Theta_star_HBR - Theta_star_NR)
+    val2 = np.sum(k_prt_i * \
+                # Theta_star_NR の次数を合わせないと正しい計算にならないので注意
+                (Theta_HBR_i - np.full((5,1), Theta_star_NR)))
 
     # 過剰熱量発生条件
     H = H and (Theta_NR_before >= Theta_star_NR)
     C = C and (Theta_NR_before <= Theta_star_NR)
 
-    if isFirst:
-        ac_theta_diff = 0
-    elif (H and C):
+    # H,C のチェック
+    if (H and C):
         raise ValueError("想定外の季節")
     # 暖房期に 過剰熱量が有効
     elif H:
@@ -272,17 +273,16 @@ def get_Theta_NR_2023(
         ac_theta_diff = Theta_NR_before - Theta_star_NR
         assert ac_theta_diff <= 0, "想定外の温度差"
     else:
-        ac_theta_diff = 0
+        pass
 
-    val3 = jjj_carryover_heat.get_C_NR(A_NR) / 3600 * ac_theta_diff
+    # val3, 4 は同じ条件で有効・無効切替
+    val3 = ac_theta_diff \
+        * (0 if (isFirst or not (H or C)) else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
+    val4 = k_evp + np.sum(k_prt_i) \
+        + (0 if (isFirst or not (H or C)) else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
 
     # (48a) NOTE: isFirst と過剰熱量無効のとき元式と一致するべき
-    Theta_NR = Theta_star_NR \
-        + (val1 + val2 + val3) \
-        / (k_evp \
-           + np.sum(k_prt_i)
-           # val3 と同じ条件で有効・無効切替
-           + 0 if (isFirst or not (H or C)) else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
+    Theta_NR = Theta_star_NR + (val1 + val2 + val3) / val4
 
     # TODO: Theta_NR が単増加してしまう問題がある
     # Theta_NR の増加を抑制する、何らかの下げ要因が必要だと思われる
