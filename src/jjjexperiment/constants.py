@@ -183,6 +183,13 @@ C2_BR_R_i = [2073982, 1146273, 952753, 836652, 810221]
 C2_NR_R = 3766594
 """非居室の熱容量 [J/K]"""
 
+# NOTE: F24-02 暖冷房送風機消費電力算定ロジック
+input_V_hs_min = None
+"""最低風量直接入力の有無"""
+V_hs_min_C = None
+"""冷房時の最低風量"""
+V_hs_min_H = None
+"""暖房時の最低風量"""
 
 def set_constants(input: dict):
   """ 更新したい部分のみの辞書でも利用可能
@@ -366,12 +373,8 @@ def set_constants(input: dict):
   # 空調の最低風量直接入力
   input_V_hs_min_H = int(input['H_A']['input_V_hs_min_H'])
   input_V_hs_min_C = int(input['C_A']['input_V_hs_min_C'])
-
-  global input_V_hs_min  # 暖冷房共通フラグ
+  # 暖冷房共通フラグ
   input_V_hs_min = max(input_V_hs_min_H, input_V_hs_min_C)
-
   if input_V_hs_min == 最低風量直接入力.入力する.value:
-    global V_hs_min_H
     V_hs_min_H = float(input['H_A']['V_hs_min_H'])
-    global V_hs_min_C
     V_hs_min_C = float(input['C_A']['V_hs_min_C'])
