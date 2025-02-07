@@ -461,6 +461,7 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_C == expected_result_type1.E_C
+        # FIXME: 変わるべきものが変わっていない
         assert result['TValue'].E_H != expected_result_type1.E_H
         assert math.isclose(result['TValue'].E_H, 37318.00958773161)
 
@@ -475,6 +476,7 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H == expected_result_type1.E_H
+        # FIXME: 変わるべきものが変わっていない
         assert result['TValue'].E_C != expected_result_type1.E_C
         assert math.isclose(result['TValue'].E_C, 15296.164414070729)
 
