@@ -1,23 +1,31 @@
 [build-system]
-requires = ["setuptools>=67.8.0", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
+[tool.poetry]
 name = "pyhees-jjj"
-version = "0.0.1"
+version = "0.1.0"
 description = "Pyheesの検証用のフォークプロジェクトです"
-urls = { homepage = "https://github.com/izumi-system-development/pyhees-jjj" }
-authors = [
-    { name = "Pyhees Development Team" }
-]
-license = { file = "LICENSE" }
-requires-python = ">=3.10"
-dependencies = [
-    "numpy>=1.24.3",
-    "pandas>=2.0.1",
-    "scipy>=1.10.1",
-    "injector"
+homepage = "https://github.com/izumi-system-development/pyhees-jjj"
+authors = ["Pyhees Development Team"]
+license = "file:LICENSE"
+readme = "src/jjjexperiment/README.md"
+packages = [
+    { include = "jjjexperiment", from = "src" },
+    { include = "pyhees", from = "src" },
 ]
 
-[project.optional-dependencies]
-dev = ["pytest"]
+[tool.poetry.dependencies]
+python = "~3.11"  # 3.11.x (= google colab ver.)
+numpy = "~1.26"  # 1.26.x
+pandas = ">=2.0.1"
+scipy = ">=1.10.1"
+injector = "*"
+nptyping = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+python_files = ["test_*.py"]

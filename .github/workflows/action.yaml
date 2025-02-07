@@ -1,4 +1,5 @@
 name: Run pytest
+
 on: [push]
 
 jobs:
@@ -10,14 +11,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Pythonの環境をセットアップ
+      # NOTE: Poetry仮想環境を使用している時であってもバージョン指定する場合には必要
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-          cache: 'pip'
+          python-version: '3.11'
 
-      - name: Install pytest
+      - name: Install dependencies
         run: .devcontainer/post-create.sh
 
       - name: Prevent Slow Causes
@@ -27,9 +27,9 @@ jobs:
       # pytest -> JUnit xml形式で結果を出力
       - name: Execute pytest
         run: |
-          pytest src/tests --junit-xml results/pytest.xml
+          poetry run pytest src/tests --junit-xml results/pytest.xml
         # CHECK: テストファイル毎に実行を分割するか検討
-        continue-on-error: true
+        continue-on-error: false
 
       # テスト結果の表示
       - name: Upload Unit Test Results

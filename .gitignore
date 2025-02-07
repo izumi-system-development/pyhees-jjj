@@ -1,4 +1,4 @@
-# JJJ-ADDED
+# JJJ specific
 *_output*.csv
 *_input.json
 *.log
@@ -7,15 +7,16 @@
 *.py[cod]
 __pycache__
 *.so
+build/
 
 # Distribution / packaging
-.Python
-.env
-.buildozer
 dist/
-build/
 *.egg-info/
 .eggs/
-*.egg
-sdist/
-wheel/
+
+# Virtual environments
+.env
+.venv/
+
+# Poetry
+# NOTE: poetry.lock は除外しない(依存バージョンを固定しており開発者間で共有すべきものです)

@@ -26,6 +26,8 @@ from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ
 from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
+import jjjexperiment.carryover_heat as jjj_carryover_heat
+
 # DIコンテナー
 from injector import Injector
 from jjjexperiment.di_container import *
@@ -54,6 +56,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
     df_output2 = pd.DataFrame()
     df_output3 = pd.DataFrame()
+
+    # 熱繰越調査用出力ファイル
+    df_carryover_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
 
     # 気象条件
     if climateFile == '-':
@@ -352,25 +357,72 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         # NOTE: 過剰熱繰越と併用しないオプションはここで実行を拒否します
         if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-            raise TimeoutError("この操作は実行に時間がかかるため併用できません。[過剰熱繰越と床下空調ロジック変更]")
+            raise PermissionError("この操作は実行に時間がかかるため併用できません。[過剰熱繰越と床下空調ロジック変更]")
             # NOTE: 過剰熱繰越の8760ループと床下空調ロジック変更の8760ループが合わさると
             # 一時間を超える実行時間になることを確認したため回避しています(2024/02)
 
         # インデックス順に更新対象
         L_star_CS_d_t_i = np.zeros((5, 24 * 365))
         L_star_H_d_t_i = np.zeros((5, 24 * 365))
+
+        # 実際の居室・非居室の室温
         Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
         Theta_NR_d_t = np.zeros(24 * 365)
+        # TODO: 空からappendしていくロジックに変更することで
+        # tインデックスの誤用がないことを保証できる
 
-        for hour in range(0, 24 * 365):
-            # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
-            L_star_CS_d_t_i[:, hour:hour+1] = dc.get_L_star_CS_i_2023(
-                L_CS_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i,
-                Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+        # 過剰熱繰越の項(確認用)
+        carryovers = np.zeros((5, 24 * 365))
+
+        # 季節から計算の必要性を判断
+        H, C, M = dc.get_season_array_d_t(region)
+
+        for t in range(0, 24 * 365):
+            # TODO: 先頭時の扱いを考慮
+            isFirst = (t == 0)
+
+            # CHECK: 過剰熱量持越し時の追い空調の停止条件を追加することも検討
+            # H[t] = ...
+            # C[t] = ...
+
+            if H[t] and C[t]:
+                raise ValueError("想定外の季節")
+            elif isFirst:
+                carryover = np.zeros((5, 1))
+            # 暖房期 前時刻にて 暖かさに余裕があるとき
+            elif H[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]):
+                carryover = jjj_carryover_heat \
+                    .calc_carryover(H[t], C[t], A_HCZ_i,
+                                    Theta_HBR_d_t_i[:, t-1:t],
+                                    Theta_star_HBR_d_t[t-1])
+            # 冷房期 前時刻にて 涼しさに余裕があるとき
+            elif C[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] < Theta_star_HBR_d_t[t-1]):
+                carryover = jjj_carryover_heat \
+                    .calc_carryover(H[t], C[t], A_HCZ_i,
+                                    Theta_HBR_d_t_i[:, t-1:t],
+                                    Theta_star_HBR_d_t[t-1])
+            else:
+                carryover = np.zeros((5, 1))
+                # 前時刻の Theta_HBR_d_t_i を使用するため
+                # 空調がなくてもすぐ次のループに行かず (46)(48)式の計算は行う
+
+            carryovers[:, t] = carryover[:, 0]  # 確認用
+
             # (8)　熱損失を含む負荷バランス時の暖房負荷
-            L_star_H_d_t_i[:, hour:hour+1] = dc.get_L_star_H_i_2023(
-                L_H_d_t_i, Q_star_trs_prt_d_t_i, region, A_HCZ_i, A_HCZ_R_i,
-                Theta_star_HBR_d_t, Theta_HBR_d_t_i, hour)
+            L_star_H_d_t_i[:, t:t+1]  \
+                = jjj_carryover_heat.get_L_star_H_i_2024(
+                    H[t],
+                    L_H_d_t_i[:5, t:t+1],
+                    Q_star_trs_prt_d_t_i[:5, t:t+1],
+                    carryover)
+
+            # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
+            L_star_CS_d_t_i[:, t:t+1]  \
+                = jjj_carryover_heat.get_L_star_CS_i_2024(
+                    C[t],
+                    L_CS_d_t_i[:5, t:t+1],
+                    Q_star_trs_prt_d_t_i[:5, t:t+1],
+                    carryover)
 
             ####################################################################################################################
             if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
@@ -393,7 +445,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 SHF_dash_d_t = dc.get_SHF_dash_d_t(L_star_CS_d_t, L_star_dash_C_d_t)
 
                 # (27)
-                Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t(type, q_hs_rtd_C, input_C_af_C)
+                Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t_2024(type, q_hs_rtd_C, input_C_af_C)
 
                 # (26)
                 Q_hs_max_CL_d_t = dc.get_Q_hs_max_CL_d_t(Q_hs_max_C_d_t, SHF_dash_d_t, L_star_dash_CL_d_t)
@@ -489,9 +541,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                                   Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
                                                   Theta_req_d_t_i[i])
 
-            # 式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
-            # NOTE: 繰り返し計算時には初期化してはならない
+            # TODO: ここに前時刻の非居室の温度を使用して負荷を下げる
+            Theta_star_hs_in_d_t[t] = Theta_star_hs_in_d_t[0] if (isFirst or not (H[t] or C[t]))  \
+                else Theta_NR_d_t[t-1]
+
+            # NOTE: 過剰熱量繰越 未利用の場合では、式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
             # Theta_NR_d_t = np.zeros(24 * 365)
+            # 過剰熱量繰越 利用時には、初期化せず再利用する
 
             # (15)　熱源機の出口における絶対湿度
             X_hs_out_d_t = dc.get_X_hs_out_d_t(X_NR_d_t, X_req_d_t_i, V_dash_supply_d_t_i, X_hs_out_min_C_d_t, L_star_CL_d_t_i, region)
@@ -509,10 +565,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                                     Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
             # (43)　暖冷房区画𝑖の吹き出し風量
-            V_supply_d_t_i = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
+            V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
                                                             V_vent_g_i, V_dash_supply_d_t_i, VAV, region, Theta_hs_out_d_t)
-            V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i, V_dash_supply_d_t_i, V_vent_g_i, region, V_hs_dsgn_H, V_hs_dsgn_C)
-
+            V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, region, V_hs_dsgn_H, V_hs_dsgn_C)
 
             # (41)　暖冷房区画𝑖の吹き出し温度
             Theta_supply_d_t_i = dc.get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
@@ -535,16 +590,39 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
                     Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
-            # 順次 一時点のみ更新
+            # NOTE: t==0 でも最後までループを走ることに注意(途中で continue しない)
+            # 0 の扱いは全てのメソッドで考慮されていること
 
             # (46)　暖冷房区画𝑖の実際の居室の室温
-            Theta_HBR_d_t_i[:, hour:hour+1] = dc.get_Theta_HBR_i_2023(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
-                                                        A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                                                        A_HCZ_R_i, Theta_HBR_d_t_i, hour)
+            Theta_HBR_d_t_i[:, t:t+1] \
+                = jjj_carryover_heat.get_Theta_HBR_i_2023(
+                    isFirst, H[t], C[t], M[t],
+                    Theta_star_HBR_d_t[t],
+                    V_supply_d_t_i[:, t:t+1],  # (5,1)
+                    Theta_supply_d_t_i[:, t:t+1],  # (5,1)
+                    U_prt,
+                    A_prt_i.reshape(-1,1),  # (5,1)
+                    Q,
+                    A_HCZ_i.reshape(-1,1),  # (5,1)
+                    L_star_H_d_t_i[:5, t:t+1],  # (5,1)
+                    L_star_CS_d_t_i[:5, t:t+1],  # (5,1)
+                    np.zeros((5,1)) if t==0 else Theta_HBR_d_t_i[:5, t-1:t])  # (5,1)
 
             # (48)　実際の非居室の室温
-            Theta_NR_d_t[hour] = dc.get_Theta_NR_2023(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
-                                                V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_NR_d_t, hour)
+            Theta_NR_d_t[t] \
+                = jjj_carryover_heat.get_Theta_NR_2023(
+                    isFirst, H[t], C[t], M[t],
+                    Theta_star_NR_d_t[t],
+                    Theta_star_HBR_d_t[t],
+                    Theta_HBR_d_t_i[:, t:t+1],  # (5,1)
+                    A_NR,
+                    V_vent_l_NR_d_t[t],
+                    V_dash_supply_d_t_i[:, t:t+1],  # (5,1)
+                    V_supply_d_t_i[:, t:t+1],  # (5,1)
+                    U_prt,
+                    A_prt_i.reshape(-1,1),  # (5,1)
+                    Q,
+                    0 if t==0 else Theta_NR_d_t[t-1])
 
     else:  # 過剰熱繰越ナシ(一般的なパターン)
 
@@ -844,6 +922,21 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     ### 熱繰越 / 非熱繰越 の分岐が終了 -> 以降、共通の処理 ###
 
     # NOTE: 繰越の有無によってCSV出力が異ならないよう df_output の処理は以降に限定する
+
+    if constants.carry_over_heat == 過剰熱量繰越計算.行う.value:
+        df_carryover_output = df_carryover_output.assign(
+            carryovers_i_1 = carryovers[0],
+            carryovers_i_2 = carryovers[1],
+            carryovers_i_3 = carryovers[2],
+            carryovers_i_4 = carryovers[3],
+            carryovers_i_5 = carryovers[4]
+        )
+        if q_hs_rtd_H is not None and q_hs_rtd_C is None:
+            df_carryover_output.to_csv(case_name + constants.version_info() + '_H_carryover_output.csv', encoding = 'cp932')
+        elif q_hs_rtd_C is not None and q_hs_rtd_H is None:
+            df_carryover_output.to_csv(case_name + constants.version_info() + '_C_carryover_output.csv', encoding = 'cp932')
+        else:
+            raise IOError("冷房時・暖房時の判断に失敗しました。")
 
     """ 熱損失・熱取得を含む負荷バランス時の熱負荷 - 熱損失・熱取得を含む負荷バランス時(2) """
     df_output = df_output.assign(
