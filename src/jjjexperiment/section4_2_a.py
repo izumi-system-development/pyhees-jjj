@@ -72,7 +72,7 @@ def calc_E_E_H_d_t(
 
     """ E_E_fan_C_d_t """
     # (37) 送風機の付加分 [kWh/h]
-    if constants.input_V_hs_min_H == 最低風量直接入力.入力する:
+    if constants.input_V_hs_min == 最低風量直接入力.入力する:
         E_E_fan_H_d_t \
             = jjj_V_min_input.get_E_E_fan_H_d_t(
                 P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H)
@@ -215,7 +215,7 @@ def get_E_E_C_d_t(
 
     """ E_E_fan_C_d_t """
     # (38) 送風機の付加分 [kWh/h]
-    if constants.input_V_hs_min_C == 最低風量直接入力.入力する:
+    if constants.input_V_hs_min == 最低風量直接入力.入力する:
         E_E_fan_C_d_t \
             = jjj_V_min_input.get_E_E_fan_C_d_t(
                 P_rac_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C)

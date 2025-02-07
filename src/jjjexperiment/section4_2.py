@@ -219,10 +219,16 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['Q_hat_hs_d_t'] = Q_hat_hs_d_t
 
     # (39)　熱源機の最低風量
-    if (q_hs_rtd_H is not None) and constants.input_V_hs_min_H == 最低風量直接入力.入力する.value:
-        V_hs_min = constants.V_hs_min_H
-    elif (q_hs_rtd_C is not None) and constants.input_V_hs_min_C == 最低風量直接入力.入力する.value:
-        V_hs_min = constants.V_hs_min_C
+    if constants.input_V_hs_min == 最低風量直接入力.入力する.value:
+        match(q_hs_rtd_H, q_hs_rtd_C):
+            case(None, None):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+            case(None, _):
+                V_hs_min = constants.V_hs_min_H
+            case(_, None):
+                V_hs_min = constants.V_hs_min_C
+            case(_, _):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
     else:
         V_hs_min = dc.get_V_hs_min(V_vent_g_i)
     df_output3['V_hs_min'] = [V_hs_min]
@@ -1076,7 +1082,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     # (35)　熱源機の風量のうちの全般換気分
     V_hs_vent_d_t \
         = jjj_V_min_input.get_V_hs_vent_d_t(region, V_vent_g_i, general_ventilation,
-            constants.input_V_hs_min_H if (q_hs_rtd_H is None) else constants.input_V_hs_min_C)
+            constants.V_hs_min_H if (q_hs_rtd_H is None) else constants.V_hs_min_C)
     df_output['V_hs_vent_d_t'] = V_hs_vent_d_t
 
     # (34)　熱源機の風量
