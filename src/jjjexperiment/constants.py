@@ -183,16 +183,15 @@ C1_NR_R = 1195534
 def override_CR(input: dict):
   """ SimHeatモデルの熱容量を上書きする 入力のある箇所のみ更新
   """
+  global C1_BR_R_i, C1_NR_R
+
   for i in range(1, 6):
     key = f'C1_BR_R_{i}'  # C1_BR_R_1, ..., C1_BR_R_5
     if key in input and input[key] is not None:
-      if 'C1_BR_R_i' in globals():
-        global C1_BR_R_i
-      C1_BR_R_i[i-1] = float(input[key])
+      C1_BR_R_i[i-1] = float(input[key])  # UIでNumberチェック済み
 
   if 'C1_NR_R' in input and input['C1_NR_R'] is not None:
-    global C1_NR_R
-    C1_NR_R = float(input['C1_NR_R'])
+    C1_NR_R = float(input['C1_NR_R'])  # UIでNumberチェック済み
 
 
 def set_constants(input: dict):
