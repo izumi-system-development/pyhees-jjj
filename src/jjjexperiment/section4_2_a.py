@@ -32,11 +32,14 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
+# JJJ
 from jjjexperiment.denchu_1 import Spec
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
 import jjjexperiment.constants as constants
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 import jjjexperiment.denchu_2 as denchu_2
+from jjjexperiment.options import *
+import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
 @constants.jjjexperiment_clone
 def calc_E_E_H_d_t(
@@ -67,6 +70,25 @@ def calc_E_E_H_d_t(
     # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
     q_hs_H_d_t = get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
 
+    """ E_E_fan_C_d_t """
+    # (37) 送風機の付加分 [kWh/h]
+    if constants.input_V_hs_min_H == 最低風量直接入力.入力する:
+        E_E_fan_H_d_t \
+            = jjj_V_min_input.get_E_E_fan_H_d_t(
+                P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H)
+    else:
+        E_E_fan_H_d_t \
+            = get_E_E_fan_H_d_t(type,
+                    # NOTE: ルームエアコンファン(P_rac_fan) / 循環ファン(P_fan) 切替
+                    P_rac_fan_rtd_H if type == PROCESS_TYPE_2 else P_fan_rtd_H,
+                    V_hs_vent_d_t,
+                    V_hs_supply_d_t,
+                    V_hs_dsgn_H,
+                    q_hs_H_d_t,  # [W]
+                    f_SFP_H)
+    _logger.NDdebug("E_E_fan_H_d_t", E_E_fan_H_d_t)
+
+    """ E_E_H_d_t """
     if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
 
         """ e_th: ヒートポンプサイクルの理論効率(-) """
@@ -95,18 +117,15 @@ def calc_E_E_H_d_t(
 
         """ E_E: 日付dの時刻tにおける1時間当たりの暖房時の消費電力量 (kWh/h) """
 
-        # (37) 送風機の付加分（kWh/h）
-        E_E_fan_H_d_t = get_E_E_fan_H_d_t(type, P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, q_hs_H_d_t, f_SFP_H)
-
         # (5) 圧縮機の分
         E_E_comp_H_d_t = get_E_E_comp_H_d_t(
                             q_hs_H_d_t,
                             e_hs_H_d_t = get_e_hs_H_d_t(e_th_H_d_t, e_r_H_d_t))  # (7) 日付dの時刻tにおける暖房時の熱源機の効率(-)
+
         E_E_H_d_t = E_E_comp_H_d_t + E_E_fan_H_d_t  # (1)
 
     elif type == PROCESS_TYPE_2 or type == PROCESS_TYPE_4:
         # TODO: f_SFP_H: type2のみのパラメータ type4での使用は怪しい
-        # NOTE: ルームエアコンでは V_hs_vent(換気風量) は使用されません
 
         if type == PROCESS_TYPE_2:
             # NOTE: 別モジュールから同名の関数を利用しています
@@ -117,10 +136,6 @@ def calc_E_E_H_d_t(
                                    q_hs_H_d_t * 3.6/1000,  # L_H[MJ/h]
                                    q_max_C, q_max_H,  # q[W]
                                    input_C_af_H, climateFile)
-            E_E_fan_H_d_t = \
-                get_E_E_fan_H_d_t(type, P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H,
-                                       q_hs_H_d_t,  # q[W]
-                                       f_SFP_H)
 
         elif type == PROCESS_TYPE_4:
             # 『2.2 実験方法と実験条件』より
@@ -144,10 +159,8 @@ def calc_E_E_H_d_t(
                                        out=np.zeros_like(q_hs_H_d_t),
                                        where=COP_H_d_t!=0)  # kWh
 
-            # (37) 送風機の付加分（kWh/h）
-            # NOTE: 求めたいのは循環ファンなので P_rac_fan ではなく P_fan を使用する
-            E_E_fan_H_d_t = get_E_E_fan_H_d_t(type, P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, q_hs_H_d_t, f_SFP_H)
-
+            # 電中研モデル調査用
+            """
             df_output_denchuH = pd.DataFrame(index = pd.date_range(
                 datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
 
@@ -159,8 +172,9 @@ def calc_E_E_H_d_t(
                 E_E_H_d_t = E_E_CRAC_H_d_t + E_E_fan_H_d_t  # kW
             )
             df_output_denchuH.to_csv(case_name + constants.version_info() + '_denchu_H_output.csv', encoding='cp932')  # =Shift_JIS
+            """
 
-        E_E_H_d_t = E_E_CRAC_H_d_t + E_E_fan_H_d_t
+        E_E_H_d_t = E_E_fan_H_d_t + E_E_CRAC_H_d_t
 
     else:
         raise Exception('暖房設備機器の種類の入力が不正です。')
@@ -199,12 +213,35 @@ def get_E_E_C_d_t(
     # (4) 日付dの時刻tにおける1時間当たりの熱源機の平均冷房能力(-)
     q_hs_CS_d_t, q_hs_CL_d_t = get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
 
+    """ E_E_fan_C_d_t """
+    # (38) 送風機の付加分 [kWh/h]
+    if constants.input_V_hs_min_C == 最低風量直接入力.入力する:
+        E_E_fan_C_d_t \
+            = jjj_V_min_input.get_E_E_fan_C_d_t(
+                P_rac_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C)
+    else:
+        if (type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3):
+            # (4) 潜熱/顕熱を使用せずに全熱負荷を再計算する
+            q_hs_C_d_t = get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
+        else:
+            # 潜熱/顕熱を使用する
+            q_hs_C_d_t = q_hs_CS_d_t + q_hs_CL_d_t
+
+        E_E_fan_C_d_t \
+            = get_E_E_fan_C_d_t(type,
+                    # NOTE: ルームエアコンファン(P_rac_fan) / 循環ファン(P_fan) 切替
+                    P_rac_fan_rtd_C if type == PROCESS_TYPE_2 else P_fan_rtd_C,
+                    V_hs_vent_d_t,
+                    V_hs_supply_d_t,
+                    V_hs_dsgn_C,
+                    q_hs_C_d_t,  # [W]
+                    f_SFP_C)
+    _logger.NDdebug("E_E_fan_C_d_t", E_E_fan_C_d_t)
+
+    """ E_E_C_d_t """
     if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
         """ 顕熱/潜熱 (CS/CL) を使用せずに 全熱負荷(C) を再計算して使用する """
 
-        # (4)
-        q_hs_C_d_t = get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
-        _logger.NDdebug("q_hs_C_d_t", q_hs_C_d_t)
 
         """ e_th: ヒートポンプサイクルの理論効率(-) """
 
@@ -233,21 +270,16 @@ def get_E_E_C_d_t(
 
         """ E_E: 日付dの時刻tにおける1時間当たりの冷房時の消費電力量 (kWh/h) """
 
-        # (38) 送風機の付加分 (kWh/h)
-        E_E_fan_C_d_t = get_E_E_fan_C_d_t(type, P_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C, q_hs_C_d_t, f_SFP_C)
-
         # (6) 圧縮機の分
         E_E_comp_C_d_t = get_E_E_comp_C_d_t(
                             q_hs_C_d_t,
                             e_hs_C_d_t = get_e_hs_C_d_t(e_th_C_d_t, e_r_C_d_t))  # (8)
 
         _logger.NDdebug("E_E_comp_C_d_t", E_E_comp_C_d_t)
-        _logger.NDdebug("E_E_fan_C_d_t", E_E_fan_C_d_t)
         E_E_C_d_t = E_E_comp_C_d_t + E_E_fan_C_d_t  # (2)
 
     elif type == PROCESS_TYPE_2 or type == PROCESS_TYPE_4:
         """ 顕熱/潜熱 (CS/CL) を使用する """
-        # NOTE: ルームエアコンでは V_hs_vent(換気風量) は使用されません
 
         if type == PROCESS_TYPE_2:
             # NOTE: 別モジュールから同名の関数を利用しています
@@ -256,12 +288,6 @@ def get_E_E_C_d_t(
                                    e_rtd_C, dualcompressor_C,
                                    q_hs_CS_d_t * 3.6/1000, q_hs_CL_d_t * 3.6/1000,  # L_H[MJ/h]
                                    q_max_C, input_C_af_C, climateFile)
-            # (38) 送風機の付加分 (kWh/h)
-            E_E_fan_C_d_t = \
-                get_E_E_fan_C_d_t(type, P_rac_fan_rtd_C,
-                                       V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C,
-                                       (q_hs_CS_d_t + q_hs_CL_d_t),  # q[W]
-                                       f_SFP_C)
 
         elif type == PROCESS_TYPE_4:
             # 『2.2 実験方法と実験条件』より
@@ -269,8 +295,6 @@ def get_E_E_C_d_t(
             V_ratio1 = (spec.V_inner * 60) / np.max(V_hs_supply_d_t)
             # 室外機/室内機 風量比
             V_ratio2 = spec.V_outer / spec.V_inner
-
-            q_hs_C_d_t = q_hs_CS_d_t + q_hs_CL_d_t
 
             # FIXME: COPが大きすぎる問題があります
             COP_C_d_t = denchu_2.calc_COP_C_d_t(
@@ -288,9 +312,8 @@ def get_E_E_C_d_t(
                                 out=np.zeros_like(q_hs_C_d_t),
                                 where=COP_C_d_t!=0)  # kWh
 
-            # (38) 送風機の付加分 (kWh/h)
-            E_E_fan_C_d_t = get_E_E_fan_C_d_t(type, P_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C, q_hs_C_d_t, f_SFP_C)
-
+            # 電中研モデル調査用
+            """
             df_output_denchuC = pd.DataFrame(index = pd.date_range(
                 datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
 
@@ -302,9 +325,9 @@ def get_E_E_C_d_t(
                 E_E_C_d_t = E_E_CRAC_C_d_t + E_E_fan_C_d_t  # kW
             )
             df_output_denchuC.to_csv(case_name + constants.version_info() + '_denchu_C_output.csv', encoding='cp932')  # =Shift_JIS
+            """
 
         _logger.NDdebug("E_E_CRAC_C_d_t", E_E_CRAC_C_d_t)
-        _logger.NDdebug("E_E_fan_C_d_t", E_E_fan_C_d_t)
         E_E_C_d_t = E_E_CRAC_C_d_t + E_E_fan_C_d_t  # (2)
 
     else:

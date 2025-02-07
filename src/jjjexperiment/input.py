@@ -206,6 +206,8 @@ def get_heating(input: dict, region: int, A_A: float):
     # 設計風量
     if int(input['H_A']['input_V_hs_dsgn_H']) == 2:
         H_A['V_hs_dsgn_H'] = float(input['H_A']['V_hs_dsgn_H'])
+    if int(input['H_A']['input_V_hs_min_H']) == 最低風量直接入力.入力する.value:
+        H_A['V_hs_min_H'] = float(input['H_A']['V_hs_min_H'])
 
     # 主たる居室暖房機器
     H_MR = None

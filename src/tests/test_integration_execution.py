@@ -48,6 +48,7 @@ class Test既存計算維持_デフォルト入力時:
         """
 
         inputs = copy.deepcopy(self._inputs1)
+        inputs = change_testmode_input_V_hs_min_H(inputs)
         # inputs = change_testmode_carryover(inputs)
         # inputs = change_testmode_underfloor_old(inputs)
         # inputs = change_testmode_underfloor_new(inputs)
@@ -130,6 +131,28 @@ def change_testmode_carryover(inputs: dict):
     """ 熱繰越
     """
     fixtures = {"carry_over_heat": 過剰熱量繰越計算.行う.value}
+    inputs_copied = copy.deepcopy(inputs)  # 複製しないと別テストで矛盾する
+    return deep_update(inputs_copied, fixtures)
+
+def change_testmode_input_V_hs_min_H(inputs: dict):
+    """ 最低風量直接入力 - H """
+    fixtures = {
+        "H_A": {
+            "input_V_hs_min_H": 最低風量直接入力.入力する.value,
+            "V_hs_min_H": 1200,
+        }
+    }
+    inputs_copied = copy.deepcopy(inputs)  # 複製しないと別テストで矛盾する
+    return deep_update(inputs_copied, fixtures)
+
+def change_testmode_input_V_hs_min_C(inputs: dict):
+    """ 最低風量直接入力 - C """
+    fixtures = {
+        "C_A": {
+            "input_V_hs_min_C": 最低風量直接入力.入力する.value,
+            "V_hs_min_C": 1200,
+        }
+    }
     inputs_copied = copy.deepcopy(inputs)  # 複製しないと別テストで矛盾する
     return deep_update(inputs_copied, fixtures)
 

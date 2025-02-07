@@ -362,3 +362,16 @@ def set_constants(input: dict):
       P_fan_C_d_t_a1 = float(input['C_A']['fan_coeff'][3])
       global P_fan_C_d_t_a0 
       P_fan_C_d_t_a0 = float(input['C_A']['fan_coeff'][4])
+
+  # 空調の最低風量直接入力
+  global input_V_hs_min_H
+  input_V_hs_min_H = int(input['H_A']['input_V_hs_min_H'])
+  global input_V_hs_min_C
+  input_V_hs_min_C = int(input['C_A']['input_V_hs_min_C'])
+
+  if input_V_hs_min_H == 最低風量直接入力.入力する.value:
+    global V_hs_min_H
+    V_hs_min_H = float(input['H_A']['V_hs_min_H'])
+  if input_V_hs_min_C == 最低風量直接入力.入力する.value:
+    global V_hs_min_C
+    V_hs_min_C = float(input['C_A']['V_hs_min_C'])
