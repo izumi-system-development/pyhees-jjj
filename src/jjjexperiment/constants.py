@@ -5,7 +5,7 @@ def version_info() -> str:
   """
   # NOTE: subprocessモジュールによるコミット履歴からの生成は \
   # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
-  return '_20241112'
+  return '_20250203'
 
 # FIXME: このデコレータの定義箇所どこが最適か
 # NOTE: 関数ラベリング用のデコレータ ex. @jjjexperiment_fork()
@@ -171,17 +171,28 @@ Alpha_HCZ_i = [12.6, 12.6, 12.6, 12.6, 12.6]
 Alpha_NR = 12.6
 """壁床天井材の容積比熱 [kJ/(m3・K)]"""
 
-# 熱容量1(空間・什器のみ)
+# SimHeatモデルの熱容量 - 熱容量1(空間・什器のみ)
 C1_BR_R_i = [893676, 500835, 400667, 325488, 325598]
 """区画i毎の居室の熱容量 [J/K]"""
 C1_NR_R = 1195534
-"""非居室の熱容量 [J/K]"""
+"""非居室の熱容量の総和 [J/K]"""
 
-# 熱容量2(壁・床・天井を含む)
-C2_BR_R_i = [2073982, 1146273, 952753, 836652, 810221]
-"""区画i毎の居室の熱容量 [J/K]"""
-C2_NR_R = 3766594
-"""非居室の熱容量 [J/K]"""
+# SimHeatモデルの熱容量 - 熱容量2(壁・床・天井を含む)
+# 現時点では使用しないため削除
+
+def override_CR(input: dict):
+  """ SimHeatモデルの熱容量を上書きする 入力のある箇所のみ更新
+  """
+  for i in range(1, 6):
+    key = f'C1_BR_R_{i}'  # C1_BR_R_1, ..., C1_BR_R_5
+    if key in input and input[key] is not None:
+      if 'C1_BR_R_i' in globals():
+        global C1_BR_R_i
+      C1_BR_R_i[i-1] = float(input[key])
+
+  if 'C1_NR_R' in input and input['C1_NR_R'] is not None:
+    global C1_NR_R
+    C1_NR_R = float(input['C1_NR_R'])
 
 
 def set_constants(input: dict):
@@ -362,3 +373,4 @@ def set_constants(input: dict):
       P_fan_C_d_t_a1 = float(input['C_A']['fan_coeff'][3])
       global P_fan_C_d_t_a0 
       P_fan_C_d_t_a0 = float(input['C_A']['fan_coeff'][4])
+  override_CR(input)
