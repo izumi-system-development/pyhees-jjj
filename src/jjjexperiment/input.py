@@ -122,7 +122,7 @@ def get_heating(input: dict, region: int, A_A: float):
 
     H_A = {
         'VAV': int(input['H_A']['VAV']) == 2,
-        'general_ventilation': int(input['H_A']['general_ventilation']) == 1,
+        'general_ventilation': int(input['H_A']['general_ventilation']) == 2,
     }
 
     # ファンの比消費電力（暖房）
@@ -228,7 +228,7 @@ def get_cooling(input: dict, region: int, A_A: float):
 
     C_A = {
         'VAV': int(input['C_A']['VAV']) == 2,
-        'general_ventilation': int(input['C_A']['general_ventilation']) == 1,
+        'general_ventilation': int(input['C_A']['general_ventilation']) == 2,
     }
 
     # ファンの比消費電力（冷房）
