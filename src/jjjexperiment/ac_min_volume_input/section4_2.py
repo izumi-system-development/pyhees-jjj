@@ -4,6 +4,7 @@ from nptyping import NDArray, Float64, Shape
 import pyhees.section4_2 as dc
 # JJJ
 import jjjexperiment.constants as constants
+from jjjexperiment.options import *
 
 def get_V_hs_vent_d_t(
         region: int,
@@ -31,7 +32,7 @@ def get_V_hs_vent_d_t(
 
     # 全般換気の機能を有する場合
     if general_ventilation == True:
-        if input_V_hs_min:  # 最低風量直接入力あり
+        if input_V_hs_min == 最低風量直接入力.入力する.value:  # 最低風量直接入力あり
             V_vent_g = np.sum(V_vent_g_i[:5])
             V_hs_vent_d_t = np.ones(24 * 365) * V_vent_g
             V_hs_vent_d_t[H & (V_vent_g < constants.V_hs_min_H)] \
@@ -44,7 +45,7 @@ def get_V_hs_vent_d_t(
 
     # 全般換気の機能を有さない場合
     elif general_ventilation == False:
-        if input_V_hs_min:  # 最低風量直接入力あり
+        if input_V_hs_min == 最低風量直接入力.入力する.value:  # 最低風量直接入力あり
             V_hs_vent_d_t = np.zeros(24 * 365)
             V_hs_vent_d_t[H] = constants.V_hs_min_H
             V_hs_vent_d_t[C] = constants.V_hs_min_C
@@ -52,7 +53,8 @@ def get_V_hs_vent_d_t(
             # オリジナル
             V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
             # JJJ
-            V_hs_vent_d_t[mask] = V_vent_g
+            # WARNING: 既存の結果の多くに影響を与える
+            V_hs_vent_d_t[mask] = np.sum(V_vent_g_i[:5])
 
     else:
         raise ValueError(general_ventilation)

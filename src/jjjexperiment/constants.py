@@ -184,11 +184,11 @@ C2_NR_R = 3766594
 """非居室の熱容量 [J/K]"""
 
 # NOTE: F24-02 暖冷房送風機消費電力算定ロジック
-input_V_hs_min = None
+input_V_hs_min = 最低風量直接入力.入力しない.value
 """最低風量直接入力の有無"""
-V_hs_min_C = None
+V_hs_min_C = 1500
 """冷房時の最低風量"""
-V_hs_min_H = None
+V_hs_min_H = 1500
 """暖房時の最低風量"""
 
 def set_constants(input: dict):
@@ -371,10 +371,19 @@ def set_constants(input: dict):
       P_fan_C_d_t_a0 = float(input['C_A']['fan_coeff'][4])
 
   # 空調の最低風量直接入力
-  input_V_hs_min_H = int(input['H_A']['input_V_hs_min_H'])
-  input_V_hs_min_C = int(input['C_A']['input_V_hs_min_C'])
-  # 暖冷房共通フラグ
-  input_V_hs_min = max(input_V_hs_min_H, input_V_hs_min_C)
-  if input_V_hs_min == 最低風量直接入力.入力する.value:
-    V_hs_min_H = float(input['H_A']['V_hs_min_H'])
-    V_hs_min_C = float(input['C_A']['V_hs_min_C'])
+  global input_V_hs_min
+  if 'H_A' in input:
+    if 'input_V_hs_min_H' in input['H_A']:
+      input_V_hs_min_H = int(input['H_A']['input_V_hs_min_H'])
+      if input_V_hs_min_H == 最低風量直接入力.入力する.value:
+        input_V_hs_min = 最低風量直接入力.入力する.value  # 共通フラグ
+        global V_hs_min_H
+        V_hs_min_H = float(input['H_A']['V_hs_min_H'])
+  if 'C_A' in input:
+    if 'input_V_hs_min_C' in input['C_A']:
+      global input_V_hs_min_C
+      input_V_hs_min_C = int(input['C_A']['input_V_hs_min_C'])
+      if input_V_hs_min_C == 最低風量直接入力.入力する.value:
+        input_V_hs_min = 最低風量直接入力.入力する.value  # 共通フラグ
+        global V_hs_min_C
+        V_hs_min_C = float(input['C_A']['V_hs_min_C'])
