@@ -144,8 +144,8 @@ def calc(input_data: dict, test_mode=False):
     Q_UT_H_d_t_i: np.ndarray
     """暖房設備機器等の未処理暖房負荷(MJ/h)"""
 
-    _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t, =\
-        jjj_dc.calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C,
+    _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, C_df_H_d_t, \
+        = jjj_dc.calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C,
             H_A['q_hs_rtd_H'], None,
             q_rtd_H, q_rtd_C, q_max_H, q_max_C, V_hs_dsgn_H, V_hs_dsgn_C, Q, H_A['VAV'], H_A['general_ventilation'], hs_CAV,
             H_A['duct_insulation'], region, L_H_d_t_i, L_CS_d_t_i, L_CL_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i,
@@ -174,42 +174,83 @@ def calc(input_data: dict, test_mode=False):
     E_E_H_d_t: np.ndarray
     """日付dの時刻tにおける1時間当たりの暖房時の消費電力量(kWh/h)"""
 
-    E_E_H_d_t, q_hs_H_d_t, E_E_fan_H_d_t = jjj_dc_a.calc_E_E_H_d_t(
-        case_name = case_name,
-        Theta_hs_out_d_t = Theta_hs_out_d_t,
-        Theta_hs_in_d_t = Theta_hs_in_d_t,
-        Theta_ex_d_t = Theta_ex_d_t,
-        V_hs_supply_d_t = V_hs_supply_d_t,
-        V_hs_vent_d_t = V_hs_vent_d_t,
-        C_df_H_d_t = C_df_H_d_t,
-        V_hs_dsgn_H = V_hs_dsgn_H,
-        q_hs_rtd_H = H_A['q_hs_rtd_H'],
-        q_hs_rtd_C = C_A['q_hs_rtd_C'],
-        P_hs_rtd_H = H_A['P_hs_rtd_H'],
-        V_fan_rtd_H = H_A['V_fan_rtd_H'],
-        P_fan_rtd_H = H_A['P_fan_rtd_H'],
-        q_hs_mid_H = H_A['q_hs_mid_H'],
-        P_hs_mid_H = H_A['P_hs_mid_H'],
-        V_fan_mid_H = H_A['V_fan_mid_H'],
-        P_fan_mid_H = H_A['P_fan_mid_H'],
-        q_hs_min_H = H_A['q_hs_min_H'],
-        q_rtd_C = q_rtd_C,
-        q_rtd_H = q_rtd_H,
-        P_rac_fan_rtd_H = P_rac_fan_rtd_H,
-        q_max_C = q_max_C,
-        q_max_H = q_max_H,
-        e_rtd_H = e_rtd_H,
-        type = H_A['type'],
-        region = region,
-        dualcompressor_H = dualcompressor_H,
-        EquipmentSpec = H_A['EquipmentSpec'],
-        input_C_af_H = input_C_af_H,
-        f_SFP_H = H_A['f_SFP_H'],
-        climateFile = climateFile,
-        simu_R_H= simu_R_H if H_A['type']==PROCESS_TYPE_4 else None,
-        spec=     spec     if H_A['type']==PROCESS_TYPE_4 else None,
-        Theta_real_inner=  T_real if H_A['type']==PROCESS_TYPE_4 else None,
-        RH_real_inner=    RH_real if H_A['type']==PROCESS_TYPE_4 else None)
+    E_E_fan_H_d_t, q_hs_H_d_t \
+        = jjj_dc_a.calc_E_E_fan_H_d_t(
+            type = H_A['type'],
+            region = region,
+            case_name = case_name,
+            input_V_hs_min = constants.input_V_hs_min,
+            general_ventilation = H_A['general_ventilation'],
+            V_vent_g_i = V_vent_g_i,
+            Theta_hs_out_d_t = Theta_hs_out_d_t,
+            Theta_hs_in_d_t = Theta_hs_in_d_t,
+            V_hs_supply_d_t = V_hs_supply_d_t,
+            V_hs_vent_d_t = V_hs_vent_d_t,
+            V_hs_dsgn_H = V_hs_dsgn_H,
+            C_df_H_d_t = C_df_H_d_t,
+            P_rac_fan_rtd_H = P_rac_fan_rtd_H,
+            P_fan_rtd_H = H_A['P_fan_rtd_H'],
+            f_SFP_H = H_A['f_SFP_H']
+            )
+
+    if H_A['type'] == PROCESS_TYPE_1 or H_A['type'] == PROCESS_TYPE_3:
+        E_E_H_d_t \
+            = jjj_dc_a.calc_E_E_H_d_t_type1_and_type3(
+                type = H_A['type'],
+                E_E_fan_H_d_t = E_E_fan_H_d_t,
+                q_hs_H_d_t = q_hs_H_d_t,
+                Theta_hs_out_d_t = Theta_hs_out_d_t,
+                Theta_hs_in_d_t = Theta_hs_in_d_t,
+                Theta_ex_d_t = Theta_ex_d_t,  # 空気温度
+                V_hs_supply_d_t = V_hs_supply_d_t,  # 風量
+                q_hs_rtd_C = C_A['q_hs_rtd_C'],  # 定格冷房能力※
+                q_hs_min_H = H_A['q_hs_min_H'],  # 最小暖房能力
+                # 中間
+                q_hs_mid_H = H_A['q_hs_mid_H'],
+                P_hs_mid_H = H_A['P_hs_mid_H'],
+                V_fan_mid_H = H_A['V_fan_mid_H'],
+                P_fan_mid_H = H_A['P_fan_mid_H'],
+                # 定格
+                q_hs_rtd_H = H_A['q_hs_rtd_H'],
+                P_fan_rtd_H = H_A['P_fan_rtd_H'],
+                V_fan_rtd_H = H_A['V_fan_rtd_H'],
+                P_hs_rtd_H = H_A['P_hs_rtd_H'],
+                EquipmentSpec = H_A['EquipmentSpec']
+            )
+    elif H_A['type'] == PROCESS_TYPE_2:
+        E_E_H_d_t \
+            = jjj_dc_a.calc_E_E_H_d_t_type2(
+                type = H_A['type'],
+                region = region,
+                climateFile = climateFile,
+                E_E_fan_H_d_t = E_E_fan_H_d_t,
+                q_hs_H_d_t = q_hs_H_d_t,
+                e_rtd_H = e_rtd_H,
+                q_rtd_H = q_rtd_H,
+                q_rtd_C = q_rtd_C,
+                q_max_H = q_max_H,
+                q_max_C = q_max_C,
+                input_C_af_H = input_C_af_H,
+                dualcompressor_H = dualcompressor_H
+            )
+    elif H_A['type'] == PROCESS_TYPE_4:
+        E_E_H_d_t \
+            = jjj_dc_a.calc_E_E_H_d_t_type4(
+                case_name = case_name,
+                type = H_A['type'],
+                region = region,
+                climateFile = climateFile,
+                E_E_fan_H_d_t = E_E_fan_H_d_t,
+                q_hs_H_d_t = q_hs_H_d_t,
+                V_hs_supply_d_t = V_hs_supply_d_t,
+                P_rac_fan_rtd_H = P_rac_fan_rtd_H,
+                simu_R_H = simu_R_H,
+                spec = spec,
+                Theta_real_inner = T_real,
+                RH_real_inner = RH_real
+            )
+    else:
+        raise Exception("暖房方式が不正です。")
 
     alpha_UT_H_A: float = get_alpha_UT_H_A(region)
     """未処理暖房負荷を未処理暖房負荷の設計一次エネルギー消費量相当値に換算するための係数"""
@@ -265,7 +306,7 @@ def calc(input_data: dict, test_mode=False):
     E_C_UT_d_t: np.ndarray
     """冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
 
-    E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, _\
+    E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, _\
         = jjj_dc.calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C,
             None, C_A['q_hs_rtd_C'],
             q_rtd_H, q_rtd_C, q_max_H, q_max_C, V_hs_dsgn_H, V_hs_dsgn_C, Q, C_A['VAV'], C_A['general_ventilation'], hs_CAV,
@@ -278,40 +319,84 @@ def calc(input_data: dict, test_mode=False):
     E_E_C_d_t: np.ndarray
     """日付dの時刻tにおける1時間当たりの冷房時の消費電力量(kWh/h)"""
 
-    E_E_C_d_t, E_E_fan_C_d_t, q_hs_CS_d_t, q_hs_CL_d_t = jjj_dc_a.get_E_E_C_d_t(
-        case_name = case_name,
-        Theta_hs_out_d_t = Theta_hs_out_d_t,
-        Theta_hs_in_d_t = Theta_hs_in_d_t,
-        Theta_ex_d_t = Theta_ex_d_t,
-        X_hs_out_d_t = X_hs_out_d_t,
-        X_hs_in_d_t = X_hs_in_d_t,
-        V_hs_supply_d_t = V_hs_supply_d_t,
-        V_hs_vent_d_t = V_hs_vent_d_t,
-        V_hs_dsgn_C = V_hs_dsgn_C,
-        EquipmentSpec = C_A['EquipmentSpec'],
-        q_hs_rtd_C = C_A['q_hs_rtd_C'],
-        P_hs_rtd_C = C_A['P_hs_rtd_C'],
-        V_fan_rtd_C = C_A['V_fan_rtd_C'],
-        P_fan_rtd_C = C_A['P_fan_rtd_C'],
-        q_hs_mid_C = C_A['q_hs_mid_C'],
-        P_hs_mid_C = C_A['P_hs_mid_C'],
-        V_fan_mid_C = C_A['V_fan_mid_C'],
-        P_fan_mid_C = C_A['P_fan_mid_C'],
-        q_hs_min_C = C_A['q_hs_min_C'],
-        region = region,
-        type = C_A['type'],
-        q_rtd_C = q_rtd_C,
-        e_rtd_C = e_rtd_C,
-        P_rac_fan_rtd_C = P_rac_fan_rtd_C,
-        q_max_C = q_max_C,
-        dualcompressor_C = dualcompressor_C,
-        input_C_af_C = input_C_af_C,
-        f_SFP_C = C_A['f_SFP_C'],
-        climateFile = climateFile,
-        simu_R_C= simu_R_C if C_A['type']==PROCESS_TYPE_4 else None,
-        spec= spec         if C_A['type']==PROCESS_TYPE_4 else None,
-        Theta_real_inner=  T_real if H_A['type']==PROCESS_TYPE_4 else None,
-        RH_real_inner=    RH_real if H_A['type']==PROCESS_TYPE_4 else None)
+    E_E_fan_C_d_t, q_hs_CS_d_t, q_hs_CL_d_t \
+        = jjj_dc_a.calc_E_E_fan_C_d_t(
+            type = C_A['type'],
+            region = region,
+            case_name = case_name,
+            input_V_hs_min = constants.input_V_hs_min,
+            general_ventilation = C_A['general_ventilation'],
+            V_vent_g_i = V_vent_g_i,
+            Theta_hs_out_d_t = Theta_hs_out_d_t,
+            Theta_hs_in_d_t = Theta_hs_in_d_t,
+            V_hs_supply_d_t = V_hs_supply_d_t,
+            V_hs_vent_d_t = V_hs_vent_d_t,
+            V_hs_dsgn_C = V_hs_dsgn_C,
+            X_hs_out_d_t = X_hs_out_d_t,
+            X_hs_in_d_t = X_hs_in_d_t,
+            P_rac_fan_rtd_C = P_rac_fan_rtd_C,
+            P_fan_rtd_C = C_A['P_fan_rtd_C'],
+            f_SFP_C = C_A['f_SFP_C']
+        )
+
+    if C_A['type'] == PROCESS_TYPE_1 or C_A['type'] == PROCESS_TYPE_3:
+        E_E_C_d_t = jjj_dc_a.calc_E_E_C_d_t_type1_and_type3(
+            type = C_A['type'],
+            region = region,
+            E_E_fan_C_d_t = E_E_fan_C_d_t,
+            Theta_hs_out_d_t = Theta_hs_out_d_t,
+            Theta_hs_in_d_t = Theta_hs_in_d_t,
+            Theta_ex_d_t = Theta_ex_d_t,
+            V_hs_supply_d_t = V_hs_supply_d_t,
+            X_hs_out_d_t = X_hs_out_d_t,
+            X_hs_in_d_t = X_hs_in_d_t,
+            q_hs_min_C = C_A['q_hs_min_C'],
+            # 中間
+            q_hs_mid_C = C_A['q_hs_mid_C'],
+            P_hs_mid_C = C_A['P_hs_mid_C'],
+            V_fan_mid_C = C_A['V_fan_mid_C'],
+            P_fan_mid_C = C_A['P_fan_mid_C'],
+            # 定格
+            q_hs_rtd_C = C_A['q_hs_rtd_C'],
+            P_fan_rtd_C = C_A['P_fan_rtd_C'],
+            V_fan_rtd_C = C_A['V_fan_rtd_C'],
+            P_hs_rtd_C = C_A['P_hs_rtd_C'],
+            EquipmentSpec = C_A['EquipmentSpec']
+        )
+    elif C_A['type'] == PROCESS_TYPE_2:
+        E_E_C_d_t = jjj_dc_a.calc_E_E_C_d_t_type2(
+            type = C_A['type'],
+            region = region,
+            climateFile = climateFile,
+            E_E_fan_C_d_t = E_E_fan_C_d_t,
+            q_hs_CS_d_t = q_hs_CS_d_t,
+            q_hs_CL_d_t = q_hs_CL_d_t,
+            e_rtd_C = e_rtd_C,
+            q_rtd_C = q_rtd_C,
+            q_rtd_H = q_rtd_H,
+            q_max_C = q_max_C,
+            q_max_H = q_max_H,
+            input_C_af_C = input_C_af_C,
+            dualcompressor_C = dualcompressor_C
+        )
+    elif C_A['type'] == PROCESS_TYPE_4:
+        E_E_C_d_t = jjj_dc_a.calc_E_E_C_d_t_type4(
+            case_name = case_name,
+            type = C_A['type'],
+            region = region,
+            climateFile = climateFile,
+            E_E_fan_C_d_t = E_E_fan_C_d_t,
+            q_hs_CS_d_t = q_hs_CS_d_t,
+            q_hs_CL_d_t = q_hs_CL_d_t,
+            V_hs_supply_d_t = V_hs_supply_d_t,
+            P_rac_fan_rtd_C = P_rac_fan_rtd_C,
+            simu_R_C = simu_R_C,
+            spec = spec,
+            Theta_real_inner = T_real,
+            RH_real_inner = RH_real
+        )
+    else:
+        raise Exception("冷房方式が不正です。")
 
     ##### 計算結果のまとめ
 

@@ -1080,9 +1080,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
     """ 熱源機の入口 - 熱源機の風量の計算 """
     # (35)　熱源機の風量のうちの全般換気分
-    V_hs_vent_d_t \
-        = jjj_V_min_input.get_V_hs_vent_d_t(region, V_vent_g_i, general_ventilation,
-            constants.V_hs_min_H if (q_hs_rtd_H is None) else constants.V_hs_min_C)
+    V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
     df_output['V_hs_vent_d_t'] = V_hs_vent_d_t
 
     # (34)　熱源機の風量
@@ -1178,4 +1176,4 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         df_output.to_csv(case_name  + constants.version_info() + '_C_output5.csv', encoding = 'cp932')
 
     return E_C_UT_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, \
-           X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t
+           X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, C_df_H_d_t
