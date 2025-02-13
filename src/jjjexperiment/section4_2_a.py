@@ -17,9 +17,6 @@ import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
 def calc_E_E_fan_H_d_t(
         type, region, case_name,
-        input_V_hs_min: bool,
-        general_ventilation: bool,
-        V_vent_g_i: NDArray[Shape['5'], Float64],
         Theta_hs_out_d_t, Theta_hs_in_d_t,  # 空気温度
         V_hs_supply_d_t, V_hs_vent_d_t, V_hs_dsgn_H,  # 風量
         C_df_H_d_t,  # 暖房出力補正係数
@@ -30,10 +27,6 @@ def calc_E_E_fan_H_d_t(
     """
     # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
     q_hs_H_d_t = dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
-
-    # (35) 式の結果についてロジック変更を行う
-    V_hs_vent_d_t = jjj_V_min_input.\
-        get_V_hs_vent_d_t(region, V_vent_g_i, general_ventilation, input_V_hs_min)
 
     # (37) 送風機の付加分 [kWh/h]
     if constants.input_V_hs_min == 最低風量直接入力.入力する.value:
@@ -60,9 +53,6 @@ def calc_E_E_fan_H_d_t(
 
 def calc_E_E_fan_C_d_t(
         type, region, case_name,
-        input_V_hs_min: bool,
-        general_ventilation: bool,
-        V_vent_g_i: NDArray[Shape['5'], Float64],
         Theta_hs_out_d_t, Theta_hs_in_d_t,
         V_hs_supply_d_t, V_hs_vent_d_t, V_hs_dsgn_C,  # 風量
         X_hs_out_d_t, X_hs_in_d_t,  # 絶対湿度
@@ -73,10 +63,6 @@ def calc_E_E_fan_C_d_t(
     """
     # (4) 日付dの時刻tにおける1時間当たりの熱源機の平均冷房能力(-)
     q_hs_CS_d_t, q_hs_CL_d_t = dc_a.get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
-
-    # (35) 式の結果についてロジック変更を行う
-    V_hs_vent_d_t = jjj_V_min_input.\
-        get_V_hs_vent_d_t(region, V_vent_g_i, general_ventilation, input_V_hs_min)
 
     # (38) 送風機の付加分 [kWh/h]
     if constants.input_V_hs_min == 最低風量直接入力.入力する.value:

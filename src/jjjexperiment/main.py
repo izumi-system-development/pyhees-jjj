@@ -152,6 +152,7 @@ def calc(input_data: dict, test_mode=False):
             H_A['type'], input_C_af_H, input_C_af_C,
             r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, YUCACO_r_A_ufvnt, climateFile)
 
+    _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
 
     if H_A['type'] == PROCESS_TYPE_4:
@@ -179,9 +180,6 @@ def calc(input_data: dict, test_mode=False):
             type = H_A['type'],
             region = region,
             case_name = case_name,
-            input_V_hs_min = constants.input_V_hs_min,
-            general_ventilation = H_A['general_ventilation'],
-            V_vent_g_i = V_vent_g_i,
             Theta_hs_out_d_t = Theta_hs_out_d_t,
             Theta_hs_in_d_t = Theta_hs_in_d_t,
             V_hs_supply_d_t = V_hs_supply_d_t,
@@ -314,6 +312,7 @@ def calc(input_data: dict, test_mode=False):
             C_A['type'], input_C_af_H, input_C_af_C,
             r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, YUCACO_r_A_ufvnt, climateFile)
 
+    _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
 
     E_E_C_d_t: np.ndarray
@@ -324,9 +323,6 @@ def calc(input_data: dict, test_mode=False):
             type = C_A['type'],
             region = region,
             case_name = case_name,
-            input_V_hs_min = constants.input_V_hs_min,
-            general_ventilation = C_A['general_ventilation'],
-            V_vent_g_i = V_vent_g_i,
             Theta_hs_out_d_t = Theta_hs_out_d_t,
             Theta_hs_in_d_t = Theta_hs_in_d_t,
             V_hs_supply_d_t = V_hs_supply_d_t,

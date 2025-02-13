@@ -40,6 +40,7 @@ def get_V_hs_vent_d_t(
             V_hs_vent_d_t[C & (V_vent_g < constants.V_hs_min_C)] \
                 = constants.V_hs_min_C
         else:  # 最低風量直接入力なし
+            # NOTE: デフォルト条件はコチラです
             # オリジナルそのまま
             V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
 
