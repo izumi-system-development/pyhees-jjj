@@ -1,39 +1,10 @@
-import pyhees.section4_2 as dc
-# 改変のベースとしているモジュール
-# TODO: まとめて命名してインポートする
-from pyhees.section4_2_a import \
-    calc_e_th_mid_H, \
-    calc_e_th_mid_C, \
-    calc_e_th_rtd_H, \
-    calc_e_th_rtd_C, \
-    calc_e_th_H_d_t, \
-    calc_e_th_C_d_t, \
-    get_q_hs_H_d_t, \
-    get_q_hs_C_d_t, \
-    get_q_hs_C_d_t_2, \
-    get_e_hs_H_d_t, \
-    get_e_hs_C_d_t, \
-    get_e_r_rtd_H, \
-    get_e_r_rtd_C, \
-    get_e_r_mid_H, \
-    get_e_r_mid_C, \
-    get_e_r_min_H, \
-    get_e_r_min_C, \
-    get_e_r_H_d_t, \
-    get_e_r_H_d_t_2023, \
-    get_e_r_C_d_t, \
-    get_e_r_C_d_t_2023, \
-    get_E_E_fan_H_d_t, \
-    get_E_E_fan_C_d_t, \
-    get_E_E_comp_H_d_t, \
-    get_E_E_comp_C_d_t \
-
-import pyhees.section4_3
-
 import numpy as np
 import pandas as pd
 from datetime import datetime
 from nptyping import NDArray, Shape, Float64
+
+import pyhees.section4_2_a as dc_a
+import pyhees.section4_3
 
 # JJJ
 from jjjexperiment.denchu_1 import Spec
@@ -55,10 +26,10 @@ def calc_E_E_fan_H_d_t(
         P_rac_fan_rtd_H, P_fan_rtd_H,  # 定格暖房時
         f_SFP_H  # その他
     ) -> NDArray[Shape['8760'], Float64]:
-    """ E_E_fan_H_d_t
+    """ (37)改 E_E_fan_H_d_t
     """
     # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
-    q_hs_H_d_t = get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
+    q_hs_H_d_t = dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
 
     # (35) 式の結果についてロジック変更を行う
     V_hs_vent_d_t = jjj_V_min_input.\
@@ -73,7 +44,7 @@ def calc_E_E_fan_H_d_t(
     elif constants.input_V_hs_min == 最低風量直接入力.入力しない.value:
         # デフォルト条件では V_hs_vent_d_t は既存式(35)のまま
         E_E_fan_H_d_t \
-            = get_E_E_fan_H_d_t(type,
+            = dc_a.get_E_E_fan_H_d_t(type,
                     # NOTE: ルームエアコンファン(P_rac_fan) / 循環ファン(P_fan) 切替
                     P_rac_fan_rtd_H if type == PROCESS_TYPE_2 else P_fan_rtd_H,
                     V_hs_vent_d_t,
@@ -94,14 +65,14 @@ def calc_E_E_fan_C_d_t(
         V_vent_g_i: NDArray[Shape['5'], Float64],
         Theta_hs_out_d_t, Theta_hs_in_d_t,
         V_hs_supply_d_t, V_hs_vent_d_t, V_hs_dsgn_C,  # 風量
-        X_hs_in_d_t, X_hs_out_d_t, # 絶対湿度
+        X_hs_out_d_t, X_hs_in_d_t,  # 絶対湿度
         P_rac_fan_rtd_C, P_fan_rtd_C,  # 定格暖房時
         f_SFP_C  # その他
     ) -> NDArray[Shape['8760'], Float64]:
-    """ E_E_fan_C_d_t
+    """ (38)改 E_E_fan_C_d_t
     """
     # (4) 日付dの時刻tにおける1時間当たりの熱源機の平均冷房能力(-)
-    q_hs_CS_d_t, q_hs_CL_d_t = get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
+    q_hs_CS_d_t, q_hs_CL_d_t = dc_a.get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
 
     # (35) 式の結果についてロジック変更を行う
     V_hs_vent_d_t = jjj_V_min_input.\
@@ -116,13 +87,13 @@ def calc_E_E_fan_C_d_t(
     elif constants.input_V_hs_min == 最低風量直接入力.入力しない.value:
         if (type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3):
             # (4) 潜熱/顕熱を使用せずに全熱負荷を再計算する
-            q_hs_C_d_t = get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
+            q_hs_C_d_t = dc_a.get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
         else:
             # 潜熱/顕熱を使用する
             q_hs_C_d_t = q_hs_CS_d_t + q_hs_CL_d_t
 
         E_E_fan_C_d_t \
-            = get_E_E_fan_C_d_t(type,
+            = dc_a.get_E_E_fan_C_d_t(type,
                     # NOTE: ルームエアコンファン(P_rac_fan) / 循環ファン(P_fan) 切替
                     P_rac_fan_rtd_C if type == PROCESS_TYPE_2 else P_fan_rtd_C,
                     V_hs_vent_d_t,
@@ -137,7 +108,7 @@ def calc_E_E_fan_C_d_t(
     return E_E_fan_C_d_t, q_hs_CS_d_t, q_hs_CL_d_t
 
 def calc_E_E_H_d_t_type1_and_type3(
-        type: int,
+        type: str,
         E_E_fan_H_d_t: NDArray[Shape['8760'], Float64],
         q_hs_H_d_t: NDArray[Shape['8760'], Float64],
         Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  # 空気温度
@@ -148,43 +119,43 @@ def calc_E_E_H_d_t_type1_and_type3(
         q_hs_rtd_H, P_fan_rtd_H, V_fan_rtd_H, P_hs_rtd_H,  # 定格冷房時
         EquipmentSpec,  # その他
     ) -> NDArray[Shape['8760'], Float64]:
-    """ (1) E_E_H_d_t
+    """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3, "type1,3 専用ロジック"
 
     """ e_th: ヒートポンプサイクルの理論効率(-) """
     # (20) 中間暖房能力運転時
-    e_th_mid_H = calc_e_th_mid_H(type, V_fan_mid_H, q_hs_mid_H, q_hs_rtd_C)
+    e_th_mid_H = dc_a.calc_e_th_mid_H(type, V_fan_mid_H, q_hs_mid_H, q_hs_rtd_C)
     # (19) 定格暖房能力運転時
-    e_th_rtd_H = calc_e_th_rtd_H(type, V_fan_rtd_H, q_hs_rtd_H, q_hs_rtd_C)
+    e_th_rtd_H = dc_a.calc_e_th_rtd_H(type, V_fan_rtd_H, q_hs_rtd_H, q_hs_rtd_C)
     # (17) 日付dの時刻tにおける暖房時
-    e_th_H_d_t = calc_e_th_H_d_t(type, Theta_ex_d_t, Theta_hs_in_d_t, Theta_hs_out_d_t, V_hs_supply_d_t, q_hs_rtd_C)
+    e_th_H_d_t = dc_a.calc_e_th_H_d_t(type, Theta_ex_d_t, Theta_hs_in_d_t, Theta_hs_out_d_t, V_hs_supply_d_t, q_hs_rtd_C)
 
     """ e_r: ヒートポンプサイクルの理論効率に対する熱源機の効率の比(-) """
     if type == PROCESS_TYPE_3:  #コンプレッサ効率特性
         # 日付dの時刻tにおける暖房時
-        e_r_H_d_t = get_e_r_H_d_t_2023(q_hs_H_d_t)
+        e_r_H_d_t = dc_a.get_e_r_H_d_t_2023(q_hs_H_d_t)
     else:
         # (11) 定格暖房能力運転時
-        e_r_rtd_H = get_e_r_rtd_H(e_th_rtd_H, q_hs_rtd_H, P_hs_rtd_H, P_fan_rtd_H)
+        e_r_rtd_H = dc_a.get_e_r_rtd_H(e_th_rtd_H, q_hs_rtd_H, P_hs_rtd_H, P_fan_rtd_H)
         # (15) 最小暖房能力運転時
-        e_r_min_H = get_e_r_min_H(e_r_rtd_H)
+        e_r_min_H = dc_a.get_e_r_min_H(e_r_rtd_H)
         # (13) 中間暖房能力運転時
-        e_r_mid_H = get_e_r_mid_H(e_r_rtd_H, e_th_mid_H, q_hs_mid_H, P_hs_mid_H, P_fan_mid_H, EquipmentSpec)
+        e_r_mid_H = dc_a.get_e_r_mid_H(e_r_rtd_H, e_th_mid_H, q_hs_mid_H, P_hs_mid_H, P_fan_mid_H, EquipmentSpec)
         # (9) 日付dの時刻tにおける暖房時
-        e_r_H_d_t = get_e_r_H_d_t(q_hs_H_d_t, q_hs_rtd_H, q_hs_min_H, q_hs_mid_H, e_r_mid_H, e_r_min_H, e_r_rtd_H)
+        e_r_H_d_t = dc_a.get_e_r_H_d_t(q_hs_H_d_t, q_hs_rtd_H, q_hs_min_H, q_hs_mid_H, e_r_mid_H, e_r_min_H, e_r_rtd_H)
 
     """ E_E: 日付dの時刻tにおける1時間当たりの暖房時の消費電力量 (kWh/h) """
     # (5) 圧縮機の分
-    E_E_comp_H_d_t = get_E_E_comp_H_d_t(
+    E_E_comp_H_d_t = dc_a.get_E_E_comp_H_d_t(
                         q_hs_H_d_t,
-                        e_hs_H_d_t = get_e_hs_H_d_t(e_th_H_d_t, e_r_H_d_t))  # (7) 日付dの時刻tにおける暖房時の熱源機の効率(-)
+                        e_hs_H_d_t = dc_a.get_e_hs_H_d_t(e_th_H_d_t, e_r_H_d_t))  # (7) 日付dの時刻tにおける暖房時の熱源機の効率(-)
 
     E_E_H_d_t = E_E_comp_H_d_t + E_E_fan_H_d_t  # (1)
     return E_E_H_d_t
 
 def calc_E_E_H_d_t_type2(
-        type: int,
+        type: str,
         region: int,
         climateFile,
         E_E_fan_H_d_t: NDArray[Shape['8760'], Float64],
@@ -197,7 +168,7 @@ def calc_E_E_H_d_t_type2(
         input_C_af_H: float,
         dualcompressor_H: bool,
     ) -> NDArray[Shape['8760'], Float64]:
-    """ (1) E_E_H_d_t
+    """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_2, "type2 専用ロジック"
     # TODO: f_SFP_H: type2のみのパラメータ type4での使用は怪しい
@@ -215,7 +186,7 @@ def calc_E_E_H_d_t_type2(
 
 def calc_E_E_H_d_t_type4(
         case_name: str,
-        type: int,
+        type: str,
         region: int,
         climateFile,
         E_E_fan_H_d_t: NDArray[Shape['8760'], Float64],
@@ -227,7 +198,7 @@ def calc_E_E_H_d_t_type4(
         Theta_real_inner,
         RH_real_inner,
     ) -> NDArray[Shape['8760'], Float64]:
-    """ (1) E_E_H_d_t
+    """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_4, "type4 専用ロジック"
     # 『2.2 実験方法と実験条件』より
@@ -278,49 +249,49 @@ def calc_E_E_C_d_t_type1_and_type3(
         q_hs_rtd_C, P_fan_rtd_C, V_fan_rtd_C, P_hs_rtd_C,  # 定格冷房時
         EquipmentSpec,  # その他
     ) -> NDArray[Shape['8760'], Float64]:
-    """ (2) E_E_C_d_t
+    """ (2)改 E_E_C_d_t
     """
     assert type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3, "type1,3 専用ロジック"
 
     # (4) 潜熱/顕熱を使用せずに全熱負荷を再計算する
-    q_hs_C_d_t = get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
+    q_hs_C_d_t = dc_a.get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
 
     """ e_th: ヒートポンプサイクルの理論効率(-) """
     # (22) 中間冷房能力運転時
-    e_th_mid_C = calc_e_th_mid_C(type, V_fan_mid_C, q_hs_mid_C, q_hs_rtd_C)
+    e_th_mid_C = dc_a.calc_e_th_mid_C(type, V_fan_mid_C, q_hs_mid_C, q_hs_rtd_C)
     # (21) 定格冷房能力運転時
-    e_th_rtd_C = calc_e_th_rtd_C(type, V_fan_rtd_C, q_hs_rtd_C)
+    e_th_rtd_C = dc_a.calc_e_th_rtd_C(type, V_fan_rtd_C, q_hs_rtd_C)
     # (18) 日付dの時刻tにおける暖房時
-    e_th_C_d_t = calc_e_th_C_d_t(type, Theta_ex_d_t, Theta_hs_in_d_t, X_hs_in_d_t, Theta_hs_out_d_t, V_hs_supply_d_t, q_hs_rtd_C)
+    e_th_C_d_t = dc_a.calc_e_th_C_d_t(type, Theta_ex_d_t, Theta_hs_in_d_t, X_hs_in_d_t, Theta_hs_out_d_t, V_hs_supply_d_t, q_hs_rtd_C)
 
     """ e_r: ヒートポンプサイクルの理論効率に対する熱源機の効率の比(-) """
     if type == PROCESS_TYPE_1:
         # (11) 定格冷房能力運転時
-        e_r_rtd_C = get_e_r_rtd_C(e_th_rtd_C, q_hs_rtd_C, P_hs_rtd_C, P_fan_rtd_C)
+        e_r_rtd_C = dc_a.get_e_r_rtd_C(e_th_rtd_C, q_hs_rtd_C, P_hs_rtd_C, P_fan_rtd_C)
         # (15) 最小冷房能力運転時
-        e_r_min_C = get_e_r_min_C(e_r_rtd_C)
+        e_r_min_C = dc_a.get_e_r_min_C(e_r_rtd_C)
         # (13) 定格冷房能力運転時
-        e_r_mid_C = get_e_r_mid_C(e_r_rtd_C, e_th_mid_C, q_hs_mid_C, P_hs_mid_C, P_fan_mid_C, EquipmentSpec)
+        e_r_mid_C = dc_a.get_e_r_mid_C(e_r_rtd_C, e_th_mid_C, q_hs_mid_C, P_hs_mid_C, P_fan_mid_C, EquipmentSpec)
         # (9) 日付dの時刻tにおける冷房時
-        e_r_C_d_t = get_e_r_C_d_t(q_hs_C_d_t, q_hs_rtd_C, q_hs_min_C, q_hs_mid_C, e_r_mid_C, e_r_min_C, e_r_rtd_C)
+        e_r_C_d_t = dc_a.get_e_r_C_d_t(q_hs_C_d_t, q_hs_rtd_C, q_hs_min_C, q_hs_mid_C, e_r_mid_C, e_r_min_C, e_r_rtd_C)
     elif type == PROCESS_TYPE_3:  #コンプレッサ効率特性
         # TODO: 潜熱評価モデルが 潜熱(q_hs_CL) ではなく 全熱(q_hs_C) を使用してOKか確認
-        e_r_C_d_t = get_e_r_C_d_t_2023(q_hs_C_d_t)  # 日付dの時刻tにおける冷房時
+        e_r_C_d_t = dc_a.get_e_r_C_d_t_2023(q_hs_C_d_t)  # 日付dの時刻tにおける冷房時
     else:
         raise Exception('冷房設備機器の種類の入力が不正です。')
 
     """ E_E: 日付dの時刻tにおける1時間当たりの冷房時の消費電力量 (kWh/h) """
     # (6) 圧縮機の分
-    E_E_comp_C_d_t = get_E_E_comp_C_d_t(
+    E_E_comp_C_d_t = dc_a.get_E_E_comp_C_d_t(
                         q_hs_C_d_t,
-                        e_hs_C_d_t = get_e_hs_C_d_t(e_th_C_d_t, e_r_C_d_t))  # (8)
+                        e_hs_C_d_t = dc_a.get_e_hs_C_d_t(e_th_C_d_t, e_r_C_d_t))  # (8)
     _logger.NDdebug("E_E_comp_C_d_t", E_E_comp_C_d_t)
 
     E_E_C_d_t = E_E_comp_C_d_t + E_E_fan_C_d_t  # (2)
     return E_E_C_d_t
 
 def calc_E_E_C_d_t_type2(
-        type: int,
+        type: str,
         region: int,
         climateFile,
         E_E_fan_C_d_t: NDArray[Shape['8760'], Float64],
@@ -332,7 +303,7 @@ def calc_E_E_C_d_t_type2(
         input_C_af_C: float,
         dualcompressor_C: bool,
     ) -> NDArray[Shape['8760'], Float64]:
-    """ (2) E_E_C_d_t
+    """ (2)改 E_E_C_d_t
     """
     assert type == PROCESS_TYPE_2, "type2 専用ロジック"
 
@@ -350,11 +321,11 @@ def calc_E_E_C_d_t_type2(
 
 def calc_E_E_C_d_t_type4(
         case_name: str,
-        type: int,
+        type: str,
         region: int,
         climateFile,
         E_E_fan_C_d_t: NDArray[Shape['8760'], Float64],
-        q_hs_C_d_t: NDArray[Shape['8760'], Float64],
+        q_hs_C_d_t: NDArray[Shape['8760'], Float64],  # NOTE: CS/CL 足せばよい
         V_hs_supply_d_t: NDArray[Shape['8760'], Float64],
         P_rac_fan_rtd_C: float,
         simu_R_C,
@@ -362,7 +333,7 @@ def calc_E_E_C_d_t_type4(
         Theta_real_inner,
         RH_real_inner,
     ) -> NDArray[Shape['8760'], Float64]:
-    """ (2) E_E_C_d_t
+    """ (2)改 E_E_C_d_t
     """
     assert type == PROCESS_TYPE_4, "type4 専用ロジック"
 

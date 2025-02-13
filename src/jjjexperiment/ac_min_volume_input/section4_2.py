@@ -54,7 +54,7 @@ def get_V_hs_vent_d_t(
             V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
             # JJJ
             # WARNING: 既存の結果の多くに影響を与える
-            V_hs_vent_d_t[mask] = np.sum(V_vent_g_i[:5])
+            # V_hs_vent_d_t[mask] = np.sum(V_vent_g_i[:5])
 
     else:
         raise ValueError(general_ventilation)
