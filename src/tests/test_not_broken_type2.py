@@ -470,9 +470,8 @@ class Test既存計算維持_入力値切替_方式2:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_C == expected_result_type2.E_C
-        # FIXME: 変わるべきものが変わっていない
-        assert result['TValue'].E_H != expected_result_type2.E_H
-        assert math.isclose(result['TValue'].E_H, 41348.5747910848)
+        # NOTE: 2025/02まで変わっていたが、変わらないのが正となった
+        assert result['TValue'].E_H == expected_result_type2.E_H
 
     def test_入力値入替_H4(self, expected_result_type2):
         """ 以前のプログラムと同じ計算結果になる
@@ -621,9 +620,8 @@ class Test既存計算維持_入力値切替_方式2:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H == expected_result_type2.E_H
-        # FIXME: 変わるべきものが変わっていない
-        assert result['TValue'].E_C != expected_result_type2.E_C
-        assert math.isclose(result['TValue'].E_C, 14288.496130040254)
+        # NOTE: 2025/02まで変わっていたが、変わらないのが正となった
+        assert result['TValue'].E_C == expected_result_type2.E_C
 
     def test_入力値入替_R4(self, expected_result_type2):
         """ 以前のプログラムと同じ計算結果になる
