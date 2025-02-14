@@ -8,7 +8,7 @@ from jjjexperiment.options import *
 
 from test_utils.utils import *
 
-class Test既存計算維持_デフォルト入力時:
+class Test統合テスト_デフォルト入力時:
 
     _inputs1: dict = json.load(open(INPUT_SAMPLE_TYPE1_PATH, 'r'))
     _inputs2: dict = json.load(open(INPUT_SAMPLE_TYPE2_PATH, 'r'))

@@ -40,7 +40,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, YUCACO_r_A_ufvnt, climateFile):
     """未処理負荷と機器の計算に必要な変数を取得"""
 
-    # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_h, q_hs_rtd_C のどちらが None かで判別可能
+    # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_H, q_hs_rtd_C のどちらが None かで判別可能
 
     dimodule = JJJExperimentModule()
     dimodule.set_houseinfo(SampleHouseInfo(A_A, A_MR, A_OR, r_A_ufvnt, None))
