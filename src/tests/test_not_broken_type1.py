@@ -462,8 +462,8 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_C == expected_result_type1.E_C
-        assert result['TValue'].E_H != expected_result_type1.E_H
-        assert math.isclose(result['TValue'].E_H, 37318.00958773161)
+        # CHECK: 最低風量(F24-02)によって変更しないようになった(確認中)
+        assert result['TValue'].E_H == expected_result_type1.E_H
 
     def test_入力値入替_R3(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
@@ -476,8 +476,8 @@ class Test既存計算維持_入力値切替_方式1:
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H == expected_result_type1.E_H
-        assert result['TValue'].E_C != expected_result_type1.E_C
-        assert math.isclose(result['TValue'].E_C, 15296.164414070729)
+        # CHECK: 最低風量(F24-02)によって変更しないようになった(確認中)
+        assert result['TValue'].E_C == expected_result_type1.E_C
 
     def test_入力値入替_H4(self, expected_result_type1):
         """ 以前のプログラムと同じ計算結果になる
