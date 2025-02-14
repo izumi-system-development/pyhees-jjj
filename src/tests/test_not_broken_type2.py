@@ -464,7 +464,7 @@ class Test既存計算維持_入力値切替_方式2:
             H_A_general_ventilation
         """
         inputs = copy.deepcopy(self._inputs)
-        inputs["H_A"]["general_ventilation"] = 2
+        inputs["H_A"]["general_ventilation"] = 全般換気機能.なし.value  # デフォルトはあり
 
         result = calc(inputs, test_mode=True)
 
@@ -614,7 +614,7 @@ class Test既存計算維持_入力値切替_方式2:
             C_A_general_ventilation
         """
         inputs = copy.deepcopy(self._inputs)
-        inputs["C_A"]["general_ventilation"] = 2
+        inputs["C_A"]["general_ventilation"] = 全般換気機能.なし.value  # デフォルトはあり
 
         result = calc(inputs, test_mode=True)
 
