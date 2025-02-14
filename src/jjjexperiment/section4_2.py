@@ -218,7 +218,18 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['Q_hat_hs_d_t'] = Q_hat_hs_d_t
 
     # (39)　熱源機の最低風量
-    V_hs_min = dc.get_V_hs_min(V_vent_g_i)
+    if constants.input_V_hs_min == 最低風量直接入力.入力する.value:
+        match(q_hs_rtd_H, q_hs_rtd_C):
+            case(None, None):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+            case(None, _):
+                V_hs_min = constants.V_hs_min_H
+            case(_, None):
+                V_hs_min = constants.V_hs_min_C
+            case(_, _):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+    else:
+        V_hs_min = dc.get_V_hs_min(V_vent_g_i)
     df_output3['V_hs_min'] = [V_hs_min]
 
     ####################################################################################################################
