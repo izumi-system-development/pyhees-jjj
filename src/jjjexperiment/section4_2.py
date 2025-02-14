@@ -27,6 +27,7 @@ from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
 import jjjexperiment.carryover_heat as jjj_carryover_heat
+import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
 # DIコンテナー
 from injector import Injector
@@ -1079,7 +1080,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
     """ 熱源機の入口 - 熱源機の風量の計算 """
     # (35)　熱源機の風量のうちの全般換気分
-    V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
+    V_hs_vent_d_t = jjj_V_min_input.get_V_hs_vent_d_t(
+                        region, V_vent_g_i, general_ventilation,
+                        constants.input_V_hs_min)
     df_output['V_hs_vent_d_t'] = V_hs_vent_d_t
 
     # (34)　熱源機の風量
