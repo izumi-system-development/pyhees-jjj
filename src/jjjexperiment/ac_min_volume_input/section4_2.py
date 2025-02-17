@@ -24,8 +24,7 @@ def get_V_hs_vent_d_t(
         日付dの時刻tにおける 熱源機の風量のうちの全般換気分 [m3/h]
 
     """
-    H, C, M = dc.get_season_array_d_t(region)
-    mask = np.logical_or(H, C)
+    H, C, _ = dc.get_season_array_d_t(region)
 
     # NOTE: 下記ロジックより暖房冷房どちらか片方のみの最低風量入力はコントロールが困難なため
     # どちらか片方でも最低風量入力がある場合は、本ロジックを使用する
@@ -40,8 +39,7 @@ def get_V_hs_vent_d_t(
             V_hs_vent_d_t[C & (V_vent_g < constants.V_hs_min_C)] \
                 = constants.V_hs_min_C
         else:  # 最低風量直接入力なし
-            # NOTE: デフォルト条件はコチラです
-            # オリジナルそのまま
+            # デフォルト条件 -> オリジナルのまま
             V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
 
     # 全般換気の機能を有さない場合
@@ -51,11 +49,8 @@ def get_V_hs_vent_d_t(
             V_hs_vent_d_t[H] = constants.V_hs_min_H
             V_hs_vent_d_t[C] = constants.V_hs_min_C
         else:  # 最低風量直接入力なし
-            # オリジナル
+            # オリジナルのまま
             V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
-            # JJJ
-            # WARNING: 既存の結果の多くに影響を与える
-            V_hs_vent_d_t[mask] = np.sum(V_vent_g_i[:5])
 
     else:
         raise ValueError(general_ventilation)
