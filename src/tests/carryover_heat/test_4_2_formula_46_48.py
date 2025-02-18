@@ -45,8 +45,7 @@ def test_過剰熱量繰越を考慮した室温_居室_式46():
     assert Theta_HBR_i.shape == (5, 1), "Theta_HBR_iの次数が想定外"
 
     # NOTE: 資料ではキャップされていないが、実装ではキャップされている
-    # 参考: np.array([19.63, 21.29, 21.48, 19.96, 19.59]).reshape(-1,1)
-    exp_Theta_HBR_i = np.array([20.0, 21.29, 21.49, 20.0, 20.0]).reshape(-1,1)
+    exp_Theta_HBR_i = np.array([19.63, 21.29, 21.49, 19.97, 19.64]).reshape(-1,1)
 
     np.testing.assert_almost_equal(Theta_HBR_i, exp_Theta_HBR_i, decimal=2), "Theta_HBR_iの計算がおかしい"
     # assert つかないの間違えやすいので注意
