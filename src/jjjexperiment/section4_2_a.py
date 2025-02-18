@@ -8,13 +8,14 @@ import pyhees.section4_3
 
 # JJJ
 from jjjexperiment.denchu_1 import Spec
-from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
+from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as constants
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 import jjjexperiment.denchu_2 as denchu_2
 from jjjexperiment.options import *
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
+@log_res(['E_E_fan_H_d_t', 'q_hs_H_d_t'])
 def calc_E_E_fan_H_d_t(
         type, region, case_name,
         Theta_hs_out_d_t, Theta_hs_in_d_t,  # 空気温度
@@ -48,9 +49,9 @@ def calc_E_E_fan_H_d_t(
     else:
         raise ValueError(constants.input_V_hs_min)
 
-    _logger.NDdebug("E_E_fan_H_d_t", E_E_fan_H_d_t)
     return E_E_fan_H_d_t, q_hs_H_d_t
 
+@log_res(['E_E_fan_C_d_t', 'q_hs_CS_d_t', 'q_hs_CL_d_t'])
 def calc_E_E_fan_C_d_t(
         type, region, case_name,
         Theta_hs_out_d_t, Theta_hs_in_d_t,
@@ -90,9 +91,9 @@ def calc_E_E_fan_C_d_t(
     else:
         raise ValueError(constants.input_V_hs_min)
 
-    _logger.NDdebug("E_E_fan_C_d_t", E_E_fan_C_d_t)
     return E_E_fan_C_d_t, q_hs_CS_d_t, q_hs_CL_d_t
 
+@log_res(['E_E_H_d_t(type:1,3)'])
 def calc_E_E_H_d_t_type1_and_type3(
         type: str,
         E_E_fan_H_d_t: NDArray[Shape['8760'], Float64],
@@ -140,6 +141,7 @@ def calc_E_E_H_d_t_type1_and_type3(
     E_E_H_d_t = E_E_comp_H_d_t + E_E_fan_H_d_t  # (1)
     return E_E_H_d_t
 
+@log_res(['E_E_H_d_t(type:2)'])
 def calc_E_E_H_d_t_type2(
         type: str,
         region: int,
@@ -170,6 +172,7 @@ def calc_E_E_H_d_t_type2(
     E_E_H_d_t = E_E_fan_H_d_t + E_E_CRAC_H_d_t
     return E_E_H_d_t
 
+@log_res(['E_E_H_d_t(type:4)'])
 def calc_E_E_H_d_t_type4(
         case_name: str,
         type: str,
@@ -224,6 +227,7 @@ def calc_E_E_H_d_t_type4(
     E_E_H_d_t = E_E_fan_H_d_t + E_E_CRAC_H_d_t
     return E_E_H_d_t
 
+@log_res(['E_E_C_d_t(type:1,3)'])
 def calc_E_E_C_d_t_type1_and_type3(
         type, region,
         E_E_fan_C_d_t: NDArray[Shape['8760'], Float64],
@@ -276,6 +280,7 @@ def calc_E_E_C_d_t_type1_and_type3(
     E_E_C_d_t = E_E_comp_C_d_t + E_E_fan_C_d_t  # (2)
     return E_E_C_d_t
 
+@log_res(['E_E_C_d_t(type:2)'])
 def calc_E_E_C_d_t_type2(
         type: str,
         region: int,
@@ -305,6 +310,7 @@ def calc_E_E_C_d_t_type2(
     E_E_C_d_t = E_E_CRAC_C_d_t + E_E_fan_C_d_t  # (2)
     return E_E_C_d_t
 
+@log_res(['E_E_C_d_t(type:4)'])
 def calc_E_E_C_d_t_type4(
         case_name: str,
         type: str,

@@ -409,6 +409,7 @@ def get_e_r_H_d_t_2023(q_hs_H_d_t):
 
     return e_r_H_d_t
 
+@log_res(['e_r_H_d_t'])
 def get_e_r_H_d_t(q_hs_H_d_t, q_hs_rtd_H, q_hs_min_H, q_hs_mid_H, e_r_mid_H, e_r_min_H, e_r_rtd_H):
     """(9-1)(9-2)(9-3)(9-4)
 

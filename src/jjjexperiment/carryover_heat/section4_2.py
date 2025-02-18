@@ -51,7 +51,6 @@ def calc_carryover(
 # MATRIX[:, t] -> Shape(5, )
 # MATRIX[:, t:t+1] -> Shape(5, 1)
 
-@log_res(['L_star_H_i'])
 def get_L_star_H_i_2024(
         H: bool,
         L_H_i: NDArray[Shape["5, 1"], Float64],
@@ -82,7 +81,6 @@ def get_L_star_H_i_2024(
     assert np.all(0 <= L_star_H_i), "負荷バランス時の暖房負荷は負にならない"
     return L_star_H_i
 
-@log_res(['L_star_CS_i'])
 def get_L_star_CS_i_2024(
         C: bool,
         L_CS_i: NDArray[Shape["5, 1"], Float64],
