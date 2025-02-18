@@ -27,6 +27,7 @@ from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
 import jjjexperiment.carryover_heat as jjj_carryover_heat
+import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
 # DIコンテナー
 from injector import Injector
@@ -40,7 +41,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, YUCACO_r_A_ufvnt, climateFile):
     """未処理負荷と機器の計算に必要な変数を取得"""
 
-    # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_h, q_hs_rtd_C のどちらが None かで判別可能
+    # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_H, q_hs_rtd_C のどちらが None かで判別可能
 
     dimodule = JJJExperimentModule()
     dimodule.set_houseinfo(SampleHouseInfo(A_A, A_MR, A_OR, r_A_ufvnt, None))
@@ -218,7 +219,18 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['Q_hat_hs_d_t'] = Q_hat_hs_d_t
 
     # (39)　熱源機の最低風量
-    V_hs_min = dc.get_V_hs_min(V_vent_g_i)
+    if constants.input_V_hs_min == 最低風量直接入力.入力する.value:
+        match(q_hs_rtd_H, q_hs_rtd_C):
+            case(None, None):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+            case(None, _):
+                V_hs_min = constants.V_hs_min_H
+            case(_, None):
+                V_hs_min = constants.V_hs_min_C
+            case(_, _):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+    else:
+        V_hs_min = dc.get_V_hs_min(V_vent_g_i)
     df_output3['V_hs_min'] = [V_hs_min]
 
     ####################################################################################################################
@@ -1068,7 +1080,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
     """ 熱源機の入口 - 熱源機の風量の計算 """
     # (35)　熱源機の風量のうちの全般換気分
-    V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
+    V_hs_vent_d_t = jjj_V_min_input.get_V_hs_vent_d_t(
+                        region, V_vent_g_i, general_ventilation,
+                        constants.input_V_hs_min)
     df_output['V_hs_vent_d_t'] = V_hs_vent_d_t
 
     # (34)　熱源機の風量

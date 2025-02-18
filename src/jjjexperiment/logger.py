@@ -10,7 +10,8 @@ from os import path
 LOG_LEVEL = logging.DEBUG  # NOTE: 調査に合わせて変更する
 
 # LOG_PATH = path.join(path.dirname(path.dirname(__file__)), '/logs/test.log')
-LOG_PATH = Path('./logs/test.log')  # NOTE: テスト実行時のルートからのパス
+LOG_PATH = Path(path.join(path.dirname(__file__), '../logs/test.log')).resolve()
+# NOTE: テスト実行時のルートからのパス
 # HACK: 現在は単一のファイルを使いまわします
 
 FORMAT = logging.Formatter('%(message)s')
