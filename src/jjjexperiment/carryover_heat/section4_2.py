@@ -33,10 +33,13 @@ def calc_carryover(
     # 季節の判断
     if H and C:
         raise ValueError("想定外の季節")
+    # 暖冷房ともに有効であれば正となるように算出
     elif H:
-        temperature_diff = Theta_HBR_i - Theta_star_HBR
+        # 過剰熱量がない部屋は負の過剰熱量にならないようクリップする
+        temperature_diff = np.clip(Theta_HBR_i - Theta_star_HBR, 0, None)
     elif C:
-        temperature_diff = Theta_star_HBR - Theta_HBR_i
+        # 過剰熱量がない部屋は負の過剰熱量にならないようクリップする
+        temperature_diff = np.clip(Theta_star_HBR - Theta_HBR_i, 0, None)
     else:
         # 空調なし -> 過剰熱量なし
         return np.zeros((5, 1))
@@ -51,7 +54,6 @@ def calc_carryover(
 # MATRIX[:, t] -> Shape(5, )
 # MATRIX[:, t:t+1] -> Shape(5, 1)
 
-@log_res(['L_star_H_i'])
 def get_L_star_H_i_2024(
         H: bool,
         L_H_i: NDArray[Shape["5, 1"], Float64],
@@ -82,7 +84,6 @@ def get_L_star_H_i_2024(
     assert np.all(0 <= L_star_H_i), "負荷バランス時の暖房負荷は負にならない"
     return L_star_H_i
 
-@log_res(['L_star_CS_i'])
 def get_L_star_CS_i_2024(
         C: bool,
         L_CS_i: NDArray[Shape["5, 1"], Float64],
@@ -184,15 +185,15 @@ def get_Theta_HBR_i_2023(
         Theta_HBR_i = Theta_star_HBR \
                     + (ac_capacity + carryover_capacity - load_capacity) \
                     / (c_ac_air + c_prt + heat_loss + cbri)
-        # 負荷バランス時の居室の室温で下限を設定
-        Theta_HBR_i = np.clip(Theta_HBR_i, Theta_star_HBR, None)
+        # NOTE: 負荷バランス時の居室の室温で下限を設定 -> しない
+        # Theta_HBR_i = np.clip(Theta_HBR_i, Theta_star_HBR, None)
     elif C:  # 冷房期 (46-2)
         load_capacity = L_star_CS_i * 10**6  # [MJ/h] -> [J/h]
         Theta_HBR_i = Theta_star_HBR \
                     -1 * (ac_capacity + carryover_capacity - load_capacity) \
                     / (c_ac_air + c_prt + heat_loss + cbri)
-        # 負荷バランス時の居室の室温で上限を設定
-        Theta_HBR_i = np.clip(Theta_HBR_i, None, Theta_star_HBR)
+        # NOTE: 負荷バランス時の居室の室温で下限を設定 -> しない
+        # Theta_HBR_i = np.clip(Theta_HBR_i, None, Theta_star_HBR)
     elif M:  # 中間期 (46-3)
         Theta_HBR_i = Theta_star_HBR * np.ones((5, 1))
 
