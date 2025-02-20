@@ -998,7 +998,8 @@ def get_X_hs_in_d_t(X_NR_d_t):
 # 9.2 熱源機の出口における空気温度・絶対湿度
 # ============================================================================
 
-@log_res(['Theta_hs_out_d_t'])
+# 過剰熱量ループ内で使用
+# @log_res(['Theta_hs_out_d_t'])
 def get_Theta_hs_out_d_t(VAV, Theta_req_d_t_i, V_dash_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i, region, Theta_NR_d_t,
                          Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t):
     """(14-1)(14-2)(14-3)(14-4)(14-5)(14-6)
@@ -1198,7 +1199,8 @@ def get_X_star_hs_in_d_t(X_star_NR_d_t):
 # ============================================================================
 
 @constants.jjjexperiment_mod
-@log_res(['Theta_req_d_t_i'])
+# 過剰熱量ループ内で使用
+# @log_res(['Theta_req_d_t_i'])
 def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i,
                         l_duct_i, region):
     """(21-1)(21-2)(21-3)
@@ -1831,7 +1833,8 @@ def calc_Q_hat_hs_d_t(Q, A_A, V_vent_l_d_t, V_vent_g_i, mu_H, mu_C, J_d_t, q_gen
 # 10.1 吹き出し空気温度
 # ============================================================================
 
-@log_res(['Theta_supply_d_t_i'])
+# 過剰熱量ループ内で使用
+# @log_res(['Theta_supply_d_t_i'])
 def get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
                                                    V_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i, region):
     """(41-1)(41-2)(41-3)
@@ -1923,7 +1926,8 @@ def get_X_supply_d_t_i(X_star_HBR_d_t, X_hs_out_d_t, L_star_CL_d_t_i, region):
 # 10.3 吹き出し風量
 # ============================================================================
 
-@log_res(['V_supply_d_t_i'])
+# 過剰熱量ループ内で使用
+# @log_res(['V_supply_d_t_i'])
 def cap_V_supply_d_t_i(V_supply_d_t_i, V_dash_supply_d_t_i, V_vent_g_i, region, V_hs_dsgn_H, V_hs_dsgn_C):
 
     V_vent_g_i = np.reshape(V_vent_g_i, (5, 1))

@@ -27,6 +27,7 @@ from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
 import jjjexperiment.carryover_heat as jjj_carryover_heat
+import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
 # DIコンテナー
 from injector import Injector
@@ -40,7 +41,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, YUCACO_r_A_ufvnt, climateFile):
     """未処理負荷と機器の計算に必要な変数を取得"""
 
-    # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_h, q_hs_rtd_C のどちらが None かで判別可能
+    # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_H, q_hs_rtd_C のどちらが None かで判別可能
 
     dimodule = JJJExperimentModule()
     dimodule.set_houseinfo(SampleHouseInfo(A_A, A_MR, A_OR, r_A_ufvnt, None))
@@ -218,7 +219,18 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['Q_hat_hs_d_t'] = Q_hat_hs_d_t
 
     # (39)　熱源機の最低風量
-    V_hs_min = dc.get_V_hs_min(V_vent_g_i)
+    if constants.input_V_hs_min == 最低風量直接入力.入力する.value:
+        match(q_hs_rtd_H, q_hs_rtd_C):
+            case(None, None):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+            case(None, _):
+                V_hs_min = constants.V_hs_min_H
+            case(_, None):
+                V_hs_min = constants.V_hs_min_C
+            case(_, _):
+                raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+    else:
+        V_hs_min = dc.get_V_hs_min(V_vent_g_i)
     df_output3['V_hs_min'] = [V_hs_min]
 
     ####################################################################################################################
@@ -428,80 +440,60 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
                 # (33)
                 L_star_CL_d_t = dc.get_L_star_CL_d_t(L_star_CL_d_t_i)
-
                 # (32)
                 L_star_CS_d_t = dc.get_L_star_CS_d_t(L_star_CS_d_t_i)
-
                 # (31)
                 L_star_CL_max_d_t = dc.get_L_star_CL_max_d_t(L_star_CS_d_t)
-
                 # (30)
                 L_star_dash_CL_d_t = dc.get_L_star_dash_CL_d_t(L_star_CL_max_d_t, L_star_CL_d_t)
-
                 # (29)
                 L_star_dash_C_d_t = dc.get_L_star_dash_C_d_t(L_star_CS_d_t, L_star_dash_CL_d_t)
-
                 # (28)
                 SHF_dash_d_t = dc.get_SHF_dash_d_t(L_star_CS_d_t, L_star_dash_C_d_t)
-
                 # (27)
                 Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t_2024(type, q_hs_rtd_C, input_C_af_C)
-
                 # (26)
                 Q_hs_max_CL_d_t = dc.get_Q_hs_max_CL_d_t(Q_hs_max_C_d_t, SHF_dash_d_t, L_star_dash_CL_d_t)
-
                 # (25)
                 Q_hs_max_CS_d_t = dc.get_Q_hs_max_CS_d_t(Q_hs_max_C_d_t, SHF_dash_d_t)
-
                 # (24)
                 C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
-
                 # (23)
                 Q_hs_max_H_d_t = dc.get_Q_hs_max_H_d_t_2024(type, q_hs_rtd_H, C_df_H_d_t, input_C_af_H)
 
             elif type == PROCESS_TYPE_2 or type == PROCESS_TYPE_4:
                 # (24)　デフロストに関する暖房出力補正係数
                 C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
-
                 # 最大暖房能力比
                 q_r_max_H = rac.get_q_r_max_H(q_max_H, q_rtd_H)
-
                 # 最大暖房出力比
                 Q_r_max_H_d_t = rac.calc_Q_r_max_H_d_t(q_rtd_C, q_r_max_H, Theta_ex_d_t)
-
                 # 最大暖房出力
                 Q_max_H_d_t = rac.calc_Q_max_H_d_t(Q_r_max_H_d_t, q_rtd_H, Theta_ex_d_t, h_ex_d_t, input_C_af_H)
                 Q_hs_max_H_d_t = Q_max_H_d_t
-
                 # 最大冷房能力比
                 q_r_max_C = rac.get_q_r_max_C(q_max_C, q_rtd_C)
-
                 # 最大冷房出力比
                 Q_r_max_C_d_t = rac.calc_Q_r_max_C_d_t(q_r_max_C, q_rtd_C, Theta_ex_d_t)
-
                 # 最大冷房出力
                 Q_max_C_d_t = rac.calc_Q_max_C_d_t(Q_r_max_C_d_t, q_rtd_C, input_C_af_C)
                 Q_hs_max_C_d_t = Q_max_C_d_t
-
                 # 冷房負荷最小顕熱比
                 SHF_L_min_c = rac.get_SHF_L_min_c()
-
                 # 最大冷房潜熱負荷
                 L_max_CL_d_t = rac.get_L_max_CL_d_t(np.sum(L_CS_d_t_i, axis=0), SHF_L_min_c)
-
                 # 補正冷房潜熱負荷
                 L_dash_CL_d_t = rac.get_L_dash_CL_d_t(L_max_CL_d_t, np.sum(L_CL_d_t_i, axis=0))
                 L_dash_C_d_t = rac.get_L_dash_C_d_t(np.sum(L_CS_d_t_i, axis=0), L_dash_CL_d_t)
-
                 # 冷房負荷補正顕熱比
                 SHF_dash_d_t = rac.get_SHF_dash_d_t(np.sum(L_CS_d_t_i, axis=0), L_dash_C_d_t)
-
                 # 最大冷房顕熱出力, 最大冷房潜熱出力
                 Q_max_CS_d_t = rac.get_Q_max_CS_d_t(Q_max_C_d_t, SHF_dash_d_t)
                 Q_max_CL_d_t = rac.get_Q_max_CL_d_t(Q_max_C_d_t, SHF_dash_d_t, L_dash_CL_d_t)
                 Q_hs_max_C_d_t = Q_max_C_d_t
                 Q_hs_max_CL_d_t = Q_max_CL_d_t
                 Q_hs_max_CS_d_t = Q_max_CS_d_t
+
             else:
                 raise Exception('設備機器の種類の入力が不正です。')
             ####################################################################################################################
@@ -1068,7 +1060,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
     """ 熱源機の入口 - 熱源機の風量の計算 """
     # (35)　熱源機の風量のうちの全般換気分
-    V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, general_ventilation)
+    V_hs_vent_d_t = jjj_V_min_input.get_V_hs_vent_d_t(
+                        region, V_vent_g_i, general_ventilation,
+                        constants.input_V_hs_min)
     df_output['V_hs_vent_d_t'] = V_hs_vent_d_t
 
     # (34)　熱源機の風量

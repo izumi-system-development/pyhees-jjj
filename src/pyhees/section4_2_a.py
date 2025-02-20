@@ -331,7 +331,9 @@ def get_E_E_comp_H_d_t(q_hs_H_d_t, e_hs_H_d_t):
     """
     E_E_comp_H_d_t = np.zeros(24 * 365)
 
-    f = q_hs_H_d_t > 0
+    # NOTE(F24-01): np.clip(Theta_HBR_i, Theta_star_HBR, None)
+    # キャップをやめたことによる 0除算の対策
+    f = np.logical_and(q_hs_H_d_t > 0, e_hs_H_d_t > 0)
 
     E_E_comp_H_d_t[f] = (q_hs_H_d_t[f] / e_hs_H_d_t[f]) * 10 ** (-3)
 
@@ -409,6 +411,7 @@ def get_e_r_H_d_t_2023(q_hs_H_d_t):
 
     return e_r_H_d_t
 
+@log_res(['e_r_H_d_t'])
 def get_e_r_H_d_t(q_hs_H_d_t, q_hs_rtd_H, q_hs_min_H, q_hs_mid_H, e_r_mid_H, e_r_min_H, e_r_rtd_H):
     """(9-1)(9-2)(9-3)(9-4)
 
