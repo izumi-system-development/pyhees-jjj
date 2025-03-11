@@ -51,6 +51,7 @@ class Test統合テスト_デフォルト入力時:
         # inputs = change_testmode_input_V_hs_min_H(inputs)
         # inputs = change_testmode_input_V_hs_min_C(inputs)
         # inputs = change_testmode_carryover(inputs)
+        # inputs = change_testmode_VAV(inputs)
         # inputs = change_testmode_underfloor_old(inputs)
         # inputs = change_testmode_underfloor_new(inputs)
         result = calc(inputs, test_mode=True)
@@ -136,11 +137,19 @@ def change_testmode_VAV_cap2logic(inputs: dict):
     inputs_copied = copy.deepcopy(inputs)  # 複製しないと別テストで矛盾する
     return deep_update(inputs_copied, fixtures)
 
-def change_testmode_carryover(inputs: dict):
-    """ 熱繰越
-    """
+def change_testmode_carryover(inputs: dict) -> dict:
+    """ 熱繰越 """
     fixtures = {"carry_over_heat": 過剰熱量繰越計算.行う.value}
     inputs_copied = copy.deepcopy(inputs)  # 複製しないと別テストで矛盾する
+    return deep_update(inputs_copied, fixtures)
+
+def change_testmode_VAV(inputs: dict) -> dict:
+    """ VAV """
+    fixtures = {
+        "H_A": {"VAV": 2},
+        "C_A": {"VAV": 2},
+    }
+    inputs_copied = copy.deepcopy(inputs)
     return deep_update(inputs_copied, fixtures)
 
 def change_testmode_input_V_hs_min_H(inputs: dict):

@@ -915,6 +915,14 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
     # NOTE: 繰越の有無によってCSV出力が異ならないよう df_output の処理は以降に限定する
 
+    _logger.NDdebug("Theta_HBR_d_t_1", Theta_HBR_d_t_i[0])
+    _logger.NDdebug("Theta_HBR_d_t_2", Theta_HBR_d_t_i[1])
+    _logger.NDdebug("Theta_HBR_d_t_3", Theta_HBR_d_t_i[2])
+    _logger.NDdebug("Theta_HBR_d_t_4", Theta_HBR_d_t_i[3])
+    _logger.NDdebug("Theta_HBR_d_t_5", Theta_HBR_d_t_i[4])
+
+    _logger.NDdebug("Theta_NR_d_t", Theta_NR_d_t)
+
     if constants.carry_over_heat == 過剰熱量繰越計算.行う.value:
         df_carryover_output = df_carryover_output.assign(
             carryovers_i_1 = carryovers[0],
