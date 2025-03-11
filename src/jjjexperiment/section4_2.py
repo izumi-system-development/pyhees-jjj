@@ -305,12 +305,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         df_output2['r_supply_des_i'] = r_supply_des_i
         df_output = df_output.assign(
-            r_supply_des_d_t_1 = None,
-            r_supply_des_d_t_2 = None,
-            r_supply_des_d_t_3 = None,
-            r_supply_des_d_t_4 = None,
-            r_supply_des_d_t_5 = None
+            r_supply_des_d_t_1 = np.ones(24*365) * r_supply_des_i[0],
+            r_supply_des_d_t_2 = np.ones(24*365) * r_supply_des_i[1],
+            r_supply_des_d_t_3 = np.ones(24*365) * r_supply_des_i[2],
+            r_supply_des_d_t_4 = np.ones(24*365) * r_supply_des_i[3],
+            r_supply_des_d_t_5 = np.ones(24*365) * r_supply_des_i[4]
         )
+
     df_output = df_output.assign(
         V_dash_supply_d_t_1 = V_dash_supply_d_t_i[0],
         V_dash_supply_d_t_2 = V_dash_supply_d_t_i[1],
@@ -533,8 +534,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                                   Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
                                                   Theta_req_d_t_i[i])
 
-            # TODO: ここに前時刻の非居室の温度を使用して負荷を下げる
-            Theta_star_hs_in_d_t[t] = Theta_star_hs_in_d_t[0] if (isFirst or not (H[t] or C[t]))  \
+            # 前時刻の非居室の温度を熱源入口温度として使用して負荷を下げる
+            Theta_star_hs_in_d_t[t] = Theta_star_hs_in_d_t[0] \
+                if (isFirst or not (H[t] or C[t]))  \
                 else Theta_NR_d_t[t-1]
 
             # NOTE: 過剰熱量繰越 未利用の場合では、式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
@@ -819,8 +821,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                             Theta_req_d_t_i[i])
             assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
 
-        _logger.NDdebug("Theta_req_d_t_1", Theta_req_d_t_i[0])
-
         # (15)　熱源機の出口における絶対湿度
         X_hs_out_d_t = dc.get_X_hs_out_d_t(X_NR_d_t, X_req_d_t_i, V_dash_supply_d_t_i, X_hs_out_min_C_d_t, L_star_CL_d_t_i, region)
 
@@ -914,6 +914,14 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     ### 熱繰越 / 非熱繰越 の分岐が終了 -> 以降、共通の処理 ###
 
     # NOTE: 繰越の有無によってCSV出力が異ならないよう df_output の処理は以降に限定する
+
+    _logger.NDdebug("Theta_HBR_d_t_1", Theta_HBR_d_t_i[0])
+    _logger.NDdebug("Theta_HBR_d_t_2", Theta_HBR_d_t_i[1])
+    _logger.NDdebug("Theta_HBR_d_t_3", Theta_HBR_d_t_i[2])
+    _logger.NDdebug("Theta_HBR_d_t_4", Theta_HBR_d_t_i[3])
+    _logger.NDdebug("Theta_HBR_d_t_5", Theta_HBR_d_t_i[4])
+
+    _logger.NDdebug("Theta_NR_d_t", Theta_NR_d_t)
 
     if constants.carry_over_heat == 過剰熱量繰越計算.行う.value:
         df_carryover_output = df_carryover_output.assign(
