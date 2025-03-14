@@ -379,6 +379,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         L_star_H_d_t_i = np.zeros((5, 24 * 365))
 
         # 実際の居室・非居室の室温
+        Theta_star_hs_in_d_t = np.zeros(24 * 365)
         Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
         Theta_NR_d_t = np.zeros(24 * 365)
         # TODO: 空からappendしていくロジックに変更することで
@@ -503,7 +504,10 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             X_star_hs_in_d_t = dc.get_X_star_hs_in_d_t(X_star_NR_d_t)
 
             # (19)　負荷バランス時の熱源機の入口における空気温度
-            Theta_star_hs_in_d_t = dc.get_Theta_star_hs_in_d_t(Theta_star_NR_d_t)
+            # 前時刻の非居室の温度を熱源入口温度として使用して負荷を下げる
+            Theta_star_hs_in_d_t[t] = dc.get_Theta_star_hs_in_d_t(Theta_star_NR_d_t)[t] \
+                if (isFirst or not (H[t] or C[t]))  \
+                else Theta_NR_d_t[t-1]
 
             # (18)　熱源機の出口における空気温度の最低値
             X_hs_out_min_C_d_t = dc.get_X_hs_out_min_C_d_t(X_star_hs_in_d_t, Q_hs_max_CL_d_t, V_dash_supply_d_t_i)
@@ -533,11 +537,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     Theta_req_d_t_i[i] = np.where(mask,
                                                   Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
                                                   Theta_req_d_t_i[i])
-
-            # 前時刻の非居室の温度を熱源入口温度として使用して負荷を下げる
-            Theta_star_hs_in_d_t[t] = Theta_star_hs_in_d_t[0] \
-                if (isFirst or not (H[t] or C[t]))  \
-                else Theta_NR_d_t[t-1]
 
             # NOTE: 過剰熱量繰越 未利用の場合では、式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
             # Theta_NR_d_t = np.zeros(24 * 365)
