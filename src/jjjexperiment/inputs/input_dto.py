@@ -1,4 +1,5 @@
 import yaml
+from typing import Optional
 from pydantic import BaseModel, ValidationError
 
 class InputDto(BaseModel):
@@ -7,10 +8,14 @@ class InputDto(BaseModel):
     A_MR: float
     A_OR: float
     region: int
+    sol_region: Optional[int]
     A_env: float
     U_A: float
     eta_A_H: float
     eta_A_C: float
+    R_g: float
+    TS: bool
+    r_A_ufvnt: Optional[float]
 
 def load_input_yaml(yaml_path: str) -> InputDto:
     try:

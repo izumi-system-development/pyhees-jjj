@@ -28,6 +28,14 @@ class EnvironmentEntity:
         mu_C = gihi.get_mu_C(self.__input.eta_A_C, self.r_env)
         return mu_C
 
+    def get_A_HCZ_i(self) -> NDArray[Shape["12, 1"], Float64]:
+        return np.array([ld.get_A_HCZ_i(i, self.__input.A_A, self.__input.A_MR, self.__input.A_OR) for i in range(1, 13)]) \
+            .reshape(-1, 1)
+
+    def get_A_HCZ_R_i(self) -> NDArray[Shape["12, 1"], Float64]:
+        return np.array([ld.get_A_HCZ_R_i(i) for i in range(1, 13)]) \
+            .reshape(-1, 1)
+
     def get_V_vent_g_i(self) -> NDArray[Shape["5, 1"], Float64]:
         # (62) 全般換気量
         A_HCZ_i = [ld.get_A_HCZ_i(i, self.__input.A_A, self.__input.A_MR, self.__input.A_OR) for i in range(1, 6)]
@@ -72,6 +80,8 @@ class EnvironmentEntity:
         return w_gen_d_t
 
     def get_Q(self) -> float:
+        # (1) 熱損失係数(換気による熱損失を含まない)
         Q_dash = gihi.get_Q_dash(self.__input.U_A, self.r_env)
+        # (15) 熱損失係数
         Q = ld.get_Q(Q_dash)
         return Q
