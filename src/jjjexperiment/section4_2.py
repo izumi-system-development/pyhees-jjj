@@ -20,6 +20,7 @@ import pyhees.section4_2_a as dc_a
 
 """ JJJ_EXPERIMENT ORIGINAL """
 
+from jjjexperiment.common import *
 import jjjexperiment.constants as constants
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
@@ -34,7 +35,7 @@ from injector import Injector
 from jjjexperiment.di_container import *
 
 # NOTE: section4_2 の同名の関数の改変版
-@constants.jjjexperiment_clone
+@jjj_clone
 def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, q_rtd_H, q_rtd_C, q_max_H, q_max_C, V_hs_dsgn_H, V_hs_dsgn_C, Q,
             VAV, general_ventilation, hs_CAV, duct_insulation, region, L_H_d_t_i, L_CS_d_t_i, L_CL_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i,
             type, input_C_af_H, input_C_af_C,

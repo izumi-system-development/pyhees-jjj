@@ -25,6 +25,7 @@ from pyhees.section11_1 import \
     calc_h_ex
 
 # JJJ_EXPERIMENT ADD
+from jjjexperiment.common import *
 import jjjexperiment.constants as constants
 
 # ============================================================================
@@ -171,7 +172,7 @@ def get_C_af_H(input_C_af_H):
 
 
 # デフロストに関する暖房出力補正係数
-@constants.jjjexperiment_mod
+@jjj_mod
 def get_C_df_H(Theta_ex, h_ex):
     """デフロストに関する暖房出力補正係数
 
@@ -246,7 +247,7 @@ def calc_E_E_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t):
 
     return E_E_H_d_t
 
-@constants.jjjexperiment_clone
+@jjj_clone
 def calc_E_E_H_d_t_2024(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t, q_max_C, q_max_H, input_C_af_H, climateFile):
     """消費電力量 (5)
 
@@ -414,7 +415,7 @@ def calc_a_eq7(q_rtd_C, dualcompressor, Theta_ex):
 
 # 係数p_i (8) (i=0,1,2,10..42)
 # (容量可変型コンプレッサー搭載ルームエアコンディショナーでないルームエアコンディショナー)
-@constants.jjjexperiment_mod
+@jjj_mod
 def calc_p_i_eq8(i, q_rtd_C):
     """係数p_i
 
@@ -841,7 +842,7 @@ def get_C_af_C(input_C_af_C):
       return float(input_C_af_C['C_af_C'])
 
 # 室内機吸い込み湿度に関する冷房能力補正係 C_hm_C
-@constants.jjjexperiment_mod
+@jjj_mod
 def get_C_hm_C():
     """室内機吸い込み湿度に関する冷房能力補正係数 C_hm_C
 
@@ -1040,7 +1041,7 @@ def calc_E_E_C_d_t(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t)
 
     return E_E_C_d_t
 
-@constants.jjjexperiment_clone
+@jjj_clone
 def calc_E_E_C_d_t_2024(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t, q_max_C, input_C_af_C, climateFile):
     """消費電力量 (20)
 

@@ -54,6 +54,7 @@ from pyhees.section11_6 import \
 
 # JJJ_EXPERIMENT ADD
 import jjjexperiment.constants as constants
+from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 from jjjexperiment.options import *
 from jjjexperiment.di_container import *
@@ -668,7 +669,7 @@ def get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region):
     L_star_H_d_t_i[Hf] = np.clip(L_H_d_t_i[Hf] + Q_star_trs_prt_d_t_i[Hf], 0, None)
     return L_star_H_d_t_i
 
-@constants.jjjexperiment_clone
+@jjj_clone
 @log_res(['L_star_newuf_H_d_t_i'])
 def get_L_star_newuf_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
                        A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t_i, Theta_ex_d_t,
@@ -745,7 +746,7 @@ def get_L_star_newuf_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
     # 床下→居室全体の項はプラスに働くので負荷としてはマイナス
     return L_star_H_d_t_i, Theta_uf_supply_d_t
 
-@constants.jjjexperiment_clone
+@jjj_clone
 def get_delta_L_star_newuf(
   region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
   V_dash_supply_d_t_i, L_dash_H_R_d_t, L_dash_CS_R_d_t, Theta_star_HBR_d_t, R_g, di: Injector = None):
@@ -1198,7 +1199,7 @@ def get_X_star_hs_in_d_t(X_star_NR_d_t):
 # 9.4 熱源機の出口における要求空気温度・絶対湿度
 # ============================================================================
 
-@constants.jjjexperiment_mod
+@jjj_mod
 # 過剰熱量ループ内で使用
 # @log_res(['Theta_req_d_t_i'])
 def get_Theta_req_d_t_i(Theta_sur_d_t_i, Theta_star_HBR_d_t, V_dash_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i,

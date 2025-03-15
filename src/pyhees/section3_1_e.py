@@ -8,6 +8,7 @@ from functools import lru_cache
 
 # JJJ_EXPERIMENT ADD
 import jjjexperiment.constants as constants
+from jjjexperiment.common import *
 from jjjexperiment.options import *
 from jjjexperiment.logger import log_res
 from jjjexperiment.di_container import *
@@ -363,7 +364,7 @@ def get_table_e_6():
 # E.5 地盤またはそれを覆う基礎
 # ============================================================================
 
-@constants.jjjexperiment_mod
+@jjj_mod
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
                L_dash_H_R_d_t,
