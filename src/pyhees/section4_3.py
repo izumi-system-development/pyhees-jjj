@@ -19,6 +19,7 @@ from pyhees.section4_3_a import \
     get_q_max_C
 
 from pyhees.section11_1 import \
+    load_outdoor, \
     load_climate, \
     get_Theta_ex, \
     get_X_ex, \
@@ -1459,7 +1460,6 @@ def get_E_M_C_d_t():
 
 
 if __name__ == '__main__':
-    from section11_1 import load_outdoor
 
     outdoor = load_outdoor()
 

@@ -1781,10 +1781,10 @@ def calc_Q_hat_hs_d_t(Q, A_A, V_vent_l_d_t, V_vent_g_i, mu_H, mu_C, J_d_t, q_gen
       q_p_CS: 冷房期における人体からの1人当たりの顕熱発熱量（W/人）
       q_p_CL: 冷房期における人体からの1人当たりの潜熱発熱量（W/人）
       X_ex_d_t: 日付dの時刻tにおける外気の絶対湿度（kg/kg(DA)）
-      w_gen_d_t: param Theta_ex_d_t: 日付dの時刻tにおける外気温度（℃）
+      w_gen_d_t: 日付dの時刻tにおける内部発湿量（kg/h）
+      Theta_ex_d_t: 日付dの時刻tにおける外気温度（℃）
       L_wtr: 水の蒸発潜熱（kJ/kg）
       region: 地域区分
-      Theta_ex_d_t: returns: 日付dの時刻tにおける１時間当たりの熱源機の風量を計算するための熱源機の暖房出力（MJ/h）
 
     Returns:
       日付dの時刻tにおける１時間当たりの熱源機の風量を計算するための熱源機の暖房出力（MJ/h）
