@@ -2,12 +2,46 @@ from nptyping import Float64, NDArray, Shape
 import numpy as np
 
 import pyhees.section3_1 as ld
+import pyhees.section3_1_e as algo
 import pyhees.section3_2 as gihi
 import pyhees.section4_2 as dc
 import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
 # JJJ
 from jjjexperiment.common import *
+
+def calc_Theta_uf(
+        L_H_flr1st: float,
+        A_s_ufvnt: float,
+        Theta_in: float,
+        Theta_ex: float,
+        V_flr1st: float,
+        ) -> float:
+    """床下空間の温度 (40-4) 単時点
+
+    Args:
+        L_H_flr1st: 一階部分の1時間当たりの暖房負荷 [MJ/h]
+        A_s_ufvnt: 空気を供給する床下空間に接する床の面積 [m2]
+        Theta_in: 室温 [℃]
+        Theta_ex: 外気温度 [℃]
+        V_flr1st: 第1床面積 [m2]
+    Returns:
+        床下空間の温度 [℃]
+    """
+    ro_air = dc.get_ro_air()    # 空気密度 [kg/m3]
+    c_p_air = algo.get_c_p_air()  # 空気の比熱 [kJ/kgK]
+    U_s = dc.get_U_s()          # 床の熱貫流率 [W/m2K]
+
+    H_floor = 0.7  # 床の温度差係数(-) 損失として
+
+    a1 = L_H_flr1st * 1e+3
+    a2 = U_s * A_s_ufvnt * (Theta_in - Theta_ex) * H_floor * 3.6
+    a3 = Theta_in * (ro_air * c_p_air * V_flr1st + U_s * A_s_ufvnt * 3.6)
+    b1 = ro_air * c_p_air * V_flr1st + U_s * A_s_ufvnt * 3.6
+
+    Theta_uf = (a1 - a2 + a3) / b1
+    return Theta_uf
+
 
 @jjj_clone
 def calc_Q_hat_hs(
@@ -63,8 +97,8 @@ def calc_Q_hat_hs(
         case JJJ_HCM.H:
             # (40-1b)
             Q_hat_hs_H = (
-                (Q - 0.35 * 0.5 * 2.4) * A_A
-                + (c_p_air * rho_air * (V_vent_l + np.sum(V_vent_g_i))) / 3600
+                (Q - 0.35 * 0.5 * 2.4) * A_A  # 外皮
+                + (c_p_air * rho_air * (V_vent_l + np.sum(V_vent_g_i))) / 3600  # 換気
                 ) * (Theta_set_H - Theta_ex)
             Q_hat_hs_H -= mu_H * A_A * J  # 日射
             Q_hat_hs_H -= q_gen  # 内部発熱
