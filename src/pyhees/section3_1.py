@@ -1345,7 +1345,7 @@ def get_Q_HEXC(region, Q, hex, etr_dash_t):
 
 
 def get_Q(Q_dash):
-    """熱損失係数
+    """式(15) 熱損失係数
 
     Args:
       Q_dash(float): 熱損失係数（換気による熱損失を含まない）(W/m2K)

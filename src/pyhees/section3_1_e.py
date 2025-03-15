@@ -30,6 +30,7 @@ def get_ro_air():
     return 1.20
 
 
+# section4_2.get_c_p_air() と単位が異なるので注意
 def get_c_p_air():
     """空気の比熱 (kJ/(kg・K))
 
@@ -317,6 +318,7 @@ def calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR):
 
     # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積 (m2) (7)
     A_s_ufvnt_i = r_A_uf_i * A_HCZ_i * r_A_ufvnt
+    # 部屋面積 * 床面積比 * 有効率
 
     return A_s_ufvnt_i
 
@@ -487,11 +489,13 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     if r_A_ufvnt is None:
         r_A_ufvnt = 0
 
-    # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
-    A_s_ufvnt = [calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)]
+    # 暖冷房区画iの 当該住戸の空気を供給する床下空間に接する床の面積(m2) (7)
+    A_s_ufvnt_i = [calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)]
 
     # 当該住戸の空気を供給する床下空間に接する床の面積の合計 (m2) (8)
     A_s_ufvnt_A = get_A_s_ufvnt_A(r_A_ufvnt, A_A, A_MR, A_OR)
+    # CHECK: 上の式、わざわざ sum() にしていないので異なるからか?
+    # assert np.isclose(A_s_ufvnt_A, sum(A_s_ufvnt_i))
 
     # 当該住戸の外気を導入する床下空間の基礎外周長さ (6)
     L_uf = get_L_uf(A_s_ufvnt_A)
@@ -499,6 +503,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     H_floor = 0.7
 
     # 基礎の線熱貫流率Ψ (W/m*K) (5)
+    # CHECK: psi, phi 一致していないが問題ないのか?
     psi = get_phi(region, Q)
 
     Theta_star = np.zeros(12)
@@ -537,12 +542,12 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           endi = 12  # NOTE: 熱貫流は1階床全体とする(=> 12でも内部的には(i=1,2,6,7,8,9))
           # 当該住宅の床下温度 (1)
           theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa
-                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, endi+1)])
+                        + (sum([U_s * A_s_ufvnt_i[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, endi+1)])
                           + psi * L_uf * Theta_ex_d_t[dt]
                           + (A_s_ufvnt_A / R_g)
                             * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g)) * 3.6) \
                       / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, endi+1)])
+                        + (sum([U_s * A_s_ufvnt_i[i - 1] * H_star[i - 1] for i in range(1, endi+1)])
                           + psi * L_uf
                           + (A_s_ufvnt_A / R_g)
                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
@@ -628,7 +633,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           f"Theta_uf_d_t": Theta_uf_d_t,
         })
 
-    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
+    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt_i, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
 
 @log_res(['Theta_uf_d_t'])
 def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_dash_supply_d_t_i, Theta_ex_d_t):
