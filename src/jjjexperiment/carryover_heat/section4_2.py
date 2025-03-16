@@ -266,11 +266,11 @@ def get_Theta_NR_2023(
     # 暖房期に 過剰熱量が有効
     elif H:
         ac_theta_diff = Theta_NR_before - Theta_star_NR
-        assert ac_theta_diff >= 0, "想定外の温度差"
+        assert ac_theta_diff >= 0, f"想定外の温度差 {Theta_NR_before} >= {Theta_star_NR}"
     # 冷房期に 過剰熱量が有効
     elif C:
         ac_theta_diff = Theta_NR_before - Theta_star_NR
-        assert ac_theta_diff <= 0, "想定外の温度差"
+        assert ac_theta_diff <= 0, f"想定外の温度差 {Theta_NR_before} <= {Theta_star_NR}"
     else:
         ac_theta_diff = 0  # 使用されないが定義は必要
         pass

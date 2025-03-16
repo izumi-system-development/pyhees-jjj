@@ -144,6 +144,76 @@ def calc(input_data: dict, test_mode=False):
     Q_UT_H_d_t_i: np.ndarray
     """暖房設備機器等の未処理暖房負荷(MJ/h)"""
 
+    def arr_summary(arr: np.ndarray):
+        return {
+            "MAX  ": max(arr),
+            "ZEROS": arr.size - np.count_nonzero(arr),
+            "AVG  ": np.average(arr[np.nonzero(arr)])
+        }
+
+    calc_Q_UT_A_input = {
+        'case_name': case_name,
+        'A_A': A_A,
+        'A_MR': A_MR,
+        'A_OR': A_OR,
+        'r_env': r_env,
+        'mu_H': mu_H,
+        'mu_C': mu_C,
+        'q_hs_rtd_H': H_A['q_hs_rtd_H'],
+        'q_hs_rtd_C': None,
+        'q_rtd_H': q_rtd_H,
+        'q_rtd_C': q_rtd_C,
+        'q_max_H': q_max_H,
+        'q_max_C': q_max_C,
+        'V_hs_dsgn_H': V_hs_dsgn_H,
+        'V_hs_dsgn_C': V_hs_dsgn_C,
+        'Q': Q,
+        'VAV': H_A['VAV'],
+        'general_ventilation': H_A['general_ventilation'],
+        'hs_CAV': hs_CAV,
+        'duct_insulation': H_A['duct_insulation'],
+        'region': region,
+        'L_H_d_t_1': arr_summary(L_H_d_t_i[0]),
+        'L_H_d_t_2': arr_summary(L_H_d_t_i[1]),
+        'L_H_d_t_3': arr_summary(L_H_d_t_i[2]),
+        'L_H_d_t_4': arr_summary(L_H_d_t_i[3]),
+        'L_H_d_t_5': arr_summary(L_H_d_t_i[4]),
+        'L_CS_d_t_1': arr_summary(L_CS_d_t_i[0]),
+        'L_CS_d_t_2': arr_summary(L_CS_d_t_i[1]),
+        'L_CS_d_t_3': arr_summary(L_CS_d_t_i[2]),
+        'L_CS_d_t_4': arr_summary(L_CS_d_t_i[3]),
+        'L_CS_d_t_5': arr_summary(L_CS_d_t_i[4]),
+        'L_CL_d_t_1': arr_summary(L_CL_d_t_i[0]),
+        'L_CL_d_t_2': arr_summary(L_CL_d_t_i[1]),
+        'L_CL_d_t_3': arr_summary(L_CL_d_t_i[2]),
+        'L_CL_d_t_4': arr_summary(L_CL_d_t_i[3]),
+        'L_CL_d_t_5': arr_summary(L_CL_d_t_i[4]),
+        'L_dash_H_R_d_t_1': arr_summary(L_dash_H_R_d_t_i[0]),
+        'L_dash_H_R_d_t_2': arr_summary(L_dash_H_R_d_t_i[1]),
+        'L_dash_H_R_d_t_3': arr_summary(L_dash_H_R_d_t_i[2]),
+        'L_dash_H_R_d_t_4': arr_summary(L_dash_H_R_d_t_i[3]),
+        'L_dash_H_R_d_t_5': arr_summary(L_dash_H_R_d_t_i[4]),
+        'L_dash_CS_R_d_t_1': arr_summary(L_dash_CS_R_d_t_i[0]),
+        'L_dash_CS_R_d_t_2': arr_summary(L_dash_CS_R_d_t_i[1]),
+        'L_dash_CS_R_d_t_3': arr_summary(L_dash_CS_R_d_t_i[2]),
+        'L_dash_CS_R_d_t_4': arr_summary(L_dash_CS_R_d_t_i[3]),
+        'L_dash_CS_R_d_t_5': arr_summary(L_dash_CS_R_d_t_i[4]),
+        'type': H_A['type'],
+        'input_C_af_H': input_C_af_H,
+        'input_C_af_C': input_C_af_C,
+        'r_A_ufvnt': r_A_ufvnt,
+        'underfloor_insulation': underfloor_insulation,
+        'underfloor_air_conditioning_air_supply': underfloor_air_conditioning_air_supply,
+        'YUCACO_r_A_ufvnt': YUCACO_r_A_ufvnt,
+        'climateFile': climateFile
+    }
+    if test_mode and False:
+        # 調査用
+        with open(case_name + constants.version_info() + '_calc_Q_UT_A_input.json', 'w') as json_file:
+            json.dump(calc_Q_UT_A_input, json_file, indent=4, ensure_ascii=False)
+    else:
+        pass
+
     _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t, \
         = jjj_dc.calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C,
             H_A['q_hs_rtd_H'], None,

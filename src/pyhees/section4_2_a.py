@@ -356,6 +356,7 @@ def get_E_E_comp_C_d_t(q_hs_C_d_t, e_hs_C_d_t):
     f = q_hs_C_d_t > 0
 
     E_E_comp_C_d_t[f] = (q_hs_C_d_t[f] / e_hs_C_d_t[f]) * 10 ** (-3)
+    # WARNING: 過剰熱量 & VAV のとき、除算において RuntimeWarning が発生する
 
     return E_E_comp_C_d_t
 
