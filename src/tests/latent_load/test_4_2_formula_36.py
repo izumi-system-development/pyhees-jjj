@@ -6,7 +6,7 @@ import pyhees.section4_2 as dc
 
 # JJJ
 import jjjexperiment.input as input
-import jjjexperiment.constants as constants
+import jjjexperiment.constants as jjj_consts
 # JJJ-Test
 from test_utils.utils import INPUT_SAMPLE_TYPE3_PATH
 
@@ -41,7 +41,7 @@ class Test風量特性_熱源機:
             'airvolume_maximum': cls._airvolume_maximum_H,
         }
         inputs['H_A'].update(fixture_H)
-        constants.set_constants(inputs)
+        jjj_consts.set_constants(inputs)
 
         _, _, _, _, _, cls._region, _ = input.get_basic(inputs)
         cls._H, cls._C, cls._M = dc.get_season_array_d_t(cls._region)
@@ -49,10 +49,10 @@ class Test風量特性_熱源機:
     def test_夏季の冷房出力_特性曲線上(self):
         def x(y):
             """簡易的に二次曲線でテストする"""
-            return (y - constants.airvolume_coeff_a0_C) / constants.airvolume_coeff_a1_C
+            return (y - jjj_consts.airvolume_coeff_a0_C) / jjj_consts.airvolume_coeff_a1_C
 
-        x1 = x(constants.airvolume_minimum_C)
-        x2 = x(constants.airvolume_maximum_C)
+        x1 = x(jjj_consts.airvolume_minimum_C)
+        x2 = x(jjj_consts.airvolume_maximum_C)
         x_mid = math.floor(x1 + (x2-x1) / 2)  # 非キャップ座標
 
         Q_hat_hs_d_t = np.ones(24 * 365) * kw2mjph(x_mid)
@@ -60,7 +60,7 @@ class Test風量特性_熱源機:
 
         def y(x):
             """簡易的に二次曲線でテストする"""
-            return constants.airvolume_coeff_a1_C * x + constants.airvolume_coeff_a0_C
+            return jjj_consts.airvolume_coeff_a1_C * x + jjj_consts.airvolume_coeff_a0_C
 
         indices_C = np.where(self._C == True)[0]
         np.testing.assert_allclose(sut[indices_C], y(x_mid) * 60)  # m3/h
@@ -86,10 +86,10 @@ class Test風量特性_熱源機:
     def test_冬季の暖房出力_特性曲線上(self):
         def x(y):
             """簡易的に二次曲線でテストする"""
-            return (y - constants.airvolume_coeff_a0_H) / constants.airvolume_coeff_a1_H
+            return (y - jjj_consts.airvolume_coeff_a0_H) / jjj_consts.airvolume_coeff_a1_H
 
-        x1 = x(constants.airvolume_minimum_H)
-        x2 = x(constants.airvolume_maximum_H)
+        x1 = x(jjj_consts.airvolume_minimum_H)
+        x2 = x(jjj_consts.airvolume_maximum_H)
         x_mid = math.floor(x1 + (x2-x1) / 2)  # 非キャップ座標
 
         Q_hat_hs_d_t = np.ones(24 * 365) * kw2mjph(x_mid)
@@ -97,7 +97,7 @@ class Test風量特性_熱源機:
 
         def y(x):
             """簡易的に二次曲線でテストする"""
-            return constants.airvolume_coeff_a1_H * x + constants.airvolume_coeff_a0_H
+            return jjj_consts.airvolume_coeff_a1_H * x + jjj_consts.airvolume_coeff_a0_H
 
         indices_H = np.where(self._H == True)[0]
         np.testing.assert_allclose(sut[indices_H], y(x_mid) * 60)  # m3/h
