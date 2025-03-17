@@ -21,12 +21,13 @@ import pyhees.section4_2_a as dc_a
 """ JJJ_EXPERIMENT ORIGINAL """
 
 from jjjexperiment.common import *
-import jjjexperiment.constants as constants
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
 from jjjexperiment.options import *
 from jjjexperiment.helper import *
 
+import jjjexperiment.constants as jjj_consts
+import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.carryover_heat as jjj_carryover_heat
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 import jjjexperiment.underfloor_ac as jjj_ufac
@@ -644,24 +645,55 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             house_info.r_A_ufac = r_A_ufac
         del r_A_ufvnt
 
-        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        # (9) 熱取得を含む負荷バランス時の冷房顕熱負荷
+        L_star_CS_d_t_i = dc.get_L_star_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region)
+        # (8) 熱損失を含む負荷バランス時の暖房負荷
+        L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region)
+
+        # (8)(9) 負荷バランス時の暖冷房負荷 補正
+        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
             # FIXME: 床下限定の数値だがとりあえず評価する L_star_の計算で不要なら無視されている
             # NOTE: 新ロジックでのみ 期待される床下温度を事前に計算(本計算は後で行う)
             Theta_uf_d_t_2023 = algo.calc_Theta_uf_d_t_2023(
                 L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
 
-            # (9)' 熱取得を含む負荷バランス時の冷房顕熱負荷
-            L_star_CS_d_t_i = \
-                jjj_ufac.get_L_star_newuf_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region,
-                        A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t_2023,
-                        Theta_ex_d_t, V_dash_supply_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, Theta_star_HBR_d_t, R_g, di)
+            # CHECK: フラグ管理不要なら消す
+            if jjj_consts.done_binsearch_newufac:
+                pass
+            else:
+                L_normal_uf2room_d_t_i, L_new_uf2room_d_t_i, L_uf2outdoor_d_t_i, L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
+                    = jjj_ufac.get_delta_L_star_newuf(
+                        region = region,
+                        A_A = A_A,
+                        A_MR = A_MR,
+                        A_OR = A_OR,
+                        Q = Q,
+                        r_A_ufac = r_A_ufac,
+                        underfloor_insulation = underfloor_insulation,
+                        Theta_uf_d_t = Theta_uf_d_t_2023,
+                        Theta_ex_d_t = Theta_ex_d_t,
+                        V_dash_supply_d_t_i = V_dash_supply_d_t_i,
+                        L_dash_H_R_d_t_i = L_dash_H_R_d_t_i,
+                        L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
+                        Theta_star_HBR_d_t = Theta_star_HBR_d_t,
+                        R_g = R_g)
 
-            # (8)' 熱損失を含む負荷バランス時の暖房負荷
-            # 暖房負荷を補正する(暖房負荷 - 床下への損失 + 床下からの地盤への熱損失 + 床下から外気への熱損失)
-            L_star_H_d_t_i, Theta_uf_supply_d_t = \
-                jjj_ufac.get_L_star_newuf_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
-                        A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t_2023,
-                        Theta_ex_d_t, V_dash_supply_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, Theta_star_HBR_d_t, R_g, di)
+            # (9) 補正
+            Cf = np.logical_and(C, L_CS_d_t_i[:5] > 0)
+            L_star_CS_d_t_i -= L_normal_uf2room_d_t_i[Cf]
+
+            # NOTE: 送風経路の負荷は部屋の負荷には含めない(24'07)
+            # + L_uf2outdoor_d_t_i[Cf] + L_uf2gnd_d_t_i[Cf],
+
+            # (8) 補正
+            Hf = np.logical_and(H, L_H_d_t_i[:5] > 0)
+            L_star_H_d_t_i -= L_normal_uf2room_d_t_i[Hf]
+
+            # NOTE: 床下→居室全体 の熱負荷補正については足しなおしていない
+            # (L_newuf2room_d_t_i 不使用)
+            # NOTE: 送風経路の負荷は部屋の負荷には含めない(24'07)
+            # + L_uf2outdoor_d_t_i[Hf] + L_uf2gnd_d_t_i[Hf],
+            # 床下→居室全体の項はプラスに働くので負荷としてはマイナス
 
             # 床下空調 新ロジック 調査用出力ファイル
             survey_df_uf = di.get(UfVarsDataFrame)
@@ -673,11 +705,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 "L_star_CS_d_t_1": L_star_CS_d_t_i[0], "L_star_CS_d_t_2": L_star_CS_d_t_i[1], "L_star_CS_d_t_3": L_star_CS_d_t_i[2], "L_star_CS_d_t_4": L_star_CS_d_t_i[3], "L_star_CS_d_t_5": L_star_CS_d_t_i[4],
                 "L_star_H_d_t_1":  L_star_H_d_t_i[0],  "L_star_H_d_t_2": L_star_H_d_t_i[1],   "L_star_H_d_t_3": L_star_H_d_t_i[2],   "L_star_H_d_t_4": L_star_H_d_t_i[3],   "L_star_H_d_t_5": L_star_H_d_t_i[4],
             })
-        else:
-            # (9)　熱取得を含む負荷バランス時の冷房顕熱負荷
-            L_star_CS_d_t_i = dc.get_L_star_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region)
-            # (8)　熱損失を含む負荷バランス時の暖房負荷
-            L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region)
 
         ####################################################################################################################
         if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
