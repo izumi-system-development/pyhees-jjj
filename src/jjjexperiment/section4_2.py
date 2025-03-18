@@ -661,7 +661,11 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             if jjj_consts.done_binsearch_newufac:
                 pass
             else:
-                L_normal_uf2room_d_t_i, L_new_uf2room_d_t_i, L_uf2outdoor_d_t_i, L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
+                delta_L_uf2room_d_t_i = np.vectorize(jjj_ufac.calc_delta_L_room2uf_i)
+                delta_L_uf2room_d_t_i = delta_L_uf2room_d_t_i(U_s, A_s_ufac_i, Theta_star_HBR_d_t - Theta_ex_d_t)
+                assert delta_L_uf2room_d_t_i.shape == (5, 24*365)
+
+                L_new_uf2room_d_t_i, L_uf2outdoor_d_t_i, L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
                     = jjj_ufac.get_delta_L_star_newuf(
                         region = region,
                         A_A = A_A,
@@ -680,20 +684,13 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
             # (9) 補正
             Cf = np.logical_and(C, L_CS_d_t_i[:5] > 0)
-            L_star_CS_d_t_i -= L_normal_uf2room_d_t_i[Cf]
-
-            # NOTE: 送風経路の負荷は部屋の負荷には含めない(24'07)
-            # + L_uf2outdoor_d_t_i[Cf] + L_uf2gnd_d_t_i[Cf],
+            L_star_CS_d_t_i -= delta_L_uf2room_d_t_i[Cf]  # 負荷控除
 
             # (8) 補正
             Hf = np.logical_and(H, L_H_d_t_i[:5] > 0)
-            L_star_H_d_t_i -= L_normal_uf2room_d_t_i[Hf]
+            L_star_H_d_t_i -= delta_L_uf2room_d_t_i[Hf]  # 負荷控除
 
-            # NOTE: 床下→居室全体 の熱負荷補正については足しなおしていない
-            # (L_newuf2room_d_t_i 不使用)
-            # NOTE: 送風経路の負荷は部屋の負荷には含めない(24'07)
-            # + L_uf2outdoor_d_t_i[Hf] + L_uf2gnd_d_t_i[Hf],
-            # 床下→居室全体の項はプラスに働くので負荷としてはマイナス
+            # NOTE: 送風経路のその他負荷は 部屋の負荷には含めない(24'07)
 
             # 床下空調 新ロジック 調査用出力ファイル
             survey_df_uf = di.get(UfVarsDataFrame)

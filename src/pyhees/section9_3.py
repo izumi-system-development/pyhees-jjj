@@ -119,8 +119,8 @@ def calc_delta_L_dash_H_ass_d_t_i(i, supply_target, L_dash_H_R_d_t_i, L_dash_CS_
             # 温度・負荷
             Theta_sa_d_t=Theta_sa_d_t,
             Theta_ex_d_t=Theta_ex_d_t,
-            L_dash_H_R_d_t=L_dash_H_R_d_t_i,
-            L_dash_CS_R_d_t=L_dash_CS_R_d_t_i
+            L_dash_H_R_d_t_i=L_dash_H_R_d_t_i,
+            L_dash_CS_R_d_t_i=L_dash_CS_R_d_t_i
         )
     else:
         Theta_uf_d_t, Theta_g_surf_d_t = None, None

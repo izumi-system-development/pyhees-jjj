@@ -79,6 +79,58 @@ def calc_Theta_uf(
     return Theta_uf
 
 
+def calc_delta_L_room2uf_i(
+        U_s: float,
+        A_s_ufac_i: NDArray[Shape['5, 1'], Float64],
+        delta_Theta: float
+    ) -> NDArray[Shape['5, 1'], Float64]:
+    """床下空間から居室全体への熱損失 [MJ/h]
+    """
+    H_floor = 0.7  # 床下空調でなく意図しない熱移動の分なので通常の遮蔽係数(0.7)となる
+    delta_L_uf2room =  U_s * A_s_ufac_i * np.abs(delta_Theta) * H_floor \
+        * 3.6 / 1000  # [W] -> [MJ/h]
+    # NOTE: L_H_d_t_i, L_CS_d_t_i に含まれている通常(非床下空調)の床下ロス部分(室内→床下→屋外)
+    # 下記の補正を追加する前にコチラを引くことでイコールフッティングできます
+    return delta_L_uf2room  # TODO: i=1~5でトリムするか検討
+
+
+def calc_delta_L_uf2outdoor(
+        psi: float,
+        L_uf: float,
+        delta_Theta: float
+    ) -> float:
+    """床下空間から外気への熱損失 [MJ/h]
+    Args:
+        psi: 土間床等の外気に接する床の熱貫流率 [W/m2K]
+        L_uf: 土間床等の外気に接する床の周辺部の長さ [m]
+        delta_Theta: 床下空間と外気の温度差 [℃]
+    """
+    return psi * L_uf * np.abs(delta_Theta) * 3.6 / 1000  # [W] -> [MJ/h]
+
+
+def calc_delta_L_uf2gnd(
+        A_s_ufvnt_A: float,
+        R_g: float,
+        Phi_A_0: float,
+        Theta_uf: float,
+        sum_Theta_dash_g_surf_A_m: float,
+        Theta_g_avg: float
+    ) -> float:
+    """床下空間から地盤への熱損失 [MJ/h]
+    Args:
+        A_s_ufvnt_A: 空気を供給する床下空間に接する床の面積 [m2]
+        R_g: 地盤またはそれを覆う基礎の表面熱伝達抵抗 [m2・K/W]
+        Phi_A_0: 吸熱応答係数の初項
+        Theta_uf: 床下空間の温度 [℃]
+        sum_Theta_dash_g_surf_A_m: 指数項mの吸熱応答の項別成分の合計 [℃]
+        Theta_g_avg: 地盤の不易層温度 [℃]
+    """
+    # CHECK: θ'g_surf_A_d_t の値に不一致アリ
+    return (A_s_ufvnt_A / R_g) / (1 + Phi_A_0 / R_g) \
+        * (Theta_uf - sum_Theta_dash_g_surf_A_m - Theta_g_avg) \
+        * 3.6 / 1000  # [W] -> [MJ/h]
+
+
 def get_delta_L_star_newuf(
         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
         V_dash_supply_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, Theta_star_HBR_d_t, R_g, di: Injector = None):
@@ -133,13 +185,6 @@ def get_delta_L_star_newuf(
 
     """熱損失[W] (1)式より各項"""
 
-    # NOTE: L_H_d_t_i, L_CS_d_t_i に含まれている通常(非床下空調)の床下ロス部分(室内→床下→屋外)
-    # 下記の補正を追加する前にコチラを引くことでイコールフッティングできます
-    L_normal_uf2room_d_t_i = \
-        U_s * np.array(A_s_ufvnt_i[:5]).reshape(-1, 1) \
-        * (np.abs(Theta_star_HBR_d_t - Theta_ex_d_t) * H_floor).reshape(1, -1) * 3.6 / 1_000  # [MJ/h]
-    # 1~5: 1,2階居室
-
     # 床下 → 床上居室全体()
     # H_floor: 床の温度差係数(-) は通常遮蔽されており(0.7)だが、床下空調時ではスカしているため(1.0)となる値
     assert np.sum(A_s_ufvnt_i) == A_s_ufvnt_A, "一階居室全体"
@@ -148,16 +193,14 @@ def get_delta_L_star_newuf(
         * (np.abs(Theta_uf_d_t - Theta_star_HBR_d_t) * 1.0).reshape(1, -1) * 3.6 / 1_000  # [MJ/h]
 
     # 床下 → 外気
-    # [W/m*K]・[m]・[K] → [W] → [MJ/h]
-    L_uf2outdoor_d_t = psi * L_uf * \
-        np.abs(Theta_ex_d_t - Theta_uf_d_t) * 3.6 / 1_000
+    delta_L_uf2outdoor_d_t = np.vectorize(calc_delta_L_uf2outdoor)
+    delta_L_uf2outdoor_d_t \
+        = delta_L_uf2outdoor_d_t(psi, L_uf, Theta_uf_d_t - Theta_ex_d_t)
 
     # 床下 → 地盤
-    # θ'_g_surf_A_m_d_t: 日付dの時刻tにおける 指数項mの 吸熱応答の項別成分 [℃]
-    # θ_g_avg: 地盤の不易層温度 [℃]
-    L_uf2gnd_d_t = (A_s_ufvnt_A / R_g) / (1 + Phi_A_0 / R_g) \
-        * (Theta_uf_d_t - np.sum(Theta_dash_g_surf_A_m_d_t, axis=1) - Theta_g_avg) * 3.6 / 1_000  # [MJ/h]
-    # CHECK: θ'g_surf_A_d_t の値に不一致アリ
+    delta_L_uf2gnd_d_t = np.vectorize(calc_delta_L_uf2gnd)
+    delta_L_uf2gnd_d_t \
+        = delta_L_uf2gnd_d_t(A_s_ufvnt_A, R_g, Phi_A_0, Theta_uf_d_t, np.sum(Theta_dash_g_surf_A_m_d_t), Theta_g_avg)
 
     """それぞれをd_t_i化する(面積比で按分)"""
 
@@ -166,13 +209,13 @@ def get_delta_L_star_newuf(
     assert np.isclose(sum(ratio), 1, rtol=1e-5)
 
     ratio = ratio.reshape(1, -1)
-    L_uf2outdoor_d_t_i = ratio.T * L_uf2outdoor_d_t
-    L_uf2gnd_d_t_i = ratio.T * L_uf2gnd_d_t
+    L_uf2outdoor_d_t_i = ratio.T * delta_L_uf2outdoor_d_t
+    L_uf2gnd_d_t_i = ratio.T * delta_L_uf2gnd_d_t
 
     # θ_supply_d_t の逆算は一度しか行わないため
     jjj_consts.done_binsearch_newufac = True
 
-    return L_normal_uf2room_d_t_i, L_newuf2room_d_t_i, L_uf2outdoor_d_t_i[:5], L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
+    return L_newuf2room_d_t_i, L_uf2outdoor_d_t_i[:5], L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
 
 
 @jjj_clone
