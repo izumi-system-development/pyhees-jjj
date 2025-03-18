@@ -1,16 +1,16 @@
 import os
+import pytest
 import numpy as np
+
 import pyhees.section3_1 as ld
 import pyhees.section3_1_d as uf
 import pyhees.section3_1_e as algo
-import pyhees.section4_1 as H
+import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
-
 # JJJ
 from jjjexperiment.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
-import jjjexperiment.underfloor_ac as jjj_uf
-import pytest
+import jjjexperiment.underfloor_ac as jjj_ufac
 
 # 床下空調利用時の式(40)のテスト
 class Test_熱源機の風量を計算するための熱源機の出力:

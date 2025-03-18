@@ -4,7 +4,7 @@ import pytest
 @pytest.mark.usefixtures('environment_entity')
 class Test_Input_Environment:
 
-    yaml_filename = "test_input.yaml"
+    yaml_filename = "inputs/test_input.yaml"
 
     def test_get_mu_H(self, environment_entity):
         """
@@ -32,7 +32,7 @@ class Test_Input_Environment:
         V_vent_g_i = environment_entity.get_V_vent_g_i()
         # Assert
         assert V_vent_g_i is not None
-        assert np.shape(V_vent_g_i) == (5, 1)
+        assert np.shape(V_vent_g_i) == (5,)
 
     def test_get_q_gen_d_t(self, environment_entity):
         """

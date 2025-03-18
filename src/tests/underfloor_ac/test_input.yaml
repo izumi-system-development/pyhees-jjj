@@ -13,3 +13,8 @@ R_g: 0.15
 # 蓄熱
 TS: False
 r_A_ufvnt: null  # [%]
+hs_CAV: False
+H_A:
+  input: 1
+C_A:
+  input: 1

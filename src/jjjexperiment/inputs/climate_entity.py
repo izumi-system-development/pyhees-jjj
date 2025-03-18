@@ -14,7 +14,7 @@ class ClimateEntity:
     """ region に関するデータを保持するクラス """
 
     def __init__(self, region: int):
-        self.__region = region
+        self.region = region
         self.climate = rgn.load_climate(region)
 
     def get_J_d_t(self) -> NDArray[Shape['8760'], Float64]:
@@ -30,7 +30,7 @@ class ClimateEntity:
         return Theta_ex_d_t
 
     def get_HCM_d_t(self) -> List[JJJ_HCM]:
-        H, C, M = dc.get_season_array_d_t(self.__region)
+        H, C, M = dc.get_season_array_d_t(self.region)
         HCM = [None] * len(H)
         for i in range(len(H)):
             if H[i]:
@@ -56,7 +56,7 @@ class ClimateEntity:
             psi: 基礎の線熱貫流率Ψ [W/m2*K]
         """
         # CHECK: psi,phi 異なるが大丈夫か要確認
-        return algo.get_phi(self.__region, Q)
+        return algo.get_phi(self.region, Q)
 
     def get_U_s_vert(self, Q: float) -> float:
         """
@@ -66,4 +66,4 @@ class ClimateEntity:
         Returns:
             U_s_vert: 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
         """
-        return algo.get_U_s_vert(self.__region, Q)
+        return algo.get_U_s_vert(self.region, Q)

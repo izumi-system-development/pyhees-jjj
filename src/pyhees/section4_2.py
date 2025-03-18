@@ -1928,6 +1928,10 @@ def get_V_dash_supply_d_t_i(r_supply_des_i, V_dash_hs_supply_d_t, V_vent_g_i):
       日付dの時刻tにおけるVAV調整前の熱源機の風量（m3/h）
 
     """
+    assert V_dash_hs_supply_d_t.ndim == 1
+    assert r_supply_des_i.ndim == 1
+    assert V_vent_g_i.ndim == 1
+
     return np.maximum(r_supply_des_i[:5, np.newaxis] * V_dash_hs_supply_d_t,
                       V_vent_g_i[:5, np.newaxis])
 

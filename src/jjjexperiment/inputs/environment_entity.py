@@ -4,6 +4,7 @@ from nptyping import Float64, NDArray, Shape
 import pyhees.section3_1 as ld
 import pyhees.section3_2 as gihi
 import pyhees.section4_2 as dc
+import pyhees.section4_2_b as dc_spec
 import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
 
@@ -20,6 +21,9 @@ class EnvironmentEntity:
             A_A = input_dto.A_A
         )
 
+    def get_A_NR(self) -> float:
+        return ld.get_A_NR(self.__input.A_A, self.__input.A_MR, self.__input.A_OR)
+
     def get_mu_H(self) -> float:
         mu_H = gihi.get_mu_H(self.__input.eta_A_H, self.r_env)
         return mu_H
@@ -28,20 +32,29 @@ class EnvironmentEntity:
         mu_C = gihi.get_mu_C(self.__input.eta_A_C, self.r_env)
         return mu_C
 
-    def get_A_HCZ_i(self) -> NDArray[Shape["12, 1"], Float64]:
-        return np.array([ld.get_A_HCZ_i(i, self.__input.A_A, self.__input.A_MR, self.__input.A_OR) for i in range(1, 13)]) \
-            .reshape(-1, 1)
+    def get_A_HCZ_i(self) -> NDArray[Shape['12'], Float64]:
+        return np.array([
+            ld.get_A_HCZ_i(i, self.__input.A_A, self.__input.A_MR, self.__input.A_OR) \
+            for i in range(1, 13)
+        ])
 
-    def get_A_HCZ_R_i(self) -> NDArray[Shape["12, 1"], Float64]:
-        return np.array([ld.get_A_HCZ_R_i(i) for i in range(1, 13)]) \
-            .reshape(-1, 1)
+    def get_A_HCZ_R_i(self) -> NDArray[Shape['12'], Float64]:
+        return np.array([
+            ld.get_A_HCZ_R_i(i) \
+            for i in range(1, 13)
+        ])
 
-    def get_V_vent_g_i(self) -> NDArray[Shape["5, 1"], Float64]:
+    def get_V_vent_g_i(self) -> NDArray[Shape['5'], Float64]:
         # (62) 全般換気量
         A_HCZ_i = [ld.get_A_HCZ_i(i, self.__input.A_A, self.__input.A_MR, self.__input.A_OR) for i in range(1, 6)]
         A_HCZ_R_i = [ld.get_A_HCZ_R_i(i) for i in range(1, 6)]
         V_vent_g_i = dc.get_V_vent_g_i(A_HCZ_i, A_HCZ_R_i)
-        return np.array(V_vent_g_i).reshape(-1, 1)
+        return np.array(V_vent_g_i)
+
+    def get_V_vent_l_NR_d_t(self) -> NDArray[Shape['8760'], Float64]:
+        # (63) 局所排気量
+        V_vent_l_NR_d_t = dc.get_V_vent_l_NR_d_t()
+        return V_vent_l_NR_d_t
 
     def get_q_gen_d_t(self) -> NDArray[Shape['8760'], Float64]:
         A_NR = ld.get_A_NR(self.__input.A_A, self.__input.A_MR, self.__input.A_OR)
@@ -85,3 +98,21 @@ class EnvironmentEntity:
         # (15) 熱損失係数
         Q = ld.get_Q(Q_dash)
         return Q
+
+    # NOTE: input.py のロジックのオブジェクト指向化
+
+    def get_q_hs_rtd_H(self) -> float:
+        match self.__input.H_A.input:
+            case 1:
+                return dc_spec.get_q_hs_rtd_H(self.__input.region, self.__input.A_A)
+            case _:
+                # 順次追加
+                raise ValueError
+
+    def get_q_hs_rtd_C(self) -> float:
+        match self.__input.C_A.input:
+            case 1:
+                return dc_spec.get_q_hs_rtd_C(self.__input.region, self.__input.A_A)
+            case _:
+                # 順次追加
+                raise ValueError

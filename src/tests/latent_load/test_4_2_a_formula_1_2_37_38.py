@@ -2,7 +2,7 @@ import json
 import numpy as np
 
 from pyhees.section3_2 import calc_r_env
-import pyhees.section4_1 as H
+import pyhees.section4_1 as HC
 import pyhees.section4_2_a as dc_a
 
 # JJJ
@@ -53,7 +53,7 @@ def prepare_args_for_calc_Q_UT_A() -> dict:
     }
 
     L_H_d_t_i: np.ndarray  # H: 暖房負荷 [MJ/h]
-    L_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = H.calc_heating_load(
+    L_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = HC.calc_heating_load(
         region = region,
         sol_region = sol_region,
         A_A = A_A, A_MR = A_MR, A_OR = A_OR,
@@ -73,7 +73,7 @@ def prepare_args_for_calc_Q_UT_A() -> dict:
 
     L_CS_d_t_i: np.ndarray  # CS: 冷房・顕熱負荷 [MJ/h]
     L_CL_d_t_i: np.ndarray  # CL: 冷房・潜熱負荷 [MJ/h]
-    L_CS_d_t_i, L_CL_d_t_i = H.calc_cooling_load(
+    L_CS_d_t_i, L_CL_d_t_i = HC.calc_cooling_load(
         region = region,
         A_A = A_A, A_MR = A_MR, A_OR = A_OR,
         NV_MR = NV_MR, NV_OR = NV_OR, TS = TS,

@@ -15,6 +15,36 @@ from jjjexperiment.common import *
 from jjjexperiment.options import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 
+
+def get_A_s_ufac_i(
+        A_A: float,
+        A_MR: float,
+        A_OR: float
+    ) -> tuple[NDArray[Shape["5, 1"], Float64], float]:
+    """
+    Returns:
+        (NDArray[Shape["5, 1"], Float64], float):
+            - A_s_ufac_i: 暖冷房区画iの床下空調有効面積[m2]
+            - r_A_s_ufac: 面積全体における床下空調部分の床面積の比率[-]
+    """
+    r_A_ufac = 1.0  # 床下空調利用時の有効率
+    A_s_ufac_i \
+        = np.array([
+            algo.calc_A_s_ufvnt_i(i, r_A_ufac, A_A, A_MR, A_OR)
+            for i in range(1, 13)
+        ]).reshape(-1, 1)
+    assert np.shape(A_s_ufac_i) == (12, 1)
+
+    # 面積全体における 床下空調部分の床面積の割合
+    r_A_s_ufac = np.sum(A_s_ufac_i) / A_A
+
+    return A_s_ufac_i, r_A_s_ufac
+
+# 計算方法はいくつかあるので使い分けを確認する
+# ex. pyhees.section4_2.calc_Theta_uf
+# ex. pyhees.section4_2.calc_Theta_uf_d_t_2023
+
+
 def calc_Theta_uf(
         L_H_flr1st: float,
         A_s_ufvnt: float,
@@ -30,6 +60,7 @@ def calc_Theta_uf(
         Theta_in: 室温 [℃]
         Theta_ex: 外気温度 [℃]
         V_flr1st: 第1床面積 [m2]
+
     Returns:
         床下空間の温度 [℃]
     """
@@ -149,7 +180,7 @@ def calc_Q_hat_hs(
         Q: float,
         A_A: float,
         V_vent_l: float,
-        V_vent_g_i: NDArray[Shape["5, 1"], Float64],
+        sum_V_vent_g_i: float,  # vectorizeするため調整 (5, 1)->(5, )
         mu_H: float,
         mu_C: float,
         J: float,
@@ -170,7 +201,7 @@ def calc_Q_hat_hs(
         Q: 当該住戸の熱損失係数 [W/(m2・K)]
         A_A: 床面積の合計 [m2]
         V_vent_l: 局所換気量 [m3/h]
-        V_vent_g_i: 暖冷房区画iの全般換気量 [m3/h]
+        sum_V_vent_g_i: 暖冷房区画iの全般換気量 [m3/h]
         mu_H: 当該住戸の暖房期の日射取得係数 [(W/m2)/(W/m2)]
         mu_C: 当該住戸の冷房期の日射取得係数 [(W/m2)/(W/m2)]
         J: 水平面全天日射量 [W/m2]
@@ -199,7 +230,7 @@ def calc_Q_hat_hs(
             # (40-1b)
             Q_hat_hs_H = (
                 (Q - 0.35 * 0.5 * 2.4) * A_A  # 外皮
-                + (c_p_air * rho_air * (V_vent_l + np.sum(V_vent_g_i))) / 3600  # 換気
+                + (c_p_air * rho_air * (V_vent_l + sum_V_vent_g_i)) / 3600  # 換気
                 ) * (Theta_set_H - Theta_ex)
             Q_hat_hs_H -= mu_H * A_A * J  # 日射
             Q_hat_hs_H -= q_gen  # 内部発熱
@@ -211,14 +242,14 @@ def calc_Q_hat_hs(
             # (40-2b)
             Q_hat_hs_CS = (
                 ((Q - 0.35 * 0.5 * 2.4) * A_A
-                + (c_p_air * rho_air * (V_vent_l + np.sum(V_vent_g_i))) / 3600
+                + (c_p_air * rho_air * (V_vent_l + sum_V_vent_g_i)) / 3600
                 ) * (Theta_ex - Theta_set_C) \
                 + mu_C * A_A * J \
                 + q_gen \
                 + n_p * q_p_CS) * 3600 * 1e-6
             # (40-2c)
             Q_hat_hs_CL = (
-                (rho_air * (V_vent_l + np.sum(V_vent_g_i)) * (X_ex - X_set_C) * 10^3 + w_gen) * L_wtr \
+                (rho_air * (V_vent_l + sum_V_vent_g_i) * (X_ex - X_set_C) * 1e+3 + w_gen) * L_wtr \
                 + n_p * q_p_CL * 3600) * 1e-6
             # (40-2a)
             return (max(Q_hat_hs_CS, 0) + max(Q_hat_hs_CL, 0))

@@ -7,7 +7,7 @@ from jjjexperiment.common import JJJ_HCM
 @pytest.mark.usefixtures('climate_entity')
 class Test_Input_Climate:
 
-    yaml_filename = "test_input.yaml"
+    yaml_filename = "inputs/test_input.yaml"
 
     def test_get_J_d_t(self, climate_entity):
         """
