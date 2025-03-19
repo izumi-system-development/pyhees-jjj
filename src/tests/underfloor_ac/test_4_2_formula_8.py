@@ -1,17 +1,17 @@
 import os
+import pytest
 import numpy as np
+
 import pyhees.section3_1 as ld
 import pyhees.section3_1_d as uf
 import pyhees.section3_1_e as algo
 import pyhees.section3_2 as gihi
 import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
-
 # JJJ
 from jjjexperiment.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
-import pytest
 
 class Test_熱損失を含む負荷バランス時の暖冷房負荷:
 

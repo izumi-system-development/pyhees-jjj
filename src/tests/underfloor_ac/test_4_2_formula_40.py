@@ -100,6 +100,7 @@ class Test_熱源機の風量を計算するための熱源機の出力:
         assert A_s_ufvnt == pytest.approx(65.44, rel=1e-2)
         assert A_s_ufvnt / input.A_A == pytest.approx(0.54, rel=1e-2)
 
+
     def test_床下から床上居室への熱移動(self):
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')

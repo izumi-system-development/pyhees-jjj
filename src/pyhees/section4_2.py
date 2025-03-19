@@ -2022,6 +2022,7 @@ def get_r_supply_des_d_t_i_2023(region, L_CS_d_t_i, L_H_d_t_i):
 # ============================================================================
 
 @log_res(['Theta_HBR_d_t_i'])
+@jjj_mod
 def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q, A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
                         r_A_ufvnt, A_A, A_MR, A_OR, Theta_uf_d_t = None):
     """(46-1)(46-2)(46-3)
@@ -2055,36 +2056,54 @@ def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, 
     Theta_HBR_d_t_i = np.zeros((5, 24 * 365))
     # A_HCZ_i = np.reshape(A_HCZ_i, (5, 0))
 
-    CPV = c_p_air * rho_air * V_supply_d_t_i  # [J/(kg・K) * kg/m3 * m3/h] → [J/(K・h)]
+    CRV = c_p_air * rho_air * V_supply_d_t_i  # [J/(kg・K) * kg/m3 * m3/h] → [J/(K・h)]
 
     if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
       # 事前条件:
       assert Theta_uf_d_t is not None, "床下温度計算がされていて提供済みである."
 
       # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
-      A_s_ufvnt_i = [calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)]
-      Us_Asufvnt = U_s * np.array(A_s_ufvnt_i)[:5, np.newaxis] * 3600  # [W/(m2・K) * m2] → [J/(K・h)]
+      A_s_ufvnt_i = np.array([calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)])
+      Us_Asufvnt = U_s * A_s_ufvnt_i[:5, np.newaxis] * 3600  # [W/(m2・K) * m2] → [J/(K・h)]
 
-      # 暖房期 (46-1)
-      Theta_HBR_d_t_i[:, H] = Theta_star_HBR_d_t[H] + (CPV[:, H] * (Theta_supply_d_t_i[:, H] - Theta_star_HBR_d_t[H])
-                                                      + Us_Asufvnt * (Theta_uf_d_t[H] - Theta_star_HBR_d_t[H])[np.newaxis, :]  # 床下->床上 貫流熱
-                                                      - L_star_H_d_t_i[:, H] * 10 ** 6) \
-                                                    / (CPV[:, H] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600 + Us_Asufvnt)
+    # 一階居室であることを示す ベクトルi を用意する
+    # TODO: 一階居室のみ床下からの熱貫流を考慮する
 
-      # 冷房期 (46-2)
-      Theta_HBR_d_t_i[:, C] = Theta_star_HBR_d_t[C] - (CPV[:, C] * (Theta_star_HBR_d_t[C] - Theta_supply_d_t_i[:, C])
-                                                      + Us_Asufvnt * (Theta_star_HBR_d_t[C] - Theta_uf_d_t[C])[np.newaxis, :]  # 床下->床上 貫流熱
-                                                      - L_star_CS_d_t_i[:, C] * 10 ** 6) \
-                                                    / (CPV[:, C] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600 + Us_Asufvnt)
-
+    # 暖房期 (46-1)
+    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+      Theta_HBR_d_t_i[:, H] \
+        = Theta_star_HBR_d_t[H] \
+          + (CRV[:, H] * (Theta_supply_d_t_i[:, H] - Theta_star_HBR_d_t[H])
+            + Us_Asufvnt * (Theta_uf_d_t[H] - Theta_star_HBR_d_t[H])[np.newaxis, :]  # 床下空調
+            - L_star_H_d_t_i[:, H] * 1e+6) \
+            / (CRV[:, H]
+              + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600
+              + Us_Asufvnt)  # 床下空調
     else:
-      Theta_HBR_d_t_i[:, H] = Theta_star_HBR_d_t[H] + (CPV[:, H] * (Theta_supply_d_t_i[:, H] - Theta_star_HBR_d_t[H])
-                                                      - L_star_H_d_t_i[:, H] * 10 ** 6) \
-                                                    / (CPV[:, H] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600)
+      Theta_HBR_d_t_i[:, H] \
+        = Theta_star_HBR_d_t[H] \
+          + (CRV[:, H] * (Theta_supply_d_t_i[:, H] - Theta_star_HBR_d_t[H])
+            - L_star_H_d_t_i[:, H] * 1e+6) \
+            / (CRV[:, H]
+              + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600)
 
-      Theta_HBR_d_t_i[:, C] = Theta_star_HBR_d_t[C] - (CPV[:, C] * (Theta_star_HBR_d_t[C] - Theta_supply_d_t_i[:, C])
-                                                      - L_star_CS_d_t_i[:, C] * 10 ** 6) \
-                                                    / (CPV[:, C] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600)
+    # 冷房期 (46-2)
+    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+      Theta_HBR_d_t_i[:, C] \
+        = Theta_star_HBR_d_t[C] \
+          - (CRV[:, C] * (Theta_star_HBR_d_t[C] - Theta_supply_d_t_i[:, C])
+            + Us_Asufvnt * (Theta_star_HBR_d_t[C] - Theta_uf_d_t[C])[np.newaxis, :]  # 床下空調
+            - L_star_CS_d_t_i[:, C] * 1e+6) \
+            / (CRV[:, C]
+              + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600
+              + Us_Asufvnt)  # 床下空調
+    else:
+      Theta_HBR_d_t_i[:, C] \
+        = Theta_star_HBR_d_t[C] \
+          - (CRV[:, C] * (Theta_star_HBR_d_t[C] - Theta_supply_d_t_i[:, C])
+            - L_star_CS_d_t_i[:, C] * 1e+6) \
+            / (CRV[:, C]
+              + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600)
 
     # 暖冷房区画iの実際の居室の室温θ_(HBR,d,t,i)は、暖房期において負荷バランス時の居室の室温θ_(HBR,d,t)^*を下回る場合、
     # 負荷バランス時の居室の室温θ_(HBR,d,t)^*に等しい
@@ -2097,7 +2116,7 @@ def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, 
     Theta_HBR_d_t_i[:, M] = Theta_star_HBR_d_t[M]
 
     # 事後条件:
-    assert np.shape(Theta_HBR_d_t_i) == (5, 8760), "想定外の行列数."
+    assert Theta_HBR_d_t_i.shape == (5, 8760), f"想定外の行列数: {Theta_HBR_d_t_i.shape}"
     return Theta_HBR_d_t_i
 
 def get_X_HBR_d_t_i(X_star_HBR_d_t):
