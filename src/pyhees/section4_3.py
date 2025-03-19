@@ -248,7 +248,7 @@ def calc_E_E_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t):
 
     return E_E_H_d_t
 
-@jjj_clone
+@jjj_cloning
 def calc_E_E_H_d_t_2024(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t, q_max_C, q_max_H, input_C_af_H, climateFile):
     """消費電力量 (5)
 
@@ -1042,7 +1042,7 @@ def calc_E_E_C_d_t(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t)
 
     return E_E_C_d_t
 
-@jjj_clone
+@jjj_cloning
 def calc_E_E_C_d_t_2024(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t, q_max_C, input_C_af_C, climateFile):
     """消費電力量 (20)
 

@@ -7,6 +7,7 @@
 import numpy as np
 
 from functools import lru_cache
+from injector import Injector
 
 import datetime
 
@@ -52,17 +53,15 @@ from pyhees.section11_5 import \
 from pyhees.section11_6 import \
     get_table_7
 
-# JJJ_EXPERIMENT ADD
+# JJJ
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 from jjjexperiment.options import *
 from jjjexperiment.di_container import *
-from injector import Injector
+import jjjexperiment.underfloor_ac as jjj_ufac
 
-import jjjexperiment.carryover_heat as jjj_carryover_heat
-
-# NOTE: こちらは使用しておらず、jjjexperimentに複製したものを使用しています
+@jjj_cloned
 # 未処理負荷と機器の計算に必要な変数を取得
 def calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, V_hs_dsgn_H, V_hs_dsgn_C, Q,
              VAV, general_ventilation, duct_insulation, region, L_H_d_t_i, L_CS_d_t_i, L_CL_d_t_i):
@@ -70,7 +69,7 @@ def calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, V_hs
 
     Args:
       A_A: param A_MR:
-      A_OR: param r_env:
+      A_OR: param A_env:
       mu_H: param mu_C:
       q_hs_rtd_H: param q_hs_rtd_C:
       V_hs_dsgn_H: param V_hs_dsgn_C:
@@ -91,7 +90,7 @@ def calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, V_hs
     Returns:
 
     """
-    raise NotImplementedError("置き換え以前のコードであり、現状は使用されることはないはずです。")
+    raise NotImplementedError("代わりにJJJ改変版を使用する")
 
     # 外気条件
     climate = load_climate(region)
@@ -233,9 +232,7 @@ def calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, V_hs
     L_star_CS_d_t_i = get_L_star_CS_d_t_i(L_CS_d_t_i, Q_star_trs_prt_d_t_i, region)
 
     # (8)
-    L_star_H_d_t_i = get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region,
-                                        A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_ex_d_t, Theta_ex_d_t,
-                                        L_dash_H_R_d_t, L_dash_CS_R_d_t, R_g)
+    L_star_H_d_t_i = get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region)
 
     # (33)
     L_star_CL_d_t = get_L_star_CL_d_t(L_star_CL_d_t_i)
@@ -306,8 +303,7 @@ def calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C, V_hs
 
     # (43)
     V_supply_d_t_i = get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
-                                        V_vent_g_i, V_dash_supply_d_t_i, VAV, region, Theta_hs_out_d_t)
-    V_supply_d_t_i = cap_V_supply_d_t_i(V_supply_d_t_i, V_dash_supply_d_t_i, V_vent_g_i, region, V_hs_dsgn_H, V_hs_dsgn_C)
+                                                    V_vent_g_i, V_dash_supply_d_t_i, VAV, region, Theta_hs_out_d_t)
 
     # (41)
     Theta_supply_d_t_i = get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
@@ -2038,11 +2034,11 @@ def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, 
       L_star_H_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの間仕切りの熱取得を含む実際の暖房負荷（MJ/h）
       L_star_CS_d_t_i: 日付dの時刻tにおける暖冷房区画iの1時間当たりの間仕切りの熱取得を含む実際の冷房顕熱負荷（MJ/h）
       region: 地域区分
-      r_A_ufvnt(float): 当該住戸において、床下空間全体の面積に対する空気を供給する床下空間の面積の比 (-)
-      A_A(float): 床面積の合計 (m2)
-      A_MR(float): 主たる居室の床面積 (m2)
-      A_OR(float): その他の居室の床面積 (m2)
-      Theta_uf_d_t: 日付dの時刻tにおける床下温度（℃）
+      r_A_ufvnt: 当該住戸において、床下空間全体の面積に対する空気を供給する床下空間の面積の比 (-)
+      A_A: 床面積の合計 (m2)
+      A_MR: 主たる居室の床面積 (m2)
+      A_OR: その他の居室の床面積 (m2)
+      Theta_uf_d_t: 日付dの時刻tにおける床下温度 (℃)
 
     Returns:
       Theta_HBR_d_t_i: 日付dの時刻tにおける暖冷房区画iの実際の居室の室温（℃）
@@ -2137,6 +2133,7 @@ def get_X_HBR_d_t_i(X_star_HBR_d_t):
 # 11.2 実際の非居室の室温・絶対湿度
 # ============================================================================
 
+@jjj_mod
 def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_uf_d_t = None, di = None):
     """(48a)(48b)(48c)(48d)
 

@@ -228,7 +228,7 @@ def get_delta_L_star_newuf(
     return delta_L_room2uf_d_t_i, delta_L_uf2outdoor_d_t_i[:5], delta_L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
 
 
-@jjj_clone
+@jjj_cloning
 def calc_Q_hat_hs(
         Q: float,
         A_A: float,
