@@ -29,6 +29,9 @@ class ClimateEntity:
         Theta_ex_d_t = rgn.get_Theta_ex(self.climate)
         return Theta_ex_d_t
 
+    def get_Theta_g_avg(self) -> float:
+        return algo.get_Theta_g_avg(self.get_Theta_ex_d_t())
+
     def get_HCM_d_t(self) -> List[JJJ_HCM]:
         H, C, M = dc.get_season_array_d_t(self.region)
         HCM = [None] * len(H)

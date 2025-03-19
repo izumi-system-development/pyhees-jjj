@@ -129,12 +129,13 @@ class Test_熱損失を含む負荷バランス時の暖冷房負荷:
 
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
 
-        delta_L_uf2room_d_t_i = np.vectorize(jjj_ufac.calc_delta_L_room2uf_i)
         U_s = dc.get_U_s()
-        delta_L_uf2room_d_t_i \
-            = delta_L_uf2room_d_t_i(U_s, A_s_ufac_i, Theta_star_HBR_d_t - Theta_ex_d_t)
-
-        L_star_H_d_t_i -= delta_L_uf2room_d_t_i[:5]  # 負荷控除
+        delta_L_uf2room_d_t_i = np.hstack([
+            jjj_ufac.calc_delta_L_room2uf_i(U_s, A_s_ufac_i, Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt])
+            for tt in range(24*365)
+        ])
+        assert delta_L_uf2room_d_t_i.shape == (12, 8760)
+        L_star_H_d_t_i -= delta_L_uf2room_d_t_i[:5, :]  # 負荷控除
 
         # Assert
         assert L_star_H_d_t_i[0][i] == pytest.approx(3.60, rel=1e-2)

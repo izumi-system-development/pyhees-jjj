@@ -71,7 +71,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     else:
         climate = pd.read_csv(climateFile, nrows=24 * 365, encoding="SHIFT-JIS")
     Theta_in_d_t = uf.get_Theta_in_d_t('H')
-    Theta_ex_d_t = get_Theta_ex(climate)
+    Theta_ex_d_t = np.array(get_Theta_ex(climate))
     X_ex_d_t = get_X_ex(climate)
 
     J_d_t = calc_I_s_d_t(0, 0, get_climate_df(climate))
@@ -314,12 +314,59 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     )
 
     # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
-    if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-        # TODO: 補正する
-        # 床下 -> 居室全体 助ける
-        # 床下 -> 外気 逃げる
-        # 床下 -> 地盤 逃げる
-        pass
+    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        # 1. 床下 -> 居室全体 (目標方向の熱移動)
+        U_s = algo.get_U_s()  # 床の熱貫流率 [W/m2K]
+        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(A_A, A_MR, A_OR)
+
+        assert A_s_ufac_i.ndim == 2
+        delta_L_room2uf_d_t_i = np.hstack([
+            jjj_ufac.calc_delta_L_room2uf_i(
+                U_s, A_s_ufac_i, Theta_ex_d_t[tt] - Theta_in_d_t[tt]
+            ) for tt in range(24 * 365)  # 各要素が shape(12,1)
+        ])
+        # delta_L_room2uf_d_t_i = np.vectorize(jjj_ufac.calc_delta_L_room2uf_i)
+        # delta_L_room2uf_d_t_i = delta_L_room2uf_d_t_i(U_s, A_s_ufac_i, Theta_ex_d_t - Theta_in_d_t)
+        assert delta_L_room2uf_d_t_i.ndim == 2
+        Q_hat_hs_d_t -= np.sum(delta_L_room2uf_d_t_i, axis=0)
+
+        # 2. 床下 -> 外気 (逃げ方向)
+        # CHECK: V_dash_supply_d_t の計算には補正前の Q^_hs_d_tを使用していてよいか
+        L_H_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
+        V_dash_supply_d_t = np.sum(V_dash_supply_d_t_i, axis=0)
+        Theta_uf_d_t = np.array([
+            jjj_ufac.calc_Theta_uf(
+                L_H_d_t_flr1st[tt],
+                np.sum(A_s_ufac_i),
+                Theta_in_d_t[tt],
+                Theta_ex_d_t[tt],
+                V_dash_supply_d_t[tt]) \
+            for tt in range(24 * 365)
+        ])
+        L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
+        climate = jjj_ipt.ClimateEntity(region)
+        psi = climate.get_psi(Q)
+
+        delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
+        delta_L_uf2outdoor_d_t \
+            = delta_L_uf2outdoor_d_t(psi, L_uf, (Theta_uf_d_t - Theta_ex_d_t))
+        assert np.shape(delta_L_uf2outdoor_d_t) == (24 * 365,)
+        Q_hat_hs_d_t += delta_L_uf2outdoor_d_t
+
+        # 3. 床下 -> 地盤 (逃げ方向)
+
+        # 吸熱応答係数の初項 定数取得クラスを作成するか
+        Phi_A_0 = 0.025504994
+        # TODO: ここで算出する方法が不明なので相談する
+        sum_Theta_dash_g_surf_A_m = 4.138  # 値は計算例で仮置き
+
+        A_s_ufac_A = np.sum(A_s_ufac_i)
+        Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
+
+        delta_L_uf2gnd_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2gnd)
+        delta_L_uf2gnd_d_t = delta_L_uf2gnd_d_t(
+            A_s_ufac_A, R_g, Phi_A_0, Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
+        Q_hat_hs_d_t += delta_L_uf2gnd_d_t
 
     # (53)　負荷バランス時の非居室の絶対湿度
     X_star_NR_d_t = dc.get_X_star_NR_d_t(X_star_HBR_d_t, L_CL_d_t_i, L_wtr, V_vent_l_NR_d_t, V_dash_supply_d_t_i, region)
@@ -658,37 +705,34 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
 
             # CHECK: フラグ管理不要なら消す
-            if jjj_consts.done_binsearch_newufac:
-                pass
-            else:
-                delta_L_uf2room_d_t_i = np.vectorize(jjj_ufac.calc_delta_L_room2uf_i)
-                delta_L_uf2room_d_t_i = delta_L_uf2room_d_t_i(U_s, A_s_ufac_i, Theta_star_HBR_d_t - Theta_ex_d_t)
-                assert delta_L_uf2room_d_t_i.shape == (5, 24*365)
+            # if jjj_consts.done_binsearch_newufac:
 
-                L_new_uf2room_d_t_i, L_uf2outdoor_d_t_i, L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
-                    = jjj_ufac.get_delta_L_star_newuf(
-                        region = region,
-                        A_A = A_A,
-                        A_MR = A_MR,
-                        A_OR = A_OR,
-                        Q = Q,
-                        r_A_ufac = r_A_ufac,
-                        underfloor_insulation = underfloor_insulation,
-                        Theta_uf_d_t = Theta_uf_d_t_2023,
-                        Theta_ex_d_t = Theta_ex_d_t,
-                        V_dash_supply_d_t_i = V_dash_supply_d_t_i,
-                        L_dash_H_R_d_t_i = L_dash_H_R_d_t_i,
-                        L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
-                        Theta_star_HBR_d_t = Theta_star_HBR_d_t,
-                        R_g = R_g)
+            delta_L_uf2room_d_t_i, delta_L_uf2outdoor_d_t_i, delta_L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
+                = jjj_ufac.get_delta_L_star_newuf(
+                    region = region,
+                    A_A = A_A,
+                    A_MR = A_MR,
+                    A_OR = A_OR,
+                    Q = Q,
+                    r_A_ufac = r_A_ufac,
+                    underfloor_insulation = underfloor_insulation,
+                    Theta_uf_d_t = Theta_uf_d_t_2023,
+                    Theta_ex_d_t = Theta_ex_d_t,
+                    V_dash_supply_d_t_i = V_dash_supply_d_t_i,
+                    L_dash_H_R_d_t_i = L_dash_H_R_d_t_i,
+                    L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
+                    Theta_star_HBR_d_t = Theta_star_HBR_d_t,
+                    R_g = R_g)
 
+            H, C, M = dc.get_season_array_d_t(region)
             # (9) 補正
-            Cf = np.logical_and(C, L_CS_d_t_i[:5] > 0)
-            L_star_CS_d_t_i -= delta_L_uf2room_d_t_i[Cf]  # 負荷控除
-
+            Cf = np.logical_and(C, L_CS_d_t_i[:5, :] > 0)
+            assert Cf.shape == (5, 24*365)
+            L_star_CS_d_t_i[Cf] -= delta_L_uf2room_d_t_i[:5, :][Cf]  # 負荷控除
             # (8) 補正
-            Hf = np.logical_and(H, L_H_d_t_i[:5] > 0)
-            L_star_H_d_t_i -= delta_L_uf2room_d_t_i[Hf]  # 負荷控除
+            Hf = np.logical_and(H, L_H_d_t_i[:5, :] > 0)
+            assert Hf.shape == (5, 24*365)
+            L_star_H_d_t_i[Hf] -= delta_L_uf2room_d_t_i[:5, :][Hf]  # 負荷控除
 
             # NOTE: 送風経路のその他負荷は 部屋の負荷には含めない(24'07)
 

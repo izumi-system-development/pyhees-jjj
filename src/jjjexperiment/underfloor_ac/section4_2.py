@@ -79,6 +79,7 @@ def calc_Theta_uf(
     return Theta_uf
 
 
+# vectorizeできなのいのでhstack-broadcastで対応 (A_s_ufac_iが強制でfloatになるため)
 def calc_delta_L_room2uf_i(
         U_s: float,
         A_s_ufac_i: NDArray[Shape['5, 1'], Float64],
@@ -86,11 +87,14 @@ def calc_delta_L_room2uf_i(
     ) -> NDArray[Shape['5, 1'], Float64]:
     """床下空間から居室全体への熱損失 [MJ/h]
     """
+    assert A_s_ufac_i.ndim == 2
+
     H_floor = 0.7  # 床下空調でなく意図しない熱移動の分なので通常の遮蔽係数(0.7)となる
     delta_L_uf2room =  U_s * A_s_ufac_i * np.abs(delta_Theta) * H_floor \
         * 3.6 / 1000  # [W] -> [MJ/h]
     # NOTE: L_H_d_t_i, L_CS_d_t_i に含まれている通常(非床下空調)の床下ロス部分(室内→床下→屋外)
     # 下記の補正を追加する前にコチラを引くことでイコールフッティングできます
+    assert delta_L_uf2room.ndim == 2
     return delta_L_uf2room  # TODO: i=1~5でトリムするか検討
 
 
@@ -186,21 +190,27 @@ def get_delta_L_star_newuf(
     """熱損失[W] (1)式より各項"""
 
     # 床下 → 床上居室全体()
-    # H_floor: 床の温度差係数(-) は通常遮蔽されており(0.7)だが、床下空調時ではスカしているため(1.0)となる値
-    assert np.sum(A_s_ufvnt_i) == A_s_ufvnt_A, "一階居室全体"
-    L_newuf2room_d_t_i = \
-        U_s * np.array(A_s_ufvnt_i[:5]).reshape(-1, 1) \
-        * (np.abs(Theta_uf_d_t - Theta_star_HBR_d_t) * 1.0).reshape(1, -1) * 3.6 / 1_000  # [MJ/h]
+    assert A_s_ufvnt_i.ndim == 1
+    delta_L_room2uf_d_t_i = np.hstack([
+        calc_delta_L_room2uf_i(U_s, A_s_ufvnt_i.reshape(-1,1),
+                Theta_uf_d_t[tt] - Theta_star_HBR_d_t[tt])
+        for tt in range(24*365)
+    ])
+    # delta_L_room2uf_d_t_i = np.vectorize(calc_delta_L_room2uf_i)
+    # delta_L_room2uf_d_t_i = delta_L_room2uf_d_t_i(U_s, A_s_ufvnt_i.reshape(-1,1), Theta_uf_d_t - Theta_star_HBR_d_t)
+    assert delta_L_room2uf_d_t_i.ndim == 2
 
     # 床下 → 外気
     delta_L_uf2outdoor_d_t = np.vectorize(calc_delta_L_uf2outdoor)
     delta_L_uf2outdoor_d_t \
         = delta_L_uf2outdoor_d_t(psi, L_uf, Theta_uf_d_t - Theta_ex_d_t)
+    assert delta_L_uf2outdoor_d_t.ndim == 1
 
     # 床下 → 地盤
     delta_L_uf2gnd_d_t = np.vectorize(calc_delta_L_uf2gnd)
     delta_L_uf2gnd_d_t \
         = delta_L_uf2gnd_d_t(A_s_ufvnt_A, R_g, Phi_A_0, Theta_uf_d_t, np.sum(Theta_dash_g_surf_A_m_d_t), Theta_g_avg)
+    assert delta_L_uf2gnd_d_t.ndim == 1
 
     """それぞれをd_t_i化する(面積比で按分)"""
 
@@ -208,14 +218,14 @@ def get_delta_L_star_newuf(
     assert np.isclose(np.sum(A_s_ufvnt_i), A_s_ufvnt_A, rtol=1e-5)
     assert np.isclose(sum(ratio), 1, rtol=1e-5)
 
-    ratio = ratio.reshape(1, -1)
-    L_uf2outdoor_d_t_i = ratio.T * delta_L_uf2outdoor_d_t
-    L_uf2gnd_d_t_i = ratio.T * delta_L_uf2gnd_d_t
+    ratio = ratio.reshape(1, -1)  # -1,1 に合わせるか
+    delta_L_uf2outdoor_d_t_i = ratio.T * delta_L_uf2outdoor_d_t
+    delta_L_uf2gnd_d_t_i = ratio.T * delta_L_uf2gnd_d_t
 
     # θ_supply_d_t の逆算は一度しか行わないため
     jjj_consts.done_binsearch_newufac = True
 
-    return L_newuf2room_d_t_i, L_uf2outdoor_d_t_i[:5], L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
+    return delta_L_room2uf_d_t_i, delta_L_uf2outdoor_d_t_i[:5], delta_L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
 
 
 @jjj_clone

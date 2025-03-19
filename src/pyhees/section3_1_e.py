@@ -490,7 +490,10 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         r_A_ufvnt = 0
 
     # 暖冷房区画iの 当該住戸の空気を供給する床下空間に接する床の面積(m2) (7)
-    A_s_ufvnt_i = [calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)]
+    A_s_ufvnt_i = np.array([
+        calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR)
+        for i in range(1, 13)
+    ])
 
     # 当該住戸の空気を供給する床下空間に接する床の面積の合計 (m2) (8)
     A_s_ufvnt_A = get_A_s_ufvnt_A(r_A_ufvnt, A_A, A_MR, A_OR)

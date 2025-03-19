@@ -56,8 +56,8 @@ class Test統合テスト_デフォルト入力時:
         # inputs = change_testmode_underfloor_new(inputs)
         result = calc(inputs, test_mode=True)
 
-        assert result['TValue'].E_C == pytest.approx(expected_result_type1.E_C, rel=1e-6)
         assert result['TValue'].E_H == pytest.approx(expected_result_type1.E_H, rel=1e-6)
+        assert result['TValue'].E_C == pytest.approx(expected_result_type1.E_C, rel=1e-6)
 
     def test_計算結果一致_方式2(self, expected_result_type2):
         """ ipynbのサンプル入力で計算結果が意図しない変化がないことを確認
@@ -68,8 +68,8 @@ class Test統合テスト_デフォルト入力時:
         # inputs = change_testmode_input_V_hs_min_C(inputs)
         result = calc(inputs, test_mode=True)
 
-        assert result['TValue'].E_C == expected_result_type2.E_C
         assert result['TValue'].E_H == expected_result_type2.E_H
+        assert result['TValue'].E_C == expected_result_type2.E_C
 
     def test_計算結果一致_方式3(self, expected_result_type1, expected_result_type2):
         """ 方式3 最後まで実行できること、結果がちゃんと変わることだけ確認
@@ -81,11 +81,11 @@ class Test統合テスト_デフォルト入力時:
         # inputs = change_testmode_input_V_hs_min_C(inputs)
         result = calc(inputs, test_mode=True)
 
-        assert result['TValue'].E_C != expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
+        assert result['TValue'].E_C != expected_result_type1.E_C
 
-        assert result['TValue'].E_C != expected_result_type2.E_C
         assert result['TValue'].E_H != expected_result_type2.E_H
+        assert result['TValue'].E_C != expected_result_type2.E_C
 
     def test_計算結果一致_方式4(self, expected_result_type1, expected_result_type2):
         """ 方式4 最後まで実行できること、結果がちゃんと変わることだけ確認
@@ -96,11 +96,11 @@ class Test統合テスト_デフォルト入力時:
         # inputs = change_testmode_input_V_hs_min_C(inputs)
         result = calc(inputs, test_mode=True)
 
-        assert result['TValue'].E_C != expected_result_type1.E_C
         assert result['TValue'].E_H != expected_result_type1.E_H
+        assert result['TValue'].E_C != expected_result_type1.E_C
 
-        assert result['TValue'].E_C != expected_result_type2.E_C
         assert result['TValue'].E_H != expected_result_type2.E_H
+        assert result['TValue'].E_C != expected_result_type2.E_C
 
 def change_testmode_VAV(inputs: dict):
     fixtures = {
