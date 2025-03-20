@@ -8,6 +8,9 @@ import jjjexperiment.constants as jjj_consts
 from jjjexperiment.denchu_1 import Spec, Condition, absolute_humid
 from jjjexperiment.options import *
 
+# TODO: 将来的に input.py は解体 inputs/**_entity.py へ移行する
+from jjjexperiment.app_config import *
+
 def get_basic(input: dict):
     """ 基本情報の設定
 
@@ -69,7 +72,7 @@ def get_env(input: dict):
     underfloor_air_conditioning_air_supply = int(input['underfloor_air_conditioning_air_supply']) == 2
 
     # NOTE: 床下空調ロジック「変更する」を優先して強制的に床下空調アリの状態にします
-    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value:
         underfloor_air_conditioning_air_supply = True
 
     if underfloor_air_conditioning_air_supply:

@@ -36,6 +36,7 @@ import jjjexperiment.underfloor_ac as jjj_ufac
 # DIコンテナー
 from injector import Injector
 from jjjexperiment.di_container import *
+from jjjexperiment.app_config import *
 
 # NOTE: section4_2 の同名の関数の改変版
 @jjj_cloning
@@ -55,6 +56,8 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     ha_ca_holder = di.get(HaCaInputHolder)
     ha_ca_holder.q_hs_rtd_H = q_hs_rtd_H
     ha_ca_holder.q_hs_rtd_C = q_hs_rtd_C
+
+    app_config = injector.get(AppConfig)
 
     R_g = jjj_consts.R_g  # 追加0416
 
@@ -314,7 +317,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     )
 
     # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
-    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
         U_s = algo.get_U_s()  # 床の熱貫流率 [W/m2K]
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(A_A, A_MR, A_OR)
@@ -416,7 +419,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     if jjj_consts.carry_over_heat == 過剰熱量繰越計算.行う.value:
 
         # NOTE: 過剰熱繰越と併用しないオプションはここで実行を拒否します
-        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
             raise PermissionError("この操作は実行に時間がかかるため併用できません。[過剰熱繰越と床下空調ロジック変更]")
             # NOTE: 過剰熱繰越の8760ループと床下空調ロジック変更の8760ループが合わさると
             # 一時間を超える実行時間になることを確認したため回避しています(2024/02)
@@ -677,7 +680,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         house_info = di.get(SampleHouseInfo)
 
-        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
             # 床下空調 新ロジック
             r_A_ufac = 1.0  # WG資料に一致させるため
             house_info.r_A_ufac = r_A_ufac
@@ -697,7 +700,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region)
 
         # (8)(9) 負荷バランス時の暖冷房負荷 補正
-        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
             # FIXME: 床下限定の数値だがとりあえず評価する L_star_の計算で不要なら無視されている
             # NOTE: 新ロジックでのみ 期待される床下温度を事前に計算(本計算は後で行う)
             Theta_uf_d_t_2023 = algo.calc_Theta_uf_d_t_2023(
@@ -843,7 +846,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                             L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, region)
 
         # NOTE: 床下空調を使用する(旧・新 両ロジックとも) 対象居室のみ損失分を補正する
-        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
             assert Theta_uf_supply_d_t is not None, "1階居室の差替え用の床下温度が必要です"
 
             # 対象居室 i=1,2(1階居室)の損失分を補正する
@@ -905,7 +908,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                                        V_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i, region)
 
         # 実行条件: 床下新空調ロジックのみ
-        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+        if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
             # 熱源機出口温度から吹き出し温度を計算する
             V_sa_d_t = np.sum(V_dash_supply_d_t_i[:2, :], axis=0)  # i=1,2
 
@@ -1206,7 +1209,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['E_C_UT_d_t'] = E_C_UT_d_t
 
     # 床下空調新ロジック調査用変数の出力
-    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
         hci = di.get(HaCaInputHolder)
         filename = case_name + jjj_consts.version_info() + hci.flg_char() + "_output_uf.csv"
         survey_df_uf = di.get(UfVarsDataFrame)  # ネスト関数内で更新されているデータフレーム

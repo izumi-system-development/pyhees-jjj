@@ -60,6 +60,7 @@ from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 from jjjexperiment.options import *
 from jjjexperiment.di_container import *
 import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.app_config import *
 
 @jjj_cloned
 # 未処理負荷と機器の計算に必要な変数を取得
@@ -2310,7 +2311,9 @@ def get_Theta_star_NR_d_t(Theta_star_HBR_d_t, Q, A_NR, V_vent_l_NR_d_t, V_dash_s
 
     # NOTE: 通常時: 1・2階居室
     # TODO: 新床下空調時: 10 (1階全体)できません アクセスするデータ側がないため
-    i_end = 5 if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value else 5
+    i_end = 5  \
+      if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+      else 5
 
     # 暖房期 (52-1)
     Theta_star_NR_d_t[H] = Theta_star_HBR_d_t[H] - np.sum(L_H_d_t_i[5:12, H], axis=0) / \

@@ -47,8 +47,6 @@ change_V_supply_d_t_i_max: int = Vサプライの上限キャップ.外さない
 """V_supply_d_t_iの上限キャップを外す"""
 carry_over_heat: int = 過剰熱量繰越計算.行わない.value
 """過剰熱量を次の時刻に持ち越す"""
-change_underfloor_temperature: int = 床下空調ロジック.変更しない.value
-"""床下温度の計算式を変更"""
 
 #以下、潜熱評価モデル追加対応(暖房)
 A_f_hex_small_H: float = 0.2
@@ -249,11 +247,8 @@ def set_constants(input: dict):
   if 'carry_over_heat' in input:
     global carry_over_heat
     carry_over_heat = int(input['carry_over_heat'])
-  if 'change_underfloor_temperature' in input:
-    global change_underfloor_temperature
-    change_underfloor_temperature = int(input['change_underfloor_temperature'])
-    global done_binsearch_newufac  # 制御用
-    done_binsearch_newufac = False
+  # 床下空調新ロジック > AppConfigへ移動
+
   #以下、潜熱評価モデル追加対応
   if 'H_A' in input:
     if 'A_f_hex_small' in input['H_A']:

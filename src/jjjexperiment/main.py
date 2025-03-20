@@ -28,6 +28,7 @@ import jjjexperiment.denchu_2
 
 import jjjexperiment.input
 import jjjexperiment.constants as jjj_consts
+from jjjexperiment.app_config import *
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.result import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
@@ -40,6 +41,8 @@ def calc(input_data: dict, test_mode=False):
 
     with open(case_name + jjj_consts.version_info() + '_input.json', 'w') as f:
         json.dump(input_data, f, indent=4)
+
+    injector.get(AppConfig).update(input_data)
 
     jjj_consts.set_constants(input_data)
     type, tatekata, A_A, A_MR, A_OR, region, sol_region = jjjexperiment.input.get_basic(input_data)

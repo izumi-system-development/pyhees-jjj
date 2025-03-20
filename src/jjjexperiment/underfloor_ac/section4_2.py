@@ -1,6 +1,5 @@
 from nptyping import Float64, NDArray, Shape
 import numpy as np
-from injector import Injector
 
 import pyhees.section3_1 as ld
 import pyhees.section3_1_e as algo
@@ -10,6 +9,7 @@ import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
 # JJJ
 import jjjexperiment.constants as jjj_consts
+from jjjexperiment.app_config import *
 from jjjexperiment.di_container import *
 from jjjexperiment.common import *
 from jjjexperiment.options import *
@@ -167,7 +167,7 @@ def get_delta_L_star_newuf(
 
     """
     # 事前条件:
-    assert jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value, \
+    assert injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value,  \
         "床下空調ロジックのみで実行されることを想定"
 
     # 当該住戸の1時間当たりの換気量 (m3/h) D.3.2 (4)
