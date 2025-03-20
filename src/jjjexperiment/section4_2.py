@@ -354,7 +354,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Q_hat_hs_d_t += delta_L_uf2outdoor_d_t
 
         # 3. 床下 -> 地盤 (逃げ方向)
-
         # 吸熱応答係数の初項 定数取得クラスを作成するか
         Phi_A_0 = 0.025504994
         # TODO: ここで算出する方法が不明なので相談する

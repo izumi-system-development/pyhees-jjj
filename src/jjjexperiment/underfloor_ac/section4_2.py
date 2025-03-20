@@ -20,16 +20,17 @@ def get_A_s_ufac_i(
         A_A: float,
         A_MR: float,
         A_OR: float
-    ) -> tuple[NDArray[Shape["5, 1"], Float64], float]:
+    ) -> tuple[NDArray[Shape["12, 1"], Float64], float]:
     """
     Returns:
-        (NDArray[Shape["5, 1"], Float64], float):
+        tuple(NDArray[Shape["12, 1"], Float64], float):
             - A_s_ufac_i: 暖冷房区画iの床下空調有効面積[m2]
             - r_A_s_ufac: 面積全体における床下空調部分の床面積の比率[-]
     """
     r_A_ufac = 1.0  # 床下空調利用時の有効率
     A_s_ufac_i \
         = np.array([
+            # 床面積 * 床下空調部分割合 * 有効率
             algo.calc_A_s_ufvnt_i(i, r_A_ufac, A_A, A_MR, A_OR)
             for i in range(1, 13)
         ]).reshape(-1, 1)
@@ -222,8 +223,6 @@ def get_delta_L_star_newuf(
     delta_L_uf2outdoor_d_t_i = ratio.T * delta_L_uf2outdoor_d_t
     delta_L_uf2gnd_d_t_i = ratio.T * delta_L_uf2gnd_d_t
 
-    # θ_supply_d_t の逆算は一度しか行わないため
-    jjj_consts.done_binsearch_newufac = True
 
     return delta_L_room2uf_d_t_i, delta_L_uf2outdoor_d_t_i[:5], delta_L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
 
