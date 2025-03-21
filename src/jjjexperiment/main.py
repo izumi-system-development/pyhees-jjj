@@ -219,7 +219,7 @@ def calc(input_data: dict, test_mode=False):
 
     _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t, \
         = jjj_dc.calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C,
-            H_A['q_hs_rtd_H'], None,
+            H_A['q_hs_rtd_H'], None,  # 暖房時 Q,hs,rtd,C 初期化しない
             q_rtd_H, q_rtd_C, q_max_H, q_max_C, V_hs_dsgn_H, V_hs_dsgn_C, Q, H_A['VAV'], H_A['general_ventilation'], hs_CAV,
             H_A['duct_insulation'], region, L_H_d_t_i, L_CS_d_t_i, L_CL_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i,
             H_A['type'], input_C_af_H, input_C_af_C,

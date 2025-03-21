@@ -3,11 +3,12 @@ from enum import Enum
 # NOTE: import * して利用するので、jjj_ 付けるとわかりやすい
 
 class JJJ_HCM(Enum):
-    Undefined = 0  # Enumの規定値無効化
+  """暖冷房期間"""
+  Undefined = 0  # Enumの規定値無効化
 
-    H = 1  # 暖房期
-    C = 2  # 冷房期
-    M = 3  # 中間期
+  H = 1  # 暖房期
+  C = 2  # 冷房期
+  M = 3  # 中間期
 
 # NOTE: オリジンが更新されたときに改変コードの追従対応の判断用にラベリングしている
 

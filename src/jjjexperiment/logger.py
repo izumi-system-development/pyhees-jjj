@@ -83,11 +83,12 @@ class LimitedLoggerAdapter(logging.LoggerAdapter):
             cls._logger.debug(f"{label}[AVG.] : {np.average(arr[np.nonzero(arr)])}")
 
 
-
 # ロギング用デコレータ
-
 def log_res(res_labels: list = []):
     """ デコレータでロガーを有効化します(返却値と同じ長さのラベルを渡して下さい """
+    # デコレータファクトリー(引数を取る)
+
+    # 実際のデコレータ
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):

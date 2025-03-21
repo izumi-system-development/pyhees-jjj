@@ -1,12 +1,11 @@
-from typing import List
 import numpy as np
+from typing import Any
 from nptyping import Float64, NDArray, Shape
 
 import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
 import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
-
 # JJJ
 from jjjexperiment.common import *
 
@@ -32,21 +31,20 @@ class ClimateEntity:
     def get_Theta_g_avg(self) -> float:
         return algo.get_Theta_g_avg(self.get_Theta_ex_d_t())
 
-    def get_HCM_d_t(self) -> List[JJJ_HCM]:
+    def get_HCM_d_t(self) -> NDArray[Shape['8760'], Any]:
         H, C, M = dc.get_season_array_d_t(self.region)
-        HCM = [None] * len(H)
+        HCM = []
         for i in range(len(H)):
             if H[i]:
-                HCM[i] = JJJ_HCM.H
+                HCM.append(JJJ_HCM.H)
             elif C[i]:
-                HCM[i] = JJJ_HCM.C
+                HCM.append(JJJ_HCM.C)
             elif M[i]:
-                HCM[i] = JJJ_HCM.M
+                HCM.append(JJJ_HCM.M)
             else:
                 raise ValueError
         # 事後条件
         assert len(HCM) == 8760
-        assert all([x is not None for x in HCM])
 
         return np.array(HCM)
 

@@ -158,12 +158,13 @@ def get_heating(input: dict, region: int, A_A: float):
     if int(input['H_A']['input']) == 1:
         H_A['EquipmentSpec'] = '入力しない'
         H_A['q_hs_rtd_H'] = dc_spec.get_q_hs_rtd_H(region, A_A)
-        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
-        H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
         H_A['P_hs_rtd_H'] = dc_spec.get_P_hs_rtd_H(H_A['q_hs_rtd_H'])
         H_A['V_fan_rtd_H'] = dc_spec.get_V_fan_rtd_H(H_A['q_hs_rtd_H'])
-        H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_rtd_H'] = dc_spec.get_P_fan_rtd_H(H_A['V_fan_rtd_H'])
+
+        H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
+        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
+        H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_mid_H'] = dc_spec.get_P_fan_mid_H(H_A['V_fan_mid_H'])
         H_A['P_hs_mid_H'] = np.nan
     elif int(input['H_A']['input']) == 2:
@@ -172,8 +173,9 @@ def get_heating(input: dict, region: int, A_A: float):
         H_A['P_hs_rtd_H'] = float(input['H_A']['P_hs_rtd_H'])
         H_A['V_fan_rtd_H'] = float(input['H_A']['V_fan_rtd_H'])
         H_A['P_fan_rtd_H'] = float(input['H_A']['P_fan_rtd_H'])
-        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
+
         H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
+        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
         H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_mid_H'] = dc_spec.get_P_fan_mid_H(H_A['V_fan_mid_H'])
         H_A['P_hs_mid_H'] = np.nan
@@ -183,11 +185,12 @@ def get_heating(input: dict, region: int, A_A: float):
         H_A['P_hs_rtd_H'] = float(input['H_A']['P_hs_rtd_H'])
         H_A['V_fan_rtd_H'] = float(input['H_A']['V_fan_rtd_H'])
         H_A['P_fan_rtd_H'] = float(input['H_A']['P_fan_rtd_H'])
-        H_A['q_hs_mid_H'] = float(input['H_A']['q_hs_mid_H'])
-        H_A['P_hs_mid_H'] = float(input['H_A']['P_hs_mid_H'])
-        H_A['V_fan_mid_H'] = float(input['H_A']['V_fan_mid_H'])
-        H_A['P_fan_mid_H'] = float(input['H_A']['P_fan_mid_H'])
+
         H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
+        H_A['q_hs_mid_H'] = float(input['H_A']['q_hs_mid_H'])
+        H_A['V_fan_mid_H'] = float(input['H_A']['V_fan_mid_H'])
+        H_A['P_hs_mid_H'] = float(input['H_A']['P_hs_mid_H'])
+        H_A['P_fan_mid_H'] = float(input['H_A']['P_fan_mid_H'])
     elif int(input['H_A']['input']) == 4:
         # WARNING: このケースは存在しますか?
         H_A['EquipmentSpec'] = '最小・定格・最大出力時のメーカー公表値を入力する'

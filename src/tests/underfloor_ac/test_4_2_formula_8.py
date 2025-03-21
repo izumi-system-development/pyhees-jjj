@@ -123,9 +123,9 @@ class Test_熱損失を含む負荷バランス時の暖冷房負荷:
         )
 
         # Act
-        i = 0  # 01/01 01:00
+        t = 0  # 01/01 01:00
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, input.region)
-        assert L_star_H_d_t_i[0][i] == pytest.approx(6.545, rel=1e-2)
+        assert L_star_H_d_t_i[0][t] == pytest.approx(6.545, rel=1e-2)
 
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
 
@@ -138,4 +138,4 @@ class Test_熱損失を含む負荷バランス時の暖冷房負荷:
         L_star_H_d_t_i -= delta_L_uf2room_d_t_i[:5, :]  # 負荷控除
 
         # Assert
-        assert L_star_H_d_t_i[0][i] == pytest.approx(3.60, rel=1e-2)
+        assert L_star_H_d_t_i[0][t] == pytest.approx(3.60, rel=1e-2)
