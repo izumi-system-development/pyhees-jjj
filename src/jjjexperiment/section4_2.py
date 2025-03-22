@@ -378,8 +378,40 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['X_star_NR_d_t'] = X_star_NR_d_t
 
     # (52)　負荷バランス時の非居室の室温
-    Theta_star_NR_d_t = dc.get_Theta_star_NR_d_t(Theta_star_HBR_d_t, Q, A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, U_prt,
-                                              A_prt_i, L_H_d_t_i, L_CS_d_t_i, region)
+    if False:
+    # TODO: この時点で Theta_NR_d_t が利用できない問題のためコメントアウト
+    # if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+        V_dash_supply_d_t_A = np.sum(V_dash_supply_d_t_i[0:5, :], axis=0)
+        L_H_NR_d_t_A = np.sum(L_H_d_t_i[5:, :], axis=0)
+        L_CS_NR_d_t_A = np.sum(L_CS_d_t_i[5:, :], axis=0)
+
+        assert A_prt_i.shape == (5,)
+        A_prt_A = np.sum(A_prt_i)
+        HCM = np.array(jjj_ipt.ClimateEntity(region).get_HCM_d_t())
+
+        Theta_star_NR_d_t = np.vectorize(jjj_ufac.get_Theta_star_NR)
+        Theta_star_NR_d_t  \
+            = Theta_star_NR_d_t(
+                Theta_star_HBR = Theta_star_HBR_d_t,  #-> Shape[8760]
+                Q = Q,
+                A_NR = A_NR,
+                V_vent_l_NR = V_vent_l_NR_d_t,  #-> Shape[8760]
+                V_dash_supply_A = V_dash_supply_d_t_A,  #-> Shape[8760]
+                U_prt = U_prt,
+                A_prt_A = A_prt_A,
+                L_H_NR_A = L_H_NR_d_t_A,  #-> Shape[8760]
+                L_CS_NR_A = L_CS_NR_d_t_A,  #-> Shape[8760]
+                Theta_NR = Theta_NR_d_t,  #-> Shape[8760]
+                Theta_uf = Theta_uf_d_t,  #-> Shape[8760]
+                HCM = HCM  # Shape[8760]
+            )
+    if True:
+        Theta_star_NR_d_t  \
+            = dc.get_Theta_star_NR_d_t(
+                Theta_star_HBR_d_t, Q, A_NR,
+                V_vent_l_NR_d_t, V_dash_supply_d_t_i,
+                U_prt, A_prt_i, L_H_d_t_i, L_CS_d_t_i, region)
+
     df_output['Theta_star_NR_d_t'] = Theta_star_NR_d_t
 
     # (49)　実際の非居室の絶対湿度
@@ -954,24 +986,58 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
                 Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
-        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
-            # (46)'　暖冷房区画𝑖の実際の居室の室温
-            Theta_HBR_d_t_i = dc.get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
-                                                     A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                                                     r_A_ufac, A_A, A_MR, A_OR, Theta_uf_d_t)
-
-            # (48)'　実際の非居室の室温
-            Theta_NR_d_t = dc.get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
-                                                V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, Theta_uf_d_t, di=di)
+        # (46) 暖冷房区画𝑖の実際の居室の室温
+        if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+            HCM = np.array(jjj_ipt.ClimateEntity(region).get_HCM_d_t())
+            A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(A_A, A_MR, A_OR)
+            Theta_HBR_d_t_i = np.hstack([
+                jjj_ufac.get_Theta_HBR_i(
+                    Theta_star_HBR = Theta_star_HBR_d_t[t],
+                    V_supply_i = V_supply_d_t_i[:, t:t+1],
+                    Theta_supply_i = Theta_supply_d_t_i[:, t:t+1],
+                    U_prt = U_prt,
+                    A_prt = A_prt_i.reshape(-1,1)[:5, :],
+                    Q = Q,
+                    A_HCZ_i = A_HCZ_i.reshape(-1,1),
+                    L_star_H_i = L_star_H_d_t_i[:, t:t+1],
+                    L_star_CS_i = L_star_CS_d_t_i[:, t:t+1],
+                    HCM = HCM[t],
+                    A_s_ufac_i = A_s_ufac_i[:5, :],
+                    Theta_uf = Theta_uf_d_t[t]
+                ) for t in range(24*365)
+            ])
         else:
-            # (46)　暖冷房区画𝑖の実際の居室の室温
-            Theta_HBR_d_t_i = dc.get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q,
-                                                     A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region,
-                                                     r_A_ufac, A_A, A_MR, A_OR)
+            # 改変なし元式
+            Theta_HBR_d_t_i  \
+                = dc.get_Theta_HBR_d_t_i(
+                    Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i,
+                    U_prt, A_prt_i, Q, A_HCZ_i,
+                    L_star_H_d_t_i, L_star_CS_d_t_i, region)
 
-            # (48)　実際の非居室の室温
-            Theta_NR_d_t = dc.get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t,
-                                                V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q, di=di)
+        # (48) 実際の非居室の室温
+        if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+            Theta_NR_d_t = np.array([
+                jjj_ufac.get_Theta_NR(
+                    Theta_star_NR = Theta_star_NR_d_t[t],
+                    Theta_star_HBR = Theta_star_HBR_d_t[t],
+                    Theta_HBR_i = Theta_HBR_d_t_i[:, t:t+1],
+                    A_NR = A_NR,
+                    V_vent_l_NR = V_vent_l_NR_d_t[t],
+                    V_dash_supply_i = V_dash_supply_d_t_i[:, t:t+1],
+                    V_supply_i = V_supply_d_t_i[:, t:t+1],
+                    U_prt = U_prt,
+                    A_prt_i = A_prt_i.reshape(-1,1),
+                    Q = Q,
+                    Theta_uf = Theta_uf_d_t[t]
+                ) for t in range(24*365)
+            ])
+        else:
+            # 改変なし元式
+            Theta_NR_d_t  \
+                = dc.get_Theta_NR_d_t(
+                    Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i,
+                    A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, V_supply_d_t_i,
+                    U_prt, A_prt_i, Q)
 
     ### 熱繰越 / 非熱繰越 の分岐が終了 -> 以降、共通の処理 ###
 
