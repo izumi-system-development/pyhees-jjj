@@ -1,0 +1,129 @@
+from nptyping import Float64, NDArray, Shape
+import numpy as np
+
+import pyhees.section4_2 as dc
+# JJJ
+from jjjexperiment.app_config import *
+from jjjexperiment.di_container import *
+from jjjexperiment.common import *
+from jjjexperiment.options import *
+
+# shape(5,1)の引数があるので hstack & broadcast で利用
+@jjj_cloning
+def get_Theta_HBR_i(
+        Theta_star_HBR: float,
+        V_supply_i: NDArray[Shape['5, 1'], Float64],
+        Theta_supply_i: NDArray[Shape['5, 1'], Float64],
+        U_prt: float,
+        A_prt_i: NDArray[Shape['5, 1'], Float64],
+        Q: float,
+        A_HCZ_i: NDArray[Shape['5, 1'], Float64],
+        L_star_H_i: NDArray[Shape['5, 1'], Float64],
+        L_star_CS_i: NDArray[Shape['5, 1'], Float64],
+        HCM: JJJ_HCM,
+        A_s_ufac_i: NDArray[Shape['5, 1'], Float64],
+        Theta_uf: float,
+    ) -> NDArray[Shape['5, 1'], Float64]:
+    """単時点版 (46-1)(46-2)(46-3) の床下空調 補正
+    """
+    # 事前条件:
+    assert injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value,  \
+        "床下空調ロジックのみで実行されることを想定"
+
+    assert V_supply_i.shape == (5, 1), '想定外の行列数'
+    assert Theta_supply_i.shape == (5, 1), '想定外の行列数'
+    assert A_prt_i.shape == (5, 1), '想定外の行列数'
+    assert A_HCZ_i.shape == (5, 1), '想定外の行列数'
+    assert L_star_H_i.shape == (5, 1), '想定外の行列数'
+    assert L_star_CS_i.shape == (5, 1), '想定外の行列数'
+    assert A_s_ufac_i.shape == (5, 1), '想定外の行列数'
+
+    CRV = dc.get_c_p_air() * dc.get_rho_air() * V_supply_i
+    assert CRV.shape == (5, 1), '想定外の行列数'
+
+    U_s = dc.get_U_s()
+
+    match HCM:
+        # 暖房期 (46-1)
+        case JJJ_HCM.H:
+            Theta_HBR_i = Theta_star_HBR  \
+                + (CRV * (Theta_supply_i - Theta_star_HBR)
+                    + U_s * A_s_ufac_i * (Theta_uf - Theta_star_HBR) * 3600  ##
+                    - L_star_H_i * 1e+6)  \
+                    / (CRV
+                        + (U_prt * A_prt_i + Q * A_HCZ_i) * 3600
+                        + U_s * A_s_ufac_i * 3600)  ##
+            # return np.clip(Theta_HBR_i, Theta_star_HBR, None)
+            return Theta_HBR_i
+
+        # 冷房期 (46-2)
+        case JJJ_HCM.C:
+            Theta_HBR_i = Theta_star_HBR  \
+                + (CRV * (Theta_star_HBR - Theta_supply_i)
+                    + U_s * A_s_ufac_i * (Theta_star_HBR - Theta_uf) * 3600  ##
+                    - L_star_CS_i * 1e+6)  \
+                    / (CRV
+                        + (U_prt * A_prt_i + Q * A_HCZ_i) * 3600
+                        + U_s * A_s_ufac_i * 3600)  ##
+            # return np.clip(Theta_HBR_i, None, Theta_star_HBR)
+            return Theta_HBR_i
+
+        # 中間期 (46-3)
+        case JJJ_HCM.M:
+            return np.full((5, 1), Theta_star_HBR)
+
+        case _:
+            raise ValueError('HCMの値が不正です')
+
+@jjj_cloning  # section4_2/get_Theta_NR_d_t
+def get_Theta_NR(
+        Theta_star_NR: float,
+        Theta_star_HBR: float,
+        Theta_HBR_i: NDArray[Shape['5, 1'], Float64],
+        A_NR: float,
+        V_vent_l_NR: float,
+        V_dash_supply_i: NDArray[Shape['5, 1'], Float64],
+        V_supply_i: NDArray[Shape['5, 1'], Float64],
+        U_prt: float,
+        A_prt_i: NDArray[Shape['5, 1'], Float64],
+        Q: float,
+        Theta_uf: float,
+    ) -> float:
+    """単時点版 (48a)(48b) 床下空調 補正アリ
+    """
+    # 事前条件:
+    assert injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value,  \
+        "床下空調ロジックのみで実行されることを想定"
+
+    assert Theta_HBR_i.shape == (5, 1), '想定外の行列数'
+    assert V_dash_supply_i.shape == (5, 1), '想定外の行列数'
+    assert V_supply_i.shape == (5, 1), '想定外の行列数'
+    assert A_prt_i.shape == (5, 1), '想定外の行列数'
+
+    c_p_air = dc.get_c_p_air()
+    rho_air = dc.get_rho_air()
+    # (48d)
+    k_dash_prt_i = c_p_air * rho_air * (V_dash_supply_i / 3600) + U_prt * A_prt_i
+    k_dash_prt_A = np.sum(k_dash_prt_i)
+    # (48c)
+    k_prt_i = c_p_air * rho_air * (V_supply_i / 3600) + U_prt * A_prt_i
+    k_prt_A = np.sum(k_prt_i)
+
+    # NOTE: VAVなしのとき V',supply=V,supply -> k',prt,i=k,prt,i
+
+    # (48b) [J/(K・s)]
+    k_evp = (Q - 0.35 * 0.5 * 2.4) * A_NR + c_p_air * rho_air * (V_vent_l_NR / 3600)
+    # (48a)
+    U_s = dc.get_U_s()
+
+    Theta_NR  \
+        = ((k_evp + k_prt_A) * Theta_star_NR  \
+            + U_s * A_NR * Theta_uf  \
+            - k_dash_prt_A * (Theta_star_HBR - Theta_star_NR)  \
+            + np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR)))  \
+        / (k_evp
+           + U_s * A_NR
+           + k_prt_A)
+
+    # NOTE: 非床下空調の式は定義しない(オリジナルを使用)
+    return Theta_NR

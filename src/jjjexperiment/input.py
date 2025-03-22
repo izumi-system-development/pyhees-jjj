@@ -8,6 +8,9 @@ import jjjexperiment.constants as jjj_consts
 from jjjexperiment.denchu_1 import Spec, Condition, absolute_humid
 from jjjexperiment.options import *
 
+# TODO: 将来的に input.py は解体 inputs/**_entity.py へ移行する
+from jjjexperiment.app_config import *
+
 def get_basic(input: dict):
     """ 基本情報の設定
 
@@ -69,7 +72,7 @@ def get_env(input: dict):
     underfloor_air_conditioning_air_supply = int(input['underfloor_air_conditioning_air_supply']) == 2
 
     # NOTE: 床下空調ロジック「変更する」を優先して強制的に床下空調アリの状態にします
-    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value:
         underfloor_air_conditioning_air_supply = True
 
     if underfloor_air_conditioning_air_supply:
@@ -155,12 +158,13 @@ def get_heating(input: dict, region: int, A_A: float):
     if int(input['H_A']['input']) == 1:
         H_A['EquipmentSpec'] = '入力しない'
         H_A['q_hs_rtd_H'] = dc_spec.get_q_hs_rtd_H(region, A_A)
-        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
-        H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
         H_A['P_hs_rtd_H'] = dc_spec.get_P_hs_rtd_H(H_A['q_hs_rtd_H'])
         H_A['V_fan_rtd_H'] = dc_spec.get_V_fan_rtd_H(H_A['q_hs_rtd_H'])
-        H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_rtd_H'] = dc_spec.get_P_fan_rtd_H(H_A['V_fan_rtd_H'])
+
+        H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
+        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
+        H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_mid_H'] = dc_spec.get_P_fan_mid_H(H_A['V_fan_mid_H'])
         H_A['P_hs_mid_H'] = np.nan
     elif int(input['H_A']['input']) == 2:
@@ -169,8 +173,9 @@ def get_heating(input: dict, region: int, A_A: float):
         H_A['P_hs_rtd_H'] = float(input['H_A']['P_hs_rtd_H'])
         H_A['V_fan_rtd_H'] = float(input['H_A']['V_fan_rtd_H'])
         H_A['P_fan_rtd_H'] = float(input['H_A']['P_fan_rtd_H'])
-        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
+
         H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
+        H_A['q_hs_mid_H'] = dc_spec.get_q_hs_mid_H(H_A['q_hs_rtd_H'])
         H_A['V_fan_mid_H'] = dc_spec.get_V_fan_mid_H(H_A['q_hs_mid_H'])
         H_A['P_fan_mid_H'] = dc_spec.get_P_fan_mid_H(H_A['V_fan_mid_H'])
         H_A['P_hs_mid_H'] = np.nan
@@ -180,11 +185,12 @@ def get_heating(input: dict, region: int, A_A: float):
         H_A['P_hs_rtd_H'] = float(input['H_A']['P_hs_rtd_H'])
         H_A['V_fan_rtd_H'] = float(input['H_A']['V_fan_rtd_H'])
         H_A['P_fan_rtd_H'] = float(input['H_A']['P_fan_rtd_H'])
-        H_A['q_hs_mid_H'] = float(input['H_A']['q_hs_mid_H'])
-        H_A['P_hs_mid_H'] = float(input['H_A']['P_hs_mid_H'])
-        H_A['V_fan_mid_H'] = float(input['H_A']['V_fan_mid_H'])
-        H_A['P_fan_mid_H'] = float(input['H_A']['P_fan_mid_H'])
+
         H_A['q_hs_min_H'] = dc_spec.get_q_hs_min_H(H_A['q_hs_rtd_H'])
+        H_A['q_hs_mid_H'] = float(input['H_A']['q_hs_mid_H'])
+        H_A['V_fan_mid_H'] = float(input['H_A']['V_fan_mid_H'])
+        H_A['P_hs_mid_H'] = float(input['H_A']['P_hs_mid_H'])
+        H_A['P_fan_mid_H'] = float(input['H_A']['P_fan_mid_H'])
     elif int(input['H_A']['input']) == 4:
         # WARNING: このケースは存在しますか?
         H_A['EquipmentSpec'] = '最小・定格・最大出力時のメーカー公表値を入力する'

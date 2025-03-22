@@ -2,28 +2,26 @@ import os
 import pytest
 import numpy as np
 
-import pyhees.section3_1 as ld
 import pyhees.section3_1_d as uf
 import pyhees.section3_1_e as algo
 import pyhees.section4_1 as HC
-import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
 
-# 床下空調利用時の式(40)のテスト
-class Test_熱源機の風量を計算するための熱源機の出力:
+class Test_床下空調時_式40:
 
     def test_既存関数の計算(self, Q_hat_hs_d_t):
         """
-        熱源機の風量を計算するための熱源機の出力適正度合い_風量_40
+        (40) 熱源機の風量を計算するための熱源機の出力
         """
         # Arrange & Act
-        i = 0  # 01/01 01:00
+        t = 0  # 01/01 01:00
         # Assert
         assert Q_hat_hs_d_t is not None
-        assert Q_hat_hs_d_t[i] == pytest.approx(18.53, rel=1e-2)
+        assert Q_hat_hs_d_t[t] == pytest.approx(18.53, rel=1e-2)
+
 
     def test_床下温度の計算(self):
         # Arrange
@@ -100,6 +98,7 @@ class Test_熱源機の風量を計算するための熱源機の出力:
         assert A_s_ufvnt == pytest.approx(65.44, rel=1e-2)
         assert A_s_ufvnt / input.A_A == pytest.approx(0.54, rel=1e-2)
 
+
     def test_床下から床上居室への熱移動(self):
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
@@ -134,6 +133,7 @@ class Test_熱源機の風量を計算するための熱源機の出力:
         assert np.shape(delta_L_uf2room) == (12, 1)
         assert np.sum(delta_L_uf2room) == pytest.approx(6.37, rel=1e-2)
 
+
     def test_床下から外気への熱損失(self):
         """
         床下から外気への熱損失
@@ -162,6 +162,7 @@ class Test_熱源機の風量を計算するための熱源機の出力:
 
         # Assert
         assert delta_L_uf2outdoor == pytest.approx(2.07, rel=1e-2)
+
 
     def test_床下から地盤への熱損失(self):
 

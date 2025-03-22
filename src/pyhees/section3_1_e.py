@@ -7,12 +7,14 @@ from math import sqrt
 from functools import lru_cache
 
 # JJJ_EXPERIMENT ADD
+from injector import Injector
+
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.common import *
 from jjjexperiment.options import *
 from jjjexperiment.logger import log_res
 from jjjexperiment.di_container import *
-from injector import Injector
+from jjjexperiment.app_config import *
 
 # ============================================================================
 # E.2 床下温度
@@ -556,8 +558,8 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
           return theta_uf
 
-        if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value \
-          and jjj_consts.done_binsearch_newufac == False:
+        if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+          and injector.get(AppConfig).done_binsearch_new_ufac == False:
 
           # NOTE: 床下空調新ロジックでは、Theta_sa_d_t として Theta_uf_d_t の目標値が来ています
           # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
@@ -618,9 +620,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_star_d_t_i[:, dt] = Theta_star
         H_star_d_t_i[:, dt] = H_star
 
-    if di is not None \
-      and jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value \
-      and jjj_consts.done_binsearch_newufac == False:
+    if di is not None  \
+      and injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+      and injector.get(AppConfig).done_binsearch_new_ufac == False:
 
       # 床下空調新ロジック調査用 変数出力
       hci = di.get(HaCaInputHolder)
@@ -635,6 +637,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
           f"Theta_uf_d_t": Theta_uf_d_t,
         })
+
+      # θ_supply_d_t の逆算は一度しか行わないため
+      injector.get(AppConfig).done_binsearch_new_ufac = True
 
     return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt_i, A_s_ufvnt_A, \
       Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, \

@@ -4,15 +4,51 @@ from pydantic import BaseModel, ValidationError
 
 class H_A(BaseModel):
     """暖房方式"""
-    input: Optional[int] = 1  # 規定値
-    V_hs_dsgn_H: Optional[float] = 1500  # 規定値
-    q_hs_rtd_H: Optional[float] = 10000  # 規定値
+    type: int
+    input_V_hs_dsgn_H: Optional[int] = 1  # 入力しない
+    """設計風量の手動入力の有効・無効"""
+    V_hs_dsgn_H: Optional[float] = 1500.0  # 規定値
+    """直接取得せず HAエンティティ経由で取得"""
+    q_hs_rtd_H: Optional[float] = 10000.0  # 規定値
+    V_fan_rtd_H: Optional[float] = None
+    input: int
+    """機器仕様の入力の有無"""
+    # 機器仕様手動入力する時
+    q_hs_rtd_H: Optional[float] = None
+    P_hs_rtd_H: Optional[float] = None
+    V_fan_rtd_H: Optional[float] = None
+    P_fan_rtd_H: Optional[float] = None
+    q_hs_min_H: Optional[float] = None
+    q_hs_mid_H: Optional[float] = None
+    V_fan_mid_H: Optional[float] = None
+    P_fan_rtd_H: Optional[float] = None
+    P_hs_rtd_H: Optional[float] = None
+    # 下記は電中研モデルしか利用しない
+    q_rac_min_H: Optional[float] = None
+    q_rac_rtd_H: Optional[float] = None
+    q_rac_max_H: Optional[float] = None
+    P_rac_min_H: Optional[float] = None
+    P_rac_rtd_H: Optional[float] = None
+    P_rac_max_H: Optional[float] = None
+    V_rac_inner_H: Optional[float] = None
+    V_rac_outer_H: Optional[float] = None
+    Theta_RH_rac_inner_pub_H: Optional[float] = None
+    Theta_RH_rac_outer_pub_H: Optional[float] = None
+    RH_rac_inner_pub_H: Optional[float] = None
+    RH_rac_outer_pub_H: Optional[float] = None
+
 
 class C_A(BaseModel):
     """冷房方式"""
-    input: Optional[int] = 1  # 規定値
-    V_hs_dsgn_C: Optional[float] = 1500  # 規定値
-    q_hs_rtd_C: Optional[float] = 10000  # 規定値
+    type: int
+    input_V_hs_dsgn_C: Optional[int] = 1  # 入力しない
+    """設計風量の手動入力の有効・無効"""
+    V_hs_dsgn_C: Optional[float] = 1500.0  # 規定値
+    """直接取得せず CAエンティティ経由で取得"""
+    q_hs_rtd_C: Optional[float] = 10000.0  # 規定値
+    V_fan_rtd_C: Optional[float] = None
+    input: Optional[int] = 1
+    """機器仕様の入力の有無"""
 
 class InputDto(BaseModel):
     """直接入力されるもの"""

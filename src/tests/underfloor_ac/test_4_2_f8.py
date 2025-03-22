@@ -1,23 +1,21 @@
 import os
+import pytest
 import numpy as np
-import pyhees.section3_1 as ld
+
 import pyhees.section3_1_d as uf
-import pyhees.section3_1_e as algo
 import pyhees.section3_2 as gihi
 import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
-
 # JJJ
 from jjjexperiment.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
-import pytest
 
-class Test_熱損失を含む負荷バランス時の暖冷房負荷:
+class Test_床下空調時_式8補正:
 
-    def test_既存関数の計算(self, Q_hat_hs_d_t):
+    def test_式8_補正計算例(self, Q_hat_hs_d_t):
         """
-        熱損失を含む負荷バランス時の暖冷房負荷適正度合い_負荷_4_2
+        (8) 熱損失を含む負荷バランス時の暖房負荷 補正
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
@@ -123,9 +121,10 @@ class Test_熱損失を含む負荷バランス時の暖冷房負荷:
         )
 
         # Act
-        i = 0  # 01/01 01:00
+        t = 0  # 01/01 01:00
+        # (8) 熱損失を含む負荷バランス時の暖房負荷
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, input.region)
-        assert L_star_H_d_t_i[0][i] == pytest.approx(6.545, rel=1e-2)
+        assert L_star_H_d_t_i[0][t] == pytest.approx(6.545, rel=1e-2)
 
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
 
@@ -135,7 +134,8 @@ class Test_熱損失を含む負荷バランス時の暖冷房負荷:
             for tt in range(24*365)
         ])
         assert delta_L_uf2room_d_t_i.shape == (12, 8760)
+        # (8) 補正
         L_star_H_d_t_i -= delta_L_uf2room_d_t_i[:5, :]  # 負荷控除
 
         # Assert
-        assert L_star_H_d_t_i[0][i] == pytest.approx(3.60, rel=1e-2)
+        assert L_star_H_d_t_i[0][t] == pytest.approx(3.60, rel=1e-2)
