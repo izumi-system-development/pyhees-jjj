@@ -2,7 +2,7 @@ import math
 import pyhees.section4_2_a as dc_a
 
 # JJJ
-import jjjexperiment.constants as constants
+import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3
 
 class Testコイル特性:
@@ -83,12 +83,12 @@ class Testコイル特性_方式3_ユーザー独自値:
     @classmethod
     def setup_class(cls):
         """ ユーザーカスタム値を適用する """
-        constants.set_constants(cls._custom_values)
+        jjj_consts.set_constants(cls._custom_values)
 
     @classmethod
     def teardown_class(cls):
         """ ユーザーカスタム値をデフォルト値に戻す """
-        constants.set_constants(cls._default_values)
+        jjj_consts.set_constants(cls._default_values)
 
     def test_有効面積_方式3_定格低_上書き(self):
         """ 定格能力 5.6 kW 未満で 仕様書通り """

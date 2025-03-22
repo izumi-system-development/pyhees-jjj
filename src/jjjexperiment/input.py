@@ -3,7 +3,7 @@ import pyhees.section4_2_b as dc_spec
 import pyhees.section4_3_a as rac_spec
 
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
-import jjjexperiment.constants as constants
+import jjjexperiment.constants as jjj_consts
 
 from jjjexperiment.denchu_1 import Spec, Condition, absolute_humid
 from jjjexperiment.options import *
@@ -69,7 +69,7 @@ def get_env(input: dict):
     underfloor_air_conditioning_air_supply = int(input['underfloor_air_conditioning_air_supply']) == 2
 
     # NOTE: 床下空調ロジック「変更する」を優先して強制的に床下空調アリの状態にします
-    if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value:
+    if jjj_consts.change_underfloor_temperature == 床下空調ロジック.変更する.value:
         underfloor_air_conditioning_air_supply = True
 
     if underfloor_air_conditioning_air_supply:

@@ -106,6 +106,7 @@ def calc_heating_load(region, sol_region, A_A, A_MR, A_OR, Q, mu_H, mu_C, NV_MR,
         L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = calc_L_H_d_t(region, sol_region, A_A, A_MR, A_OR, mode_H, mode_C, spec_MR, spec_OR,
                                                      mode_MR, mode_OR, Q,
                                                      mu_H, mu_C, NV_MR, NV_OR, TS, r_A_ufvnt, HEX, SHC, underfloor_insulation)
+        # CHECK: 暖房負荷の計算で _CS_R をするのが正しいか要確認
         return L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i
     elif mode_H is None:
         return None, None, None

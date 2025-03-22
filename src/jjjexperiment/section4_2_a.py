@@ -9,7 +9,7 @@ import pyhees.section4_3
 # JJJ
 from jjjexperiment.denchu_1 import Spec
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
-import jjjexperiment.constants as constants
+import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 import jjjexperiment.denchu_2 as denchu_2
 from jjjexperiment.options import *
@@ -30,12 +30,12 @@ def calc_E_E_fan_H_d_t(
     q_hs_H_d_t = dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
 
     # (37) 送風機の付加分 [kWh/h]
-    if constants.input_V_hs_min == 最低風量直接入力.入力する.value:
+    if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
         E_E_fan_H_d_t \
             = jjj_V_min_input.get_E_E_fan_d_t(
                 P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H)
 
-    elif constants.input_V_hs_min == 最低風量直接入力.入力しない.value:
+    elif jjj_consts.input_V_hs_min == 最低風量直接入力.入力しない.value:
         # デフォルト条件では V_hs_vent_d_t は既存式(35)のまま
         E_E_fan_H_d_t \
             = dc_a.get_E_E_fan_H_d_t(type,
@@ -47,7 +47,7 @@ def calc_E_E_fan_H_d_t(
                     q_hs_H_d_t,  # [W]
                     f_SFP_H)
     else:
-        raise ValueError(constants.input_V_hs_min)
+        raise ValueError(jjj_consts.input_V_hs_min)
 
     return E_E_fan_H_d_t, q_hs_H_d_t
 
@@ -66,12 +66,12 @@ def calc_E_E_fan_C_d_t(
     q_hs_CS_d_t, q_hs_CL_d_t = dc_a.get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
 
     # (38) 送風機の付加分 [kWh/h]
-    if constants.input_V_hs_min == 最低風量直接入力.入力する.value:
+    if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
         E_E_fan_C_d_t \
             = jjj_V_min_input.get_E_E_fan_d_t(
                 P_rac_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C)
 
-    elif constants.input_V_hs_min == 最低風量直接入力.入力しない.value:
+    elif jjj_consts.input_V_hs_min == 最低風量直接入力.入力しない.value:
         if (type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3):
             # (4) 潜熱/顕熱を使用せずに全熱負荷を再計算する
             q_hs_C_d_t = dc_a.get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
@@ -89,7 +89,7 @@ def calc_E_E_fan_C_d_t(
                     q_hs_C_d_t,  # [W]
                     f_SFP_C)
     else:
-        raise ValueError(constants.input_V_hs_min)
+        raise ValueError(jjj_consts.input_V_hs_min)
 
     return E_E_fan_C_d_t, q_hs_CS_d_t, q_hs_CL_d_t
 
@@ -222,7 +222,7 @@ def calc_E_E_H_d_t_type4(
         E_E_fan_H_d_t = E_E_fan_H_d_t,  # kW
         E_E_H_d_t = E_E_CRAC_H_d_t + E_E_fan_H_d_t  # kW
     )
-    df_output_denchuH.to_csv(case_name + constants.version_info() + '_denchu_H_output.csv', encoding='cp932')  # =Shift_JIS
+    df_output_denchuH.to_csv(case_name + jjj_consts.version_info() + '_denchu_H_output.csv', encoding='cp932')  # =Shift_JIS
 
     E_E_H_d_t = E_E_fan_H_d_t + E_E_CRAC_H_d_t
     return E_E_H_d_t
@@ -362,7 +362,7 @@ def calc_E_E_C_d_t_type4(
         E_E_fan_C_d_t = E_E_fan_C_d_t,  # kW
         E_E_C_d_t = E_E_CRAC_C_d_t + E_E_fan_C_d_t  # kW
     )
-    df_output_denchuC.to_csv(case_name + constants.version_info() + '_denchu_C_output.csv', encoding='cp932')  # =Shift_JIS
+    df_output_denchuC.to_csv(case_name + jjj_consts.version_info() + '_denchu_C_output.csv', encoding='cp932')  # =Shift_JIS
 
     _logger.NDdebug("E_E_CRAC_C_d_t", E_E_CRAC_C_d_t)
     E_E_C_d_t = E_E_CRAC_C_d_t + E_E_fan_C_d_t  # (2)

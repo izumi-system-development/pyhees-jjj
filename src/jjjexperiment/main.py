@@ -27,7 +27,7 @@ import jjjexperiment.denchu_1
 import jjjexperiment.denchu_2
 
 import jjjexperiment.input
-import jjjexperiment.constants as constants
+import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.result import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
@@ -38,10 +38,10 @@ def calc(input_data: dict, test_mode=False):
     climateFile = input_data['climateFile']
     loadFile    = input_data['loadFile']
 
-    with open(case_name + constants.version_info() + '_input.json', 'w') as f:
+    with open(case_name + jjj_consts.version_info() + '_input.json', 'w') as f:
         json.dump(input_data, f, indent=4)
 
-    constants.set_constants(input_data)
+    jjj_consts.set_constants(input_data)
     type, tatekata, A_A, A_MR, A_OR, region, sol_region = jjjexperiment.input.get_basic(input_data)
     ENV, NV_MR, NV_OR, TS, r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, hs_CAV = jjjexperiment.input.get_env(input_data)
     mode_H, H_A, H_MR, H_OR, H_HS = jjjexperiment.input.get_heating(input_data, region, A_A)
@@ -209,7 +209,7 @@ def calc(input_data: dict, test_mode=False):
     }
     if test_mode and False:
         # 調査用
-        with open(case_name + constants.version_info() + '_calc_Q_UT_A_input.json', 'w') as json_file:
+        with open(case_name + jjj_consts.version_info() + '_calc_Q_UT_A_input.json', 'w') as json_file:
             json.dump(calc_Q_UT_A_input, json_file, indent=4, ensure_ascii=False)
     else:
         pass
@@ -234,7 +234,7 @@ def calc(input_data: dict, test_mode=False):
         """ 電柱研モデルのモデリング定数の確認のためのCSV出力 """
         df_denchu_consts = jjjexperiment.denchu_1 \
             .get_DataFrame_denchu_modeling_consts(spec, cdtn, R2, R1, R0, T_real, RH_real, P_rac_fan_rtd_H)
-        df_denchu_consts.to_csv(case_name + constants.version_info() + '_denchu_consts_H_output.csv', encoding='cp932')
+        df_denchu_consts.to_csv(case_name + jjj_consts.version_info() + '_denchu_consts_H_output.csv', encoding='cp932')
 
         del cdtn, R2, R1, R0  # NOTE: 以降不要
     else:
@@ -363,7 +363,7 @@ def calc(input_data: dict, test_mode=False):
         """ 電柱研モデルのモデリング定数の確認のためのCSV出力 """
         df_denchu_consts = jjjexperiment.denchu_1 \
             .get_DataFrame_denchu_modeling_consts(spec, cdtn, R2, R1, R0, T_real, RH_real, P_rac_fan_rtd_C)
-        df_denchu_consts.to_csv(case_name + constants.version_info() + '_denchu_consts_C_output.csv', encoding='cp932')
+        df_denchu_consts.to_csv(case_name + jjj_consts.version_info() + '_denchu_consts_C_output.csv', encoding='cp932')
 
         del cdtn, R2, R1, R0  # NOTE: 以降不要
     else:
@@ -478,7 +478,7 @@ def calc(input_data: dict, test_mode=False):
     df_output1 = pd.DataFrame(index = ['合計値'])
     df_output1['E_H [MJ/year]'] = E_H
     df_output1['E_C [MJ/year]'] = E_C
-    df_output1.to_csv(case_name + constants.version_info() + '_output1.csv', encoding = 'cp932')
+    df_output1.to_csv(case_name + jjj_consts.version_info() + '_output1.csv', encoding = 'cp932')
 
     df_output2['Theta_hs_C_out_d_t [℃]']    = Theta_hs_out_d_t
     df_output2['Theta_hs_C_in_d_t [℃]']     = Theta_hs_in_d_t
@@ -499,7 +499,7 @@ def calc(input_data: dict, test_mode=False):
     df_output2['q_hs_H_d_t [Wh/h]']         = q_hs_H_d_t
     df_output2['q_hs_CS_d_t [Wh/h]']        = q_hs_CS_d_t
     df_output2['q_hs_CL_d_t [Wh/h]']        = q_hs_CL_d_t
-    df_output2.to_csv(case_name + constants.version_info() + '_output2.csv', encoding = 'cp932')
+    df_output2.to_csv(case_name + jjj_consts.version_info() + '_output2.csv', encoding = 'cp932')
 
     # NOTE: 結合テストで確認したい値を返すのに使用します
     if test_mode:

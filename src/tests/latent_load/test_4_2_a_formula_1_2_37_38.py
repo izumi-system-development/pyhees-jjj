@@ -2,12 +2,12 @@ import json
 import numpy as np
 
 from pyhees.section3_2 import calc_r_env
-import pyhees.section4_1 as H
+import pyhees.section4_1 as HC
 import pyhees.section4_2_a as dc_a
 
 # JJJ
 import jjjexperiment.input as input
-import jjjexperiment.constants as constants
+import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3
 import jjjexperiment.section4_2 as jjj_dc
 import jjjexperiment.section4_2_a as jjj_dc_a
@@ -22,7 +22,7 @@ def prepare_args_for_calc_Q_UT_A() -> dict:
 
     inputs["H_A"]["input_V_hs_dsgn_H"] = 2  # ユーザー入力ON
     inputs["C_A"]["input_V_hs_dsgn_C"] = 2  # ユーザー入力ON
-    constants.set_constants(inputs)
+    jjj_consts.set_constants(inputs)
 
     # 個別の変数に展開
     _, _, A_A, A_MR, A_OR, region, sol_region = input.get_basic(inputs)
@@ -53,7 +53,7 @@ def prepare_args_for_calc_Q_UT_A() -> dict:
     }
 
     L_H_d_t_i: np.ndarray  # H: 暖房負荷 [MJ/h]
-    L_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = H.calc_heating_load(
+    L_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = HC.calc_heating_load(
         region = region,
         sol_region = sol_region,
         A_A = A_A, A_MR = A_MR, A_OR = A_OR,
@@ -73,7 +73,7 @@ def prepare_args_for_calc_Q_UT_A() -> dict:
 
     L_CS_d_t_i: np.ndarray  # CS: 冷房・顕熱負荷 [MJ/h]
     L_CL_d_t_i: np.ndarray  # CL: 冷房・潜熱負荷 [MJ/h]
-    L_CS_d_t_i, L_CL_d_t_i = H.calc_cooling_load(
+    L_CS_d_t_i, L_CL_d_t_i = HC.calc_cooling_load(
         region = region,
         A_A = A_A, A_MR = A_MR, A_OR = A_OR,
         NV_MR = NV_MR, NV_OR = NV_OR, TS = TS,
@@ -236,12 +236,12 @@ class Testファン消費電力_暖房:
         update_info_01 = {
             'H_A': {'fan_coeff': [0, 0, 27, -8, 13]}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_01)
+        jjj_consts.set_constants(update_info_01)
         result_03_01, _ = jjj_dc_a.calc_E_E_fan_H_d_t(**self._testEEfanArgs)
         update_info_02 = {
             'H_A': {'fan_coeff': [0, 0, 13, 20, -6]}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_02)
+        jjj_consts.set_constants(update_info_02)
         result_03_02, _ = jjj_dc_a.calc_E_E_fan_H_d_t(**self._testEEfanArgs)
 
         assert not np.all(result_03_01 == result_03_02)
@@ -313,13 +313,13 @@ class Testファン消費電力_冷房:
         update_info_01 = {
             'C_A': {'fan_coeff': [0, 0, 27, -8, 13]}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_01)
+        jjj_consts.set_constants(update_info_01)
         result_03_01, _, _ = jjj_dc_a.calc_E_E_fan_C_d_t(**self._testEEfanArgs)
 
         update_info_02 = {
             'C_A': {'fan_coeff': [0, 0, 13, 20, -6]}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_02)
+        jjj_consts.set_constants(update_info_02)
         result_03_02, _, _ = jjj_dc_a.calc_E_E_fan_C_d_t(**self._testEEfanArgs)
 
         assert not np.all(result_03_01 == result_03_02)
@@ -467,7 +467,7 @@ class Testコンプレッサ効率特性_暖房:
         update_info_01 = {
             'H_A': {'compressor_coeff': coeffs_01}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_01)
+        jjj_consts.set_constants(update_info_01)
         E_E_fan_H_d_t3_1, q_hs_H_d_t3_1 = jjj_dc_a.calc_E_E_fan_H_d_t(**self._testEEfanArgs)
         self._testBaseArgs['type'] = PROCESS_TYPE_3
         self._testBaseArgs['E_E_fan_H_d_t'] = E_E_fan_H_d_t3_1
@@ -477,7 +477,7 @@ class Testコンプレッサ効率特性_暖房:
         update_info_02 = {
             'H_A': {'compressor_coeff': coeffs_02}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_02)
+        jjj_consts.set_constants(update_info_02)
         E_E_fan_H_d_t3_2, q_hs_H_d_t3_2 = jjj_dc_a.calc_E_E_fan_H_d_t(**self._testEEfanArgs)
         self._testBaseArgs['type'] = PROCESS_TYPE_3
         self._testBaseArgs['E_E_fan_H_d_t'] = E_E_fan_H_d_t3_2
@@ -634,7 +634,7 @@ class Testコンプレッサ効率特性_冷房:
         update_info_01 = {
             'C_A': {'compressor_coeff': coeffs_01}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_01)
+        jjj_consts.set_constants(update_info_01)
         E_E_fan_C_d_t_T301, _, _ = jjj_dc_a.calc_E_E_fan_C_d_t(**self._testEEfanArgs)
         self._testBaseArgs["type"] = PROCESS_TYPE_3
         self._testBaseArgs["E_E_fan_C_d_t"] = E_E_fan_C_d_t_T301
@@ -643,7 +643,7 @@ class Testコンプレッサ効率特性_冷房:
         update_info_02 = {
             'C_A': {'compressor_coeff': coeffs_02}  # NOTE: ユーザーの独自値で設定
         }
-        constants.set_constants(update_info_02)
+        jjj_consts.set_constants(update_info_02)
         E_E_fan_C_d_t_T302, _, _ = jjj_dc_a.calc_E_E_fan_C_d_t(**self._testEEfanArgs)
         self._testBaseArgs["E_E_fan_C_d_t"] = E_E_fan_C_d_t_T302
         E_E_C_d_t_T302 = jjj_dc_a.calc_E_E_C_d_t_type1_and_type3(**self._testBaseArgs)
