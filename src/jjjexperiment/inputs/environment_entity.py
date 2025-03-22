@@ -1,5 +1,4 @@
 import numpy as np
-from nptyping import Float64, NDArray, Shape
 
 import pyhees.section3_1 as ld
 import pyhees.section3_2 as gihi
@@ -8,6 +7,7 @@ import pyhees.section4_2_b as dc_spec
 import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
 # JJJ
+from jjjexperiment.common import *
 import jjjexperiment.inputs as jjj_ipt
 
 class EnvironmentEntity:
@@ -31,31 +31,31 @@ class EnvironmentEntity:
         mu_C = gihi.get_mu_C(self.__input.eta_A_C, self.r_env)
         return mu_C
 
-    def get_A_HCZ_i(self) -> NDArray[Shape['12'], Float64]:
+    def get_A_HCZ_i(self) -> Array12:
         return np.array([
             ld.get_A_HCZ_i(i, self.__input.A_A, self.__input.A_MR, self.__input.A_OR) \
             for i in range(1, 13)
         ])
 
-    def get_A_HCZ_R_i(self) -> NDArray[Shape['12'], Float64]:
+    def get_A_HCZ_R_i(self) -> Array12:
         return np.array([
             ld.get_A_HCZ_R_i(i) \
             for i in range(1, 13)
         ])
 
-    def get_V_vent_g_i(self) -> NDArray[Shape['5'], Float64]:
+    def get_V_vent_g_i(self) -> Array5:
         # (62) 全般換気量
         A_HCZ_i = [ld.get_A_HCZ_i(i, self.__input.A_A, self.__input.A_MR, self.__input.A_OR) for i in range(1, 6)]
         A_HCZ_R_i = [ld.get_A_HCZ_R_i(i) for i in range(1, 6)]
         V_vent_g_i = dc.get_V_vent_g_i(A_HCZ_i, A_HCZ_R_i)
         return np.array(V_vent_g_i)
 
-    def get_V_vent_l_NR_d_t(self) -> NDArray[Shape['8760'], Float64]:
+    def get_V_vent_l_NR_d_t(self) -> Array8760:
         # (63) 局所排気量
         V_vent_l_NR_d_t = dc.get_V_vent_l_NR_d_t()
         return V_vent_l_NR_d_t
 
-    def get_q_gen_d_t(self) -> NDArray[Shape['8760'], Float64]:
+    def get_q_gen_d_t(self) -> Array8760:
         A_NR = ld.get_A_NR(self.__input.A_A, self.__input.A_MR, self.__input.A_OR)
         # (64d) 非居室の内部発熱
         q_gen_NR_d_t = dc.calc_q_gen_NR_d_t(A_NR)
@@ -67,7 +67,7 @@ class EnvironmentEntity:
         q_gen_d_t = dc.get_q_gen_d_t(q_gen_NR_d_t, q_gen_OR_d_t, q_gen_MR_d_t)
         return q_gen_d_t
 
-    def get_n_p_d_t(self) -> NDArray[Shape['8760'], Float64]:
+    def get_n_p_d_t(self) -> Array8760:
         A_NR = ld.get_A_NR(self.__input.A_A, self.__input.A_MR, self.__input.A_OR)
         # (66d) 非居室の在室人数
         n_p_NR_d_t = dc.calc_n_p_NR_d_t(A_NR)
@@ -79,7 +79,7 @@ class EnvironmentEntity:
         n_p_d_t = dc.get_n_p_d_t(n_p_NR_d_t, n_p_OR_d_t, n_p_MR_d_t)
         return n_p_d_t
 
-    def get_w_gen_d_t(self) -> NDArray[Shape['8760'], Float64]:
+    def get_w_gen_d_t(self) -> Array8760:
         A_NR = ld.get_A_NR(self.__input.A_A, self.__input.A_MR, self.__input.A_OR)
         # (65d) 非居室の内部発湿
         w_gen_NR_d_t = dc.calc_w_gen_NR_d_t(A_NR)

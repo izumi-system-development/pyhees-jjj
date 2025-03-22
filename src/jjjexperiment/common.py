@@ -1,4 +1,16 @@
 from enum import Enum
+from typing import Annotated
+import numpy as np
+from numpy.typing import NDArray
+
+Array5 = Annotated[NDArray[np.float64], '5']
+Array5x1 = Annotated[NDArray[np.float64], '5x1']
+Array5x8760 = Annotated[NDArray[np.float64], '5x8760']
+Array12 = Annotated[NDArray[np.float64], '12']
+Array12x1 = Annotated[NDArray[np.float64], '12x1']
+Array12x8760 = Annotated[NDArray[np.float64], '12x8760']
+Array8760 = Annotated[NDArray[np.float64], '8760']
+# これ以外のその他変則的な次元はその場で定義
 
 # NOTE: import * して利用するので、jjj_ 付けるとわかりやすい
 

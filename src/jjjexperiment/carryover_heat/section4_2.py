@@ -1,18 +1,18 @@
 import numpy as np
-from nptyping import NDArray, Float64, Shape
 
 import pyhees.section4_2 as dc
 # JJJ
+from jjjexperiment.common import *
 import jjjexperiment.carryover_heat as jjj_carryover_heat
 from jjjexperiment.logger import log_res
 
 def calc_carryover(
         H: bool,
         C: bool,
-        A_HCZ_i: NDArray[Shape["5"], Float64],
-        Theta_HBR_i: NDArray[Shape["5, 1"], Float64],
+        A_HCZ_i: Array5,
+        Theta_HBR_i: Array5x1,
         Theta_star_HBR: float,
-    ) -> NDArray[Shape["5, 1"], Float64]:
+    ) -> Array5x1:
     """過剰熱量 [MJ] (一時点)
 
     Args:
@@ -56,10 +56,10 @@ def calc_carryover(
 
 def get_L_star_H_i_2024(
         H: bool,
-        L_H_i: NDArray[Shape["5, 1"], Float64],
-        Q_star_trs_prt_i: NDArray[Shape["5, 1"], Float64],
-        carryover: NDArray[Shape["5, 1"], Float64],
-    )-> NDArray[Shape["5, 1"], Float64]:
+        L_H_i: Array5x1,
+        Q_star_trs_prt_i: Array5x1,
+        carryover: Array5x1,
+    )-> Array5x1:
     """(8-1)(8-2)(8-3) -> 時点版, 過剰熱量を考慮
 
     Args:
@@ -86,10 +86,10 @@ def get_L_star_H_i_2024(
 
 def get_L_star_CS_i_2024(
         C: bool,
-        L_CS_i: NDArray[Shape["5, 1"], Float64],
-        Q_star_trs_prt_i: NDArray[Shape["5, 1"], Float64],
-        carryover: NDArray[Shape["5, 1"], Float64],
-    )-> NDArray[Shape["5, 1"], Float64]:
+        L_CS_i: Array5x1,
+        Q_star_trs_prt_i: Array5x1,
+        carryover: Array5x1,
+    )-> Array5x1:
     """(9-1)(9-2)(9-3) -> 時点版, 過剰熱量を考慮
 
     Args:
@@ -121,16 +121,16 @@ def get_L_star_CS_i_2024(
 def get_Theta_HBR_i_2023(
         isFirst: bool, H: bool, C: bool, M: bool,
         Theta_star_HBR: float,
-        V_supply_i: NDArray[Shape["5, 1"], Float64],
-        Theta_supply_i: NDArray[Shape["5, 1"], Float64],
+        V_supply_i: Array5x1,
+        Theta_supply_i: Array5x1,
         U_prt: float,
-        A_prt_i: NDArray[Shape["5, 1"], Float64],
+        A_prt_i: Array5x1,
         Q: float,
-        A_HCZ_i: NDArray[Shape["5, 1"], Float64],
-        L_star_H_i: NDArray[Shape["5, 1"], Float64],
-        L_star_CS_i: NDArray[Shape["5, 1"], Float64],
-        Theta_HBR_before_i: NDArray[Shape["5, 1"], Float64]
-        ) -> NDArray[Shape["5, 1"], Float64]:
+        A_HCZ_i: Array5x1,
+        L_star_H_i: Array5x1,
+        L_star_CS_i: Array5x1,
+        Theta_HBR_before_i: Array5x1
+        ) -> Array5x1:
     """(46-1)(46-2)(46-3) -> 時点版, 過剰熱量を考慮
 
     Args:
@@ -205,13 +205,13 @@ def get_Theta_NR_2023(
         isFirst: bool, H: bool, C: bool, M: bool,
         Theta_star_NR: float,
         Theta_star_HBR: float,
-        Theta_HBR_i: NDArray[Shape["5, 1"], Float64],
+        Theta_HBR_i: Array5x1,
         A_NR: float,
         V_vent_l_NR: float,
-        V_dash_supply_i: NDArray[Shape["5, 1"], Float64],
-        V_supply_i: NDArray[Shape["5, 1"], Float64],
+        V_dash_supply_i: Array5x1,
+        V_supply_i: Array5x1,
         U_prt: float,
-        A_prt_i: NDArray[Shape["5, 1"], Float64],
+        A_prt_i: Array5x1,
         Q: float,
         Theta_NR_before: float
         ) -> float:

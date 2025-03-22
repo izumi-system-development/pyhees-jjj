@@ -1,11 +1,12 @@
 import numpy as np
-from nptyping import NDArray, Shape, Float64
+
 # JJJ
+from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
 
 def get_C_BR_i(
-        A_HCZ_i: NDArray[Shape["5, 1"], Float64]
-    )-> NDArray[Shape["5, 1"], Float64]:
+        A_HCZ_i: Array5x1
+    )-> Array5x1:
     """標準住戸との床面積比率で熱容量を求める
 
     Args:
