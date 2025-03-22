@@ -57,6 +57,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     ha_ca_holder.q_hs_rtd_H = q_hs_rtd_H
     ha_ca_holder.q_hs_rtd_C = q_hs_rtd_C
 
+    # 制御フラグ
     app_config = injector.get(AppConfig)
 
     R_g = jjj_consts.R_g  # 追加0416
@@ -323,13 +324,14 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(A_A, A_MR, A_OR)
 
         assert A_s_ufac_i.ndim == 2
-        delta_L_room2uf_d_t_i = np.hstack([
-            jjj_ufac.calc_delta_L_room2uf_i(
-                U_s, A_s_ufac_i, Theta_ex_d_t[tt] - Theta_in_d_t[tt]
-            ) for tt in range(24 * 365)  # 各要素が shape(12,1)
-        ])
-        # delta_L_room2uf_d_t_i = np.vectorize(jjj_ufac.calc_delta_L_room2uf_i)
-        # delta_L_room2uf_d_t_i = delta_L_room2uf_d_t_i(U_s, A_s_ufac_i, Theta_ex_d_t - Theta_in_d_t)
+        delta_L_room2uf_d_t_i  \
+            = np.hstack([
+                jjj_ufac.calc_delta_L_room2uf_i(
+                    U_s,
+                    A_s_ufac_i,
+                    Theta_ex_d_t[t] - Theta_in_d_t[t]
+                ) for t in range(24*365)  # 各要素が shape(12,1)
+            ])
         assert delta_L_room2uf_d_t_i.ndim == 2
         Q_hat_hs_d_t -= np.sum(delta_L_room2uf_d_t_i, axis=0)
 
@@ -337,21 +339,22 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # CHECK: V_dash_supply_d_t の計算には補正前の Q^_hs_d_tを使用していてよいか
         L_H_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
         V_dash_supply_d_t = np.sum(V_dash_supply_d_t_i, axis=0)
-        Theta_uf_d_t = np.array([
-            jjj_ufac.calc_Theta_uf(
-                L_H_d_t_flr1st[tt],
-                np.sum(A_s_ufac_i),
-                Theta_in_d_t[tt],
-                Theta_ex_d_t[tt],
-                V_dash_supply_d_t[tt]) \
-            for tt in range(24 * 365)
-        ])
+        Theta_uf_d_t  \
+            = np.array([
+                jjj_ufac.calc_Theta_uf(
+                    L_H_d_t_flr1st[t],
+                    np.sum(A_s_ufac_i),
+                    Theta_in_d_t[t],
+                    Theta_ex_d_t[t],
+                    V_dash_supply_d_t[t]
+                ) for t in range(24*365)
+            ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
         climate = jjj_ipt.ClimateEntity(region)
         psi = climate.get_psi(Q)
 
         delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
-        delta_L_uf2outdoor_d_t \
+        delta_L_uf2outdoor_d_t  \
             = delta_L_uf2outdoor_d_t(psi, L_uf, (Theta_uf_d_t - Theta_ex_d_t))
         assert np.shape(delta_L_uf2outdoor_d_t) == (24 * 365,)
         Q_hat_hs_d_t += delta_L_uf2outdoor_d_t
@@ -366,8 +369,8 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 
         delta_L_uf2gnd_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2gnd)
-        delta_L_uf2gnd_d_t = delta_L_uf2gnd_d_t(
-            A_s_ufac_A, R_g, Phi_A_0, Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
+        delta_L_uf2gnd_d_t  \
+            = delta_L_uf2gnd_d_t(A_s_ufac_A, R_g, Phi_A_0, Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
         Q_hat_hs_d_t += delta_L_uf2gnd_d_t
 
     # (53)　負荷バランス時の非居室の絶対湿度

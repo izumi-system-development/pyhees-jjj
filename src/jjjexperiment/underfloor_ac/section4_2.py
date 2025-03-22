@@ -223,7 +223,6 @@ def get_delta_L_star_newuf(
     delta_L_uf2outdoor_d_t_i = ratio.T * delta_L_uf2outdoor_d_t
     delta_L_uf2gnd_d_t_i = ratio.T * delta_L_uf2gnd_d_t
 
-
     return delta_L_room2uf_d_t_i, delta_L_uf2outdoor_d_t_i[:5], delta_L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
 
 

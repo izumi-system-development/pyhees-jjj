@@ -29,6 +29,7 @@ def environment_entity(request) -> jjj_ipt.EnvironmentEntity:
 
 @pytest.fixture
 def Q_hat_hs_d_t():
+    """(40) 熱源機の風量を計算するための熱源機の出力"""
     yaml_fullpath = os.path.join(os.path.dirname(__file__), 'inputs/test_input.yaml')
     input = jjj_ipt.load_input_yaml(yaml_fullpath)
 
