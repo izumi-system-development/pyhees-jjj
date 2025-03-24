@@ -70,14 +70,16 @@ def calc_Theta_uf(
     """
     ro_air = dc.get_ro_air()    # 空気密度 [kg/m3]
     c_p_air = algo.get_c_p_air()  # 空気の比熱 [kJ/kgK]
-    U_s = dc.get_U_s()          # 床の熱貫流率 [W/m2K]
+
+    app_config = injector.get(AppConfig)
+    U_s_vert = app_config.U_s_vert  # 床の熱貫流率 [W/m2K]
 
     H_floor = 0.7  # 床の温度差係数(-) 損失として
 
     a1 = L_H_flr1st * 1e+3
-    a2 = U_s * A_s_ufvnt * (Theta_in - Theta_ex) * H_floor * 3.6
-    a3 = Theta_in * (ro_air * c_p_air * V_flr1st + U_s * A_s_ufvnt * 3.6)
-    b1 = ro_air * c_p_air * V_flr1st + U_s * A_s_ufvnt * 3.6
+    a2 = U_s_vert * A_s_ufvnt * (Theta_in - Theta_ex) * H_floor * 3.6
+    a3 = Theta_in * (ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6)
+    b1 = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
 
     Theta_uf = (a1 - a2 + a3) / b1
     return Theta_uf
@@ -85,16 +87,20 @@ def calc_Theta_uf(
 
 # vectorizeできなのいのでhstack-broadcastで対応 (A_s_ufac_iが強制でfloatになるため)
 def calc_delta_L_room2uf_i(
-        U_s: float,
+        U_s_vert: float,
         A_s_ufac_i: Array5x1,
         delta_Theta: float
     ) -> Array5x1:
     """床下空間から居室全体への熱損失 [MJ/h]
+
+    Args:
+        U_s_vert: 床の熱貫流率 [W/m2・K]
+
     """
     assert A_s_ufac_i.ndim == 2
 
     H_floor = 0.7  # 床下空調でなく意図しない熱移動の分なので通常の遮蔽係数(0.7)となる
-    delta_L_uf2room =  U_s * A_s_ufac_i * np.abs(delta_Theta) * H_floor \
+    delta_L_uf2room =  U_s_vert * A_s_ufac_i * np.abs(delta_Theta) * H_floor \
         * 3.6 / 1000  # [W] -> [MJ/h]
     # NOTE: L_H_d_t_i, L_CS_d_t_i に含まれている通常(非床下空調)の床下ロス部分(室内→床下→屋外)
     # 下記の補正を追加する前にコチラを引くことでイコールフッティングできます
@@ -187,7 +193,9 @@ def get_delta_L_star_newuf(
             V_sa_d_t,  # V_sa_d_t_A=
             '',  # H_OR_C= 機能してない
             L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, di)
-    U_s = dc.get_U_s()  # [W/m2・K]
+
+    app_config = injector.get(AppConfig)
+    U_s_vert = app_config.U_s_vert  # [W/m2・K]
 
     # 温度低下を加味した給気温度 ここでは使わないが後で使うために返す
 
@@ -196,7 +204,7 @@ def get_delta_L_star_newuf(
     # 床下 → 床上居室全体()
     assert A_s_ufvnt_i.ndim == 1
     delta_L_room2uf_d_t_i = np.hstack([
-        calc_delta_L_room2uf_i(U_s, A_s_ufvnt_i.reshape(-1,1),
+        calc_delta_L_room2uf_i(U_s_vert, A_s_ufvnt_i.reshape(-1,1),
                 Theta_uf_d_t[tt] - Theta_star_HBR_d_t[tt])
         for tt in range(24*365)
     ])

@@ -53,7 +53,7 @@ class Test統合テスト_デフォルト入力時:
         # inputs = change_testmode_carryover(inputs)
         # inputs = change_testmode_VAV(inputs)
         # inputs = change_testmode_underfloor_old(inputs)
-        # inputs = change_testmode_underfloor_new(inputs)
+        inputs = change_testmode_underfloor_new(inputs)
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H == pytest.approx(expected_result_type1.E_H, rel=1e-6)

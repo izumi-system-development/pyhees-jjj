@@ -320,14 +320,14 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
     if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
-        U_s = algo.get_U_s()  # 床の熱貫流率 [W/m2K]
+        U_s_vert = app_config.U_s_vert  # 床の熱貫流率 [W/m2K]
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(A_A, A_MR, A_OR)
 
         assert A_s_ufac_i.ndim == 2
         delta_L_room2uf_d_t_i  \
             = np.hstack([
                 jjj_ufac.calc_delta_L_room2uf_i(
-                    U_s,
+                    U_s_vert,
                     A_s_ufac_i,
                     Theta_ex_d_t[t] - Theta_in_d_t[t]
                 ) for t in range(24*365)  # 各要素が shape(12,1)
@@ -747,6 +747,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # CHECK: フラグ管理不要なら消す
             # if jjj_consts.done_binsearch_newufac:
 
+            # U_s_vert を渡そうか
             delta_L_uf2room_d_t_i, delta_L_uf2outdoor_d_t_i, delta_L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
                 = jjj_ufac.get_delta_L_star_newuf(
                     region = region,

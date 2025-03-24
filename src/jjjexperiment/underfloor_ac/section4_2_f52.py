@@ -38,7 +38,7 @@ def get_Theta_star_NR(
     # vectorize可能
     c_p_air = dc.get_c_p_air()
     rho_air = dc.get_rho_air()
-    U_s = dc.get_U_s()
+    U_s = dc.get_U_s()  # U_s_vert でないチェック済み
 
     k1 = (Q - 0.35 * 0.5 * 2.4) * A_NR  \
         + c_p_air * rho_air * V_vent_l_NR / 3600  \

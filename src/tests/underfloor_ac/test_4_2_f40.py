@@ -120,7 +120,6 @@ class Test_床下空調時_式40:
         # Arrange - 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
         environment = jjj_ipt.EnvironmentEntity(input)
         U_s_vert = climate.get_U_s_vert(environment.get_Q())
-        # U_s = algo.get_U_s()
 
         # Act
         # NOTE: ここでは意図した空調ではなく漏れなので 通常の0.7となる

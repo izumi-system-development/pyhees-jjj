@@ -1,4 +1,6 @@
 from injector import Injector, singleton
+
+import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.options import *
 
@@ -15,10 +17,19 @@ class AppConfig:
     """地盤またはそれを覆う基礎の表面熱伝達抵抗 [(m2・K)/W]"""
     Theta_g_avg: float = None
     """地盤内の不易層の温度 [℃]"""
-    U_s_vert: float = None
+    _U_s_vert: float = None
     """床板(床チャンバー上面)の熱貫流率 [W/(m2・K)]"""
     phi: float = None
     """基礎(床チャンバー側面)の線熱貫流率 [W/(m・K)]"""
+
+    @property
+    def U_s_vert(self) -> float:
+        if self._U_s_vert is None:
+            # HACK: ないとき本当は algo.get_U_s_vert() にしたいが
+            # いろいろ必要なのでどこでも呼びやすいコチラを今は使う
+            return dc.get_U_s()
+        else:
+            return self._U_s_vert
 
     # 大きくなったら関連するアップデートを分割定義する
     def update(self, input: dict) -> None:
@@ -32,7 +43,7 @@ class AppConfig:
                     self.is_valid_ufac_input = 2 == int(input['input_ufac_consts'])
                     if self.is_valid_ufac_input:
                         self.Theta_g_avg = float(input['Theta_g_avg'])
-                        self.U_s_vert = float(input['U_s_vert'])
+                        self._U_s_vert = float(input['U_s_vert'])
                         self.phi = float(input['phi'])
 
 injector = Injector()
