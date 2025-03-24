@@ -9,6 +9,7 @@ import pyhees.section4_1 as HC
 from jjjexperiment.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.app_config import *
 
 class Test_床下空調時_式40:
 
@@ -104,6 +105,9 @@ class Test_床下空調時_式40:
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
 
+        app_config = injector.get(AppConfig)
+        app_config.update(input.model_dump())
+
         climate = jjj_ipt.ClimateEntity(input.region)
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
@@ -115,9 +119,8 @@ class Test_床下空調時_式40:
 
         # Arrange - 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
         environment = jjj_ipt.EnvironmentEntity(input)
-        # CHEKC: どちらを使うか確認中
         U_s_vert = climate.get_U_s_vert(environment.get_Q())
-        U_s = algo.get_U_s()
+        # U_s = algo.get_U_s()
 
         # Act
         # NOTE: ここでは意図した空調ではなく漏れなので 通常の0.7となる
@@ -127,7 +130,7 @@ class Test_床下空調時_式40:
 
         delta_L_uf2room \
             = jjj_ufac.calc_delta_L_room2uf_i(
-                U_s, A_s_ufac_i, Theta_in_d_t[t] - Theta_ex_d_t[t])
+                U_s_vert, A_s_ufac_i, Theta_in_d_t[t] - Theta_ex_d_t[t])
 
         # Assert
         assert np.shape(delta_L_uf2room) == (12, 1)

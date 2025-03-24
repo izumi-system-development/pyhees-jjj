@@ -186,7 +186,7 @@ def get_delta_L_star_newuf(
             Theta_ex_d_t,
             V_sa_d_t,  # V_sa_d_t_A=
             '',  # H_OR_C= 機能してない
-            L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g, di)
+            L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, di)
     U_s = dc.get_U_s()  # [W/m2・K]
 
     # 温度低下を加味した給気温度 ここでは使わないが後で使うために返す

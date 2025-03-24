@@ -372,7 +372,7 @@ def get_table_e_6():
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
                L_dash_H_R_d_t_i,
-               L_dash_CS_R_d_t_i, R_g=None, di: Injector = None):
+               L_dash_CS_R_d_t_i, di: Injector = None):
     """床下温度及び地盤またはそれを覆う基礎の表面温度 (℃) (1)(9)
 
     Args:

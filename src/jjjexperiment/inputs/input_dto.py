@@ -69,6 +69,14 @@ class InputDto(BaseModel):
     hs_CAV: Optional[bool] = False
     H_A: H_A
     C_A: C_A
+    change_underfloor_temperature: Optional[int] = 床下空調ロジック.変更しない.value
+
+    R_g: float = 0.15
+    """地盤またはそれを覆う基礎の表面熱伝達抵抗 [(m2・K)/W]"""
+    input_ufac_consts: Optional[int] = 1
+    """床下空調の定数 上書き入力の有無"""
+    Theta_g_avg: Optional[float] = 15.7
+    """地盤内の不易層の温度 [℃]"""
     U_s_vert: float = 2.223
     """暖冷房負荷計算時に想定した床の熱貫流率 [W/m2・K]"""
     phi: float = 0.846

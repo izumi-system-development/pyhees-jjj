@@ -60,7 +60,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     # 制御フラグ
     app_config = injector.get(AppConfig)
 
-    R_g = jjj_consts.R_g  # 追加0416
+    R_g = app_config.R_g
 
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
     df_output2 = pd.DataFrame()
@@ -613,7 +613,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                         algo.calc_Theta(
                             region, A_A, A_MR, A_OR, Q, YUCACO_r_A_ufvnt, underfloor_insulation,
                             Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                            '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                            '', L_H_d_t_i, L_CS_d_t_i)
 
                     if q_hs_rtd_H is not None:
                         mask = Theta_req_d_t_i[i] > Theta_uf_d_t
@@ -660,7 +660,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                         algo.calc_Theta(
                             region, A_A, A_MR, A_OR, Q, YUCACO_r_A_ufvnt, underfloor_insulation,
                             Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                            '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                            '', L_H_d_t_i, L_CS_d_t_i)
 
                     if q_hs_rtd_H is not None:
                         mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
@@ -903,7 +903,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     algo.calc_Theta(
                         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
                         Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                        '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                        '', L_H_d_t_i, L_CS_d_t_i)
 
                 if q_hs_rtd_H is not None:  # 暖房
                   mask = Theta_req_d_t_i[i] > Theta_uf_d_t
@@ -958,7 +958,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     Theta_ex_d_t,
                     V_sa_d_t,  # V_sa_d_t_A=
                     '',  # H_OR_C=
-                    L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g, di= None)
+                    L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, di= None)
                     # NOTE: ここでは L_dash_/L_ の使い分けはあまり気にしない
 
             # CHECK: i=3,4,5(2階居室)は床下通さないので中和がなく高温なのは問題ないか
@@ -978,7 +978,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     algo.calc_Theta(
                         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
                         Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                        '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                        '', L_H_d_t_i, L_CS_d_t_i)
 
                 if q_hs_rtd_H is not None:  # 暖房
                     mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
