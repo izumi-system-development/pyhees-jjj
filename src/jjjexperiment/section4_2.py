@@ -343,7 +343,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         V_dash_supply_flr1st_d_t  \
             = np.sum(
                 V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
-        U_s_vert = climate.get_U_s_vert(Q)
         Theta_uf_d_t  \
             = np.array([
                 jjj_ufac.calc_Theta_uf(
