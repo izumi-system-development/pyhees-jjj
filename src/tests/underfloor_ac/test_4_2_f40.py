@@ -144,7 +144,7 @@ class Test_床下空調時_式40:
 
         environment = jjj_ipt.EnvironmentEntity(input)
         climate = jjj_ipt.ClimateEntity(input.region)
-        psi = climate.get_psi(environment.get_Q())
+        phi = climate.get_phi(environment.get_Q())
 
         # Arrange - 基礎外周長さ [m]
         A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
@@ -158,7 +158,7 @@ class Test_床下空調時_式40:
         Theta_uf = 23.2  # 床下温度 [℃]
         delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
         delta_L_uf2outdoor \
-            = delta_L_uf2outdoor_d_t(psi, L_uf, Theta_uf - Theta_ex_d_t[t])
+            = delta_L_uf2outdoor_d_t(phi, L_uf, Theta_uf - Theta_ex_d_t[t])
 
         # Assert
         assert delta_L_uf2outdoor == pytest.approx(2.07, rel=1e-2)

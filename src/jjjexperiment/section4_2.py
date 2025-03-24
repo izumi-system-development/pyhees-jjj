@@ -355,11 +355,11 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
         climate = jjj_ipt.ClimateEntity(region)
-        psi = climate.get_psi(Q)
+        phi = climate.get_phi(Q)
 
         delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
         delta_L_uf2outdoor_d_t  \
-            = delta_L_uf2outdoor_d_t(psi, L_uf, (Theta_uf_d_t - Theta_ex_d_t))
+            = delta_L_uf2outdoor_d_t(phi, L_uf, (Theta_uf_d_t - Theta_ex_d_t))
         assert np.shape(delta_L_uf2outdoor_d_t) == (24 * 365,)
         Q_hat_hs_d_t += delta_L_uf2outdoor_d_t
 

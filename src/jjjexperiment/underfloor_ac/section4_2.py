@@ -103,17 +103,17 @@ def calc_delta_L_room2uf_i(
 
 
 def calc_delta_L_uf2outdoor(
-        psi: float,
+        phi: float,
         L_uf: float,
         delta_Theta: float
     ) -> float:
     """床下空間から外気への熱損失 [MJ/h]
     Args:
-        psi: 土間床等の外気に接する床の熱貫流率 [W/m2K]
+        phi: 土間床等の外気に接する床の熱貫流率 [W/m2K]
         L_uf: 土間床等の外気に接する床の周辺部の長さ [m]
         delta_Theta: 床下空間と外気の温度差 [℃]
     """
-    return psi * L_uf * np.abs(delta_Theta) * 3.6 / 1000  # [W] -> [MJ/h]
+    return phi * L_uf * np.abs(delta_Theta) * 3.6 / 1000  # [W] -> [MJ/h]
 
 
 def calc_delta_L_uf2gnd(

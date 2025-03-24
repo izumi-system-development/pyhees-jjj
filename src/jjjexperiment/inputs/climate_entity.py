@@ -1,5 +1,4 @@
 import numpy as np
-from typing import Any
 
 import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
@@ -47,17 +46,19 @@ class ClimateEntity:
 
         return np.array(HCM)
 
-    def get_psi(self, Q: float) -> float:
+    def get_phi(self, Q: float) -> float:
         """
         Ψ値を計算
         Args:
             Q: 当該住戸の熱損失係数 [W/m2*K]
         Returns:
-            psi: 基礎の線熱貫流率Ψ [W/m2*K]
+            phi: 基礎の線熱貫流率 [W/m*K]
         """
         # CHECK: psi,phi 異なるが大丈夫か要確認
         return algo.get_phi(self.region, Q)
 
+    # NOTE: algo.get_U_s() =定数 と使い分ける
+    # こちらはユーザー入力
     def get_U_s_vert(self, Q: float) -> float:
         """
         暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]

@@ -6,9 +6,9 @@ from jjjexperiment.options import *
 class AppConfig:
     def __init__(self):
         """規定値で初期化"""
-        self.new_ufac_flg = 床下空調ロジック.変更しない.value
+        self.new_ufac_flg: int = 床下空調ロジック.変更しない.value
         """床下空調ロジック"""
-        self.done_binsearch_new_ufac = False
+        self.done_binsearch_new_ufac: bool = False
         """床下空調新ロジック 二分探索完了"""
 
     def update(self, input: dict) -> None:

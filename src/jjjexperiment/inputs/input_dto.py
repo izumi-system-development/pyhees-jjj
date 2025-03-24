@@ -1,6 +1,8 @@
 import yaml
 from typing import Optional
 from pydantic import BaseModel, ValidationError
+# JJJ
+from jjjexperiment.options import *
 
 class H_A(BaseModel):
     """暖房方式"""
@@ -50,6 +52,7 @@ class C_A(BaseModel):
     input: Optional[int] = 1
     """機器仕様の入力の有無"""
 
+
 class InputDto(BaseModel):
     """直接入力されるもの"""
     A_A: float
@@ -61,7 +64,6 @@ class InputDto(BaseModel):
     U_A: float
     eta_A_H: float
     eta_A_C: float
-    R_g: float
     TS: bool
     r_A_ufvnt: Optional[float] = None
     hs_CAV: Optional[bool] = False
@@ -69,7 +71,7 @@ class InputDto(BaseModel):
     C_A: C_A
     U_s_vert: float = 2.223
     """暖冷房負荷計算時に想定した床の熱貫流率 [W/m2・K]"""
-    psi: float = 0.846
+    phi: float = 0.846
     """基礎(床チャンバー側面)の線熱貫流率φ [W/m・K]"""
 
 def load_input_yaml(yaml_path: str) -> InputDto:

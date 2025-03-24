@@ -409,12 +409,10 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     """
     # NOTE: 元コードからの利用もあるため、挙動を変えないように注意する
 
-    # 元コードでは R_g は使用していない
-    R_g = jjj_consts.R_g if R_g is None else R_g
-
     # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
     #R_g = 0.15
     #R_g = 0.15 + 2.63  #フェノバボード50mm
+    R_g = injector.get(AppConfig).R_g
 
     # 吸熱応答係数の初項
     Phi_A_0 = 0.025504994
