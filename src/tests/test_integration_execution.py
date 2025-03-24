@@ -1,6 +1,7 @@
 import pytest
 import json
 import copy
+import warnings
 
 from jjjexperiment.main import calc
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger
@@ -46,6 +47,7 @@ class Test統合テスト_デフォルト入力時:
     def test_計算結果一致_方式1(self, expected_result_type1):
         """ ipynbのサンプル入力で計算結果が意図しない変化がないことを確認
         """
+        # warnings.simplefilter('error')
 
         inputs = copy.deepcopy(self._inputs1)
         # inputs = change_testmode_input_V_hs_min_H(inputs)
@@ -53,7 +55,7 @@ class Test統合テスト_デフォルト入力時:
         # inputs = change_testmode_carryover(inputs)
         # inputs = change_testmode_VAV(inputs)
         # inputs = change_testmode_underfloor_old(inputs)
-        inputs = change_testmode_underfloor_new(inputs)
+        # inputs = change_testmode_underfloor_new(inputs)
         result = calc(inputs, test_mode=True)
 
         assert result['TValue'].E_H == pytest.approx(expected_result_type1.E_H, rel=1e-6)
