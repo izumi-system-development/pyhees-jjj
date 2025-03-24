@@ -45,7 +45,8 @@ def get_Theta_star_NR(
         + c_p_air * rho_air * V_dash_supply_A / 3600  \
         + U_prt * A_prt_A
 
-    k2 = U_s * A_NR * (Theta_uf - Theta_NR)
+    k2 = U_s * A_NR * np.abs(Theta_uf - Theta_NR)
+    # NOTE: abs しないとバグる
 
     match HCM:
         case JJJ_HCM.H:
