@@ -338,7 +338,11 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # 2. 床下 -> 外気 (逃げ方向)
         # CHECK: V_dash_supply_d_t の計算には補正前の Q^_hs_d_tを使用していてよいか
         L_H_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
-        V_dash_supply_d_t = np.sum(V_dash_supply_d_t_i, axis=0)
+        r_A_uf_i = jjj_ufac.get_r_A_uf_i()
+        mask_uf_i = r_A_uf_i > 0  # 床下空調部屋のみ
+        V_dash_supply_flr1st_d_t  \
+            = np.sum(
+                V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
         Theta_uf_d_t  \
             = np.array([
                 jjj_ufac.calc_Theta_uf(
@@ -346,7 +350,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     np.sum(A_s_ufac_i),
                     Theta_in_d_t[t],
                     Theta_ex_d_t[t],
-                    V_dash_supply_d_t[t]
+                    V_dash_supply_flr1st_d_t[t]
                 ) for t in range(24*365)
             ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
@@ -362,8 +366,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # 3. 床下 -> 地盤 (逃げ方向)
         # 吸熱応答係数の初項 定数取得クラスを作成するか
         Phi_A_0 = 0.025504994
-        # TODO: ここで算出する方法が不明なので相談する
+
         sum_Theta_dash_g_surf_A_m = 4.138  # 値は計算例で仮置き
+        # NOTE: 実際には Theta_uf_d_t と共に後に算出される
 
         A_s_ufac_A = np.sum(A_s_ufac_i)
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
