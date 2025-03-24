@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Any
-from nptyping import Float64, NDArray, Shape
 
 import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc

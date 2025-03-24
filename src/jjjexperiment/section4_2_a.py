@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
 from datetime import datetime
-from nptyping import NDArray, Shape, Float64
 
 import pyhees.section4_2_a as dc_a
 import pyhees.section4_3
 
 # JJJ
+from jjjexperiment.common import *
 from jjjexperiment.denchu_1 import Spec
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as jjj_consts
@@ -23,7 +23,7 @@ def calc_E_E_fan_H_d_t(
         C_df_H_d_t,  # 暖房出力補正係数
         P_rac_fan_rtd_H, P_fan_rtd_H,  # 定格暖房時
         f_SFP_H  # その他
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (37)改 E_E_fan_H_d_t
     """
     # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
@@ -59,7 +59,7 @@ def calc_E_E_fan_C_d_t(
         X_hs_out_d_t, X_hs_in_d_t,  # 絶対湿度
         P_rac_fan_rtd_C, P_fan_rtd_C,  # 定格暖房時
         f_SFP_C  # その他
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (38)改 E_E_fan_C_d_t
     """
     # (4) 日付dの時刻tにおける1時間当たりの熱源機の平均冷房能力(-)
@@ -96,8 +96,8 @@ def calc_E_E_fan_C_d_t(
 @log_res(['E_E_H_d_t(type:1,3)'])
 def calc_E_E_H_d_t_type1_and_type3(
         type: str,
-        E_E_fan_H_d_t: NDArray[Shape['8760'], Float64],
-        q_hs_H_d_t: NDArray[Shape['8760'], Float64],
+        E_E_fan_H_d_t: Array8760,
+        q_hs_H_d_t: Array8760,
         Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  # 空気温度
         V_hs_supply_d_t,  # 風量
         q_hs_rtd_C,  # 定格冷房能力※
@@ -105,7 +105,7 @@ def calc_E_E_H_d_t_type1_and_type3(
         q_hs_mid_H, P_hs_mid_H, V_fan_mid_H, P_fan_mid_H,  # 中間冷房時
         q_hs_rtd_H, P_fan_rtd_H, V_fan_rtd_H, P_hs_rtd_H,  # 定格冷房時
         EquipmentSpec,  # その他
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3, "type1,3 専用ロジック"
@@ -146,8 +146,8 @@ def calc_E_E_H_d_t_type2(
         type: str,
         region: int,
         climateFile,
-        E_E_fan_H_d_t: NDArray[Shape['8760'], Float64],
-        q_hs_H_d_t: NDArray[Shape['8760'], Float64],
+        E_E_fan_H_d_t: Array8760,
+        q_hs_H_d_t: Array8760,
         e_rtd_H: float,
         q_rtd_H: float,
         q_rtd_C: float,
@@ -155,7 +155,7 @@ def calc_E_E_H_d_t_type2(
         q_max_C: float,
         input_C_af_H: float,
         dualcompressor_H: bool,
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_2, "type2 専用ロジック"
@@ -178,15 +178,15 @@ def calc_E_E_H_d_t_type4(
         type: str,
         region: int,
         climateFile,
-        E_E_fan_H_d_t: NDArray[Shape['8760'], Float64],
-        q_hs_H_d_t: NDArray[Shape['8760'], Float64],
-        V_hs_supply_d_t: NDArray[Shape['8760'], Float64],
+        E_E_fan_H_d_t: Array8760,
+        q_hs_H_d_t: Array8760,
+        V_hs_supply_d_t: Array8760,
         P_rac_fan_rtd_H: float,
         simu_R_H,
         spec: Spec,
         Theta_real_inner,
         RH_real_inner,
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_4, "type4 専用ロジック"
@@ -230,7 +230,7 @@ def calc_E_E_H_d_t_type4(
 @log_res(['E_E_C_d_t(type:1,3)'])
 def calc_E_E_C_d_t_type1_and_type3(
         type, region,
-        E_E_fan_C_d_t: NDArray[Shape['8760'], Float64],
+        E_E_fan_C_d_t: Array8760,
         Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  # 空気温度
         V_hs_supply_d_t,  # 風量
         X_hs_out_d_t, X_hs_in_d_t,  # 絶対湿度
@@ -238,7 +238,7 @@ def calc_E_E_C_d_t_type1_and_type3(
         q_hs_mid_C, P_hs_mid_C, V_fan_mid_C, P_fan_mid_C,  # 中間冷房時
         q_hs_rtd_C, P_fan_rtd_C, V_fan_rtd_C, P_hs_rtd_C,  # 定格冷房時
         EquipmentSpec,  # その他
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
     assert type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3, "type1,3 専用ロジック"
@@ -285,15 +285,15 @@ def calc_E_E_C_d_t_type2(
         type: str,
         region: int,
         climateFile,
-        E_E_fan_C_d_t: NDArray[Shape['8760'], Float64],
-        q_hs_CS_d_t: NDArray[Shape['8760'], Float64],
-        q_hs_CL_d_t: NDArray[Shape['8760'], Float64],
+        E_E_fan_C_d_t: Array8760,
+        q_hs_CS_d_t: Array8760,
+        q_hs_CL_d_t: Array8760,
         e_rtd_C: float,
         q_rtd_C: float,
         q_max_C: float,
         input_C_af_C: float,
         dualcompressor_C: bool,
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
     assert type == PROCESS_TYPE_2, "type2 専用ロジック"
@@ -316,15 +316,15 @@ def calc_E_E_C_d_t_type4(
         type: str,
         region: int,
         climateFile,
-        E_E_fan_C_d_t: NDArray[Shape['8760'], Float64],
-        q_hs_C_d_t: NDArray[Shape['8760'], Float64],  # NOTE: CS/CL 足せばよい
-        V_hs_supply_d_t: NDArray[Shape['8760'], Float64],
+        E_E_fan_C_d_t: Array8760,
+        q_hs_C_d_t: Array8760,  # NOTE: CS/CL 足せばよい
+        V_hs_supply_d_t: Array8760,
         P_rac_fan_rtd_C: float,
         simu_R_C,
         spec: Spec,
         Theta_real_inner,
         RH_real_inner,
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
     assert type == PROCESS_TYPE_4, "type4 専用ロジック"

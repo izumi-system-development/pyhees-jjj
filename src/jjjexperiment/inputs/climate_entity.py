@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Any
-from nptyping import Float64, NDArray, Shape
 
 import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
@@ -16,22 +15,22 @@ class ClimateEntity:
         self.region = region
         self.climate = rgn.load_climate(region)
 
-    def get_J_d_t(self) -> NDArray[Shape['8760'], Float64]:
+    def get_J_d_t(self) -> Array8760:
         J_d_t = slr.calc_I_s_d_t(0, 0, rgn.get_climate_df(self.climate))
         return J_d_t
 
-    def get_X_ex_d_t(self) -> NDArray[Shape['8760'], Float64]:
+    def get_X_ex_d_t(self) -> Array8760:
         X_ex_d_t = rgn.get_X_ex(self.climate)
         return X_ex_d_t
 
-    def get_Theta_ex_d_t(self) -> NDArray[Shape['8760'], Float64]:
+    def get_Theta_ex_d_t(self) -> Array8760:
         Theta_ex_d_t = rgn.get_Theta_ex(self.climate)
         return Theta_ex_d_t
 
     def get_Theta_g_avg(self) -> float:
         return algo.get_Theta_g_avg(self.get_Theta_ex_d_t())
 
-    def get_HCM_d_t(self) -> NDArray[Shape['8760'], Any]:
+    def get_HCM_d_t(self) -> Array8760:
         H, C, M = dc.get_season_array_d_t(self.region)
         HCM = []
         for i in range(len(H)):

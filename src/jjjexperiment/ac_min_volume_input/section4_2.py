@@ -1,17 +1,17 @@
 import numpy as np
-from nptyping import NDArray, Float64, Shape
 
 import pyhees.section4_2 as dc
 # JJJ
+from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.options import *
 
 def get_V_hs_vent_d_t(
         region: int,
-        V_vent_g_i: NDArray[Shape['5'], Float64],
+        V_vent_g_i: Array5,
         general_ventilation: bool,
         input_V_hs_min: bool
-    ) -> NDArray[Shape['8760'], Float64]:
+    ) -> Array8760:
     """(35-1)(35-2) 改造版
 
     Args:

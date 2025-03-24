@@ -1,4 +1,3 @@
-from nptyping import Float64, NDArray, Shape
 import numpy as np
 
 import pyhees.section4_2 as dc
@@ -12,18 +11,18 @@ from jjjexperiment.options import *
 @jjj_cloning
 def get_Theta_HBR_i(
         Theta_star_HBR: float,
-        V_supply_i: NDArray[Shape['5, 1'], Float64],
-        Theta_supply_i: NDArray[Shape['5, 1'], Float64],
+        V_supply_i: Array5x1,
+        Theta_supply_i: Array5x1,
         U_prt: float,
-        A_prt_i: NDArray[Shape['5, 1'], Float64],
+        A_prt_i: Array5x1,
         Q: float,
-        A_HCZ_i: NDArray[Shape['5, 1'], Float64],
-        L_star_H_i: NDArray[Shape['5, 1'], Float64],
-        L_star_CS_i: NDArray[Shape['5, 1'], Float64],
+        A_HCZ_i: Array5x1,
+        L_star_H_i: Array5x1,
+        L_star_CS_i: Array5x1,
         HCM: JJJ_HCM,
-        A_s_ufac_i: NDArray[Shape['5, 1'], Float64],
+        A_s_ufac_i: Array5x1,
         Theta_uf: float,
-    ) -> NDArray[Shape['5, 1'], Float64]:
+    ) -> Array5x1:
     """単時点版 (46-1)(46-2)(46-3) の床下空調 補正
     """
     # 事前条件:
@@ -79,13 +78,13 @@ def get_Theta_HBR_i(
 def get_Theta_NR(
         Theta_star_NR: float,
         Theta_star_HBR: float,
-        Theta_HBR_i: NDArray[Shape['5, 1'], Float64],
+        Theta_HBR_i: Array5x1,
         A_NR: float,
         V_vent_l_NR: float,
-        V_dash_supply_i: NDArray[Shape['5, 1'], Float64],
-        V_supply_i: NDArray[Shape['5, 1'], Float64],
+        V_dash_supply_i: Array5x1,
+        V_supply_i: Array5x1,
         U_prt: float,
-        A_prt_i: NDArray[Shape['5, 1'], Float64],
+        A_prt_i: Array5x1,
         Q: float,
         Theta_uf: float,
     ) -> float:

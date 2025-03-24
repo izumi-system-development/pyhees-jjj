@@ -996,7 +996,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     V_supply_i = V_supply_d_t_i[:, t:t+1],
                     Theta_supply_i = Theta_supply_d_t_i[:, t:t+1],
                     U_prt = U_prt,
-                    A_prt = A_prt_i.reshape(-1,1)[:5, :],
+                    A_prt_i = A_prt_i.reshape(-1,1)[:5, :],
                     Q = Q,
                     A_HCZ_i = A_HCZ_i.reshape(-1,1),
                     L_star_H_i = L_star_H_d_t_i[:, t:t+1],

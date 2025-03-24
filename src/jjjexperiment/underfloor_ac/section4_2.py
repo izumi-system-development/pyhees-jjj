@@ -1,4 +1,3 @@
-from nptyping import Float64, NDArray, Shape
 import numpy as np
 
 import pyhees.section3_1_e as algo
@@ -10,7 +9,7 @@ from jjjexperiment.common import *
 from jjjexperiment.options import *
 
 
-def get_r_A_uf_i() -> NDArray[Shape['12, 1'], Float64]:
+def get_r_A_uf_i() -> Array12x1:
     """暖冷房区画iの床面積のうち床下空間に接する床面積の割合 (-)
     """
     r_A_uf_i = np.array([
@@ -24,10 +23,10 @@ def get_A_s_ufac_i(
         A_A: float,
         A_MR: float,
         A_OR: float
-    ) -> tuple[NDArray[Shape["12, 1"], Float64], float]:
+    ) -> tuple[Array12x1, float]:
     """
     Returns:
-        tuple(NDArray[Shape["12, 1"], Float64], float):
+        tuple(Array12x1, float):
             - A_s_ufac_i: 暖冷房区画iの床下空調有効面積[m2]
             - r_A_s_ufac: 面積全体における床下空調部分の床面積の比率[-]
     """
@@ -87,9 +86,9 @@ def calc_Theta_uf(
 # vectorizeできなのいのでhstack-broadcastで対応 (A_s_ufac_iが強制でfloatになるため)
 def calc_delta_L_room2uf_i(
         U_s: float,
-        A_s_ufac_i: NDArray[Shape['5, 1'], Float64],
+        A_s_ufac_i: Array5x1,
         delta_Theta: float
-    ) -> NDArray[Shape['5, 1'], Float64]:
+    ) -> Array5x1:
     """床下空間から居室全体への熱損失 [MJ/h]
     """
     assert A_s_ufac_i.ndim == 2
