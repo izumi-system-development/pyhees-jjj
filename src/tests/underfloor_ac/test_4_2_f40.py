@@ -29,6 +29,9 @@ class Test_床下空調時_式40:
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
 
+        app_config = injector.get(AppConfig)
+        app_config.update(input.model_dump())
+
         environment = jjj_ipt.EnvironmentEntity(input)
         climate = jjj_ipt.ClimateEntity(input.region)
 
@@ -70,6 +73,8 @@ class Test_床下空調時_式40:
         L_H_d_t = np.sum(L_H_d_t_i, axis=0)
         L_H_d_t_flr1st = r_A_s_ufac * L_H_d_t
 
+        U_s_vert = climate.get_U_s_vert(environment.get_Q())
+
         t = 0  # 01/01 01:00
         assert np.sum(L_H_d_t_flr1st[t]) == pytest.approx(10.09, rel=1e-2)
 
@@ -79,7 +84,9 @@ class Test_床下空調時_式40:
         V_dash_supply_flr1st = V_dash_supply_1 + V_dash_supply_2
         assert V_dash_supply_flr1st == pytest.approx(527.5, rel=1e-2)
 
-        Theta_uf = jjj_ufac.calc_Theta_uf(L_H_d_t_flr1st[t], A_s_ufvnt, Theta_in_d_t[t], Theta_ex_d_t[t], V_dash_supply_flr1st)
+        Theta_uf  \
+            = jjj_ufac.calc_Theta_uf(
+                L_H_d_t_flr1st[t], A_s_ufvnt, U_s_vert, Theta_in_d_t[t], Theta_ex_d_t[t], V_dash_supply_flr1st)
 
         # Assert
         assert Theta_uf == pytest.approx(23.20, rel=1e-2)

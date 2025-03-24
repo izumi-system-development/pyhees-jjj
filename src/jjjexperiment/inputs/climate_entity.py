@@ -77,7 +77,7 @@ class ClimateEntity:
             U_s_vert: 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
         """
         app_config = injector.get(AppConfig)
-        if app_config._U_s_vert is None:
+        if app_config.U_s_vert is None:
             return algo.get_U_s_vert(self.region, Q)
         else:
-            return app_config._U_s_vert
+            return app_config.U_s_vert
