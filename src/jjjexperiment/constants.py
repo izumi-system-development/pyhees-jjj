@@ -5,16 +5,7 @@ def version_info() -> str:
   """
   # NOTE: subprocessモジュールによるコミット履歴からの生成は \
   # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
-  return '_20250203'
-
-# FIXME: このデコレータの定義箇所どこが最適か
-# NOTE: 関数ラベリング用のデコレータ ex. @jjjexperiment_fork()
-def jjjexperiment_clone(func):
-  """ pyheesモジュール内における jjjexperimentによる 複製された実装"""
-  return func
-def jjjexperiment_mod(func):
-  """ pyheesモジュール内における jjjexperimentによる 改変された実装"""
-  return func
+  return '_20250325'
 
 # FIXME: PROCESS_TYPE の置き場はこのファイル以外で最適な場所があれば移動する
 PROCESS_TYPE_1 = 'ダクト式セントラル空調機'
@@ -56,8 +47,6 @@ change_V_supply_d_t_i_max: int = Vサプライの上限キャップ.外さない
 """V_supply_d_t_iの上限キャップを外す"""
 carry_over_heat: int = 過剰熱量繰越計算.行わない.value
 """過剰熱量を次の時刻に持ち越す"""
-change_underfloor_temperature: int = 床下空調ロジック.変更しない.value
-"""床下温度の計算式を変更"""
 
 #以下、潜熱評価モデル追加対応(暖房)
 A_f_hex_small_H: float = 0.2
@@ -243,9 +232,6 @@ def set_constants(input: dict):
   if 'q_rtd_C_limit' in input:
     global q_rtd_C_limit
     q_rtd_C_limit = float(input['q_rtd_C_limit'])
-  if 'R_g' in input:
-    global R_g  # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W) ex. 0.15
-    R_g = float(input['R_g'])
   if 'change_supply_volume_before_vav_adjust' in input:
     global change_supply_volume_before_vav_adjust
     change_supply_volume_before_vav_adjust = int(input['change_supply_volume_before_vav_adjust'])
@@ -258,11 +244,9 @@ def set_constants(input: dict):
   if 'carry_over_heat' in input:
     global carry_over_heat
     carry_over_heat = int(input['carry_over_heat'])
-  if 'change_underfloor_temperature' in input:
-    global change_underfloor_temperature
-    change_underfloor_temperature = int(input['change_underfloor_temperature'])
-    global done_binsearch_newufac  # 制御用
-    done_binsearch_newufac = False
+  # 床下空調新ロジック > AppConfigへ移動
+  # R_g > AppConfigへ移動
+
   #以下、潜熱評価モデル追加対応
   if 'H_A' in input:
     if 'A_f_hex_small' in input['H_A']:

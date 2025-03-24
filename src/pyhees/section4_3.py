@@ -19,13 +19,15 @@ from pyhees.section4_3_a import \
     get_q_max_C
 
 from pyhees.section11_1 import \
+    load_outdoor, \
     load_climate, \
     get_Theta_ex, \
     get_X_ex, \
     calc_h_ex
 
 # JJJ_EXPERIMENT ADD
-import jjjexperiment.constants as constants
+from jjjexperiment.common import *
+import jjjexperiment.constants as jjj_consts
 
 # ============================================================================
 # 5 最大暖房出力
@@ -105,7 +107,7 @@ def get_b_eq3(q_rtd_C):
       tuple: 係数b2及びb1,b0
 
     """
-    q_rtd_C = min(constants.q_rtd_C_limit, q_rtd_C)
+    q_rtd_C = min(jjj_consts.q_rtd_C_limit, q_rtd_C)
     b2 = 0.000181 * q_rtd_C * 10 ** (-3) - 0.000184
     b1 = 0.002322 * q_rtd_C * 10 ** (-3) + 0.013904
     b0 = 0.003556 * q_rtd_C * 10 ** (-3) + 0.993431
@@ -123,7 +125,7 @@ def get_c_eq3(q_rtd_C):
       tuple: 係数c2及びc1,c0
 
     """
-    q_rtd_C = min(constants.q_rtd_C_limit, q_rtd_C)
+    q_rtd_C = min(jjj_consts.q_rtd_C_limit, q_rtd_C)
     c2 = -0.000173 * q_rtd_C * 10 ** (-3) + 0.000367
     c1 = -0.003980 * q_rtd_C * 10 ** (-3) + 0.003983
     c0 = -0.002870 * q_rtd_C * 10 ** (-3) + 0.006376
@@ -171,7 +173,7 @@ def get_C_af_H(input_C_af_H):
 
 
 # デフロストに関する暖房出力補正係数
-@constants.jjjexperiment_mod
+@jjj_mod
 def get_C_df_H(Theta_ex, h_ex):
     """デフロストに関する暖房出力補正係数
 
@@ -184,7 +186,7 @@ def get_C_df_H(Theta_ex, h_ex):
 
     """
     C_df_H = np.ones(24 * 365)
-    C_df_H[(Theta_ex < constants.defrost_temp_rac) * (h_ex >= constants.defrost_humid_rac)] = constants.C_df_H_d_t_defrost_rac
+    C_df_H[(Theta_ex < jjj_consts.defrost_temp_rac) * (h_ex >= jjj_consts.defrost_humid_rac)] = jjj_consts.C_df_H_d_t_defrost_rac
     return C_df_H
 
 
@@ -246,7 +248,7 @@ def calc_E_E_H_d_t(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t):
 
     return E_E_H_d_t
 
-@constants.jjjexperiment_clone
+@jjj_cloning
 def calc_E_E_H_d_t_2024(region, q_rtd_C, q_rtd_H, e_rtd_H, dualcompressor, L_H_d_t, q_max_C, q_max_H, input_C_af_H, climateFile):
     """消費電力量 (5)
 
@@ -414,7 +416,7 @@ def calc_a_eq7(q_rtd_C, dualcompressor, Theta_ex):
 
 # 係数p_i (8) (i=0,1,2,10..42)
 # (容量可変型コンプレッサー搭載ルームエアコンディショナーでないルームエアコンディショナー)
-@constants.jjjexperiment_mod
+@jjj_mod
 def calc_p_i_eq8(i, q_rtd_C):
     """係数p_i
 
@@ -426,7 +428,7 @@ def calc_p_i_eq8(i, q_rtd_C):
       float: 係数p_i
 
     """
-    q_rtd_C = min(constants.q_rtd_C_limit, q_rtd_C)
+    q_rtd_C = min(jjj_consts.q_rtd_C_limit, q_rtd_C)
     # 係数 s_i, t_i
     s_i = calc_s_i_eq8(i)
     t_i = calc_t_i_eq8(i)
@@ -776,7 +778,7 @@ def get_b_eq13(q_rtd_C):
       tuple: 係数b2,b1,b0
 
     """
-    q_rtd_C = min(constants.q_rtd_C_limit, q_rtd_C)
+    q_rtd_C = min(jjj_consts.q_rtd_C_limit, q_rtd_C)
     b2 = 0.000812 * q_rtd_C * 10 ** (-3) - 0.001480
     b1 = 0.003527 * q_rtd_C * 10 ** (-3) - 0.023000
     b0 = -0.011490 * q_rtd_C * 10 ** (-3) + 1.024328
@@ -794,7 +796,7 @@ def get_c_eq13(q_rtd_C):
       tuple: 係数c2,c1,c0
 
     """
-    q_rtd_C = min(constants.q_rtd_C_limit, q_rtd_C)
+    q_rtd_C = min(jjj_consts.q_rtd_C_limit, q_rtd_C)
     c2 = -0.000350 * q_rtd_C * 10 ** (-3) + 0.000800
     c1 = -0.001280 * q_rtd_C * 10 ** (-3) + 0.003621
     c0 = 0.004772 * q_rtd_C * 10 ** (-3) - 0.011170
@@ -841,7 +843,7 @@ def get_C_af_C(input_C_af_C):
       return float(input_C_af_C['C_af_C'])
 
 # 室内機吸い込み湿度に関する冷房能力補正係 C_hm_C
-@constants.jjjexperiment_mod
+@jjj_mod
 def get_C_hm_C():
     """室内機吸い込み湿度に関する冷房能力補正係数 C_hm_C
 
@@ -851,7 +853,7 @@ def get_C_hm_C():
       float: 室内機吸い込み湿度に関する冷房能力補正係数
 
     """
-    return constants.C_hm_C
+    return jjj_consts.C_hm_C
 
 
 # ============================================================================
@@ -1040,7 +1042,7 @@ def calc_E_E_C_d_t(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t)
 
     return E_E_C_d_t
 
-@constants.jjjexperiment_clone
+@jjj_cloning
 def calc_E_E_C_d_t_2024(region, q_rtd_C, e_rtd_C, dualcompressor, L_CS_d_t, L_CL_d_t, q_max_C, input_C_af_C, climateFile):
     """消費電力量 (20)
 
@@ -1191,7 +1193,7 @@ def calc_p_i_eq23(i, q_rtd_C):
       float: 係数p_i
 
     """
-    q_rtd_C = min(constants.q_rtd_C_limit, q_rtd_C)
+    q_rtd_C = min(jjj_consts.q_rtd_C_limit, q_rtd_C)
     s_i = calc_s_i_eq23(i)
     t_i = calc_t_i_eq23(i)
     return s_i * q_rtd_C * 10 ** (-3) + t_i
@@ -1458,7 +1460,6 @@ def get_E_M_C_d_t():
 
 
 if __name__ == '__main__':
-    from section11_1 import load_outdoor
 
     outdoor = load_outdoor()
 

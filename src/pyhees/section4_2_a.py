@@ -43,7 +43,8 @@ import numpy as np
 from scipy import optimize
 
 # JJJ_EXPERIMENT ADD
-import jjjexperiment.constants as constants
+from jjjexperiment.common import *
+import jjjexperiment.constants as jjj_consts
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 
 # ============================================================================
@@ -397,7 +398,7 @@ def get_e_hs_C_d_t(e_th_C_d_t, e_r_C_d_t):
 # A.4.3.1 エネルギー消費量の算定におけるヒートポンプサイクルの理論効率に対する熱源機の効率の比
 # ==============================================================================================
 
-@constants.jjjexperiment_clone
+@jjj_cloned
 @log_res(['e_r_H_d_t'])
 def get_e_r_H_d_t_2023(q_hs_H_d_t):
     """(9-1)(9-2)(9-3)(9-4) ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）対応_コンプレッサ効率特性
@@ -408,7 +409,7 @@ def get_e_r_H_d_t_2023(q_hs_H_d_t):
       日付dの時刻tにおける暖房時のヒートポンプサイクルの理論効率に対する熱源機の効率の比（-）
     """
     x = q_hs_H_d_t / 1000
-    e_r_H_d_t = constants.a_r_H_t_t_a4 * x**4 + constants.a_r_H_t_t_a3 * x**3 + constants.a_r_H_t_t_a2 * x**2 + constants.a_r_H_t_t_a1 * x + constants.a_r_H_t_t_a0
+    e_r_H_d_t = jjj_consts.a_r_H_t_t_a4 * x**4 + jjj_consts.a_r_H_t_t_a3 * x**3 + jjj_consts.a_r_H_t_t_a2 * x**2 + jjj_consts.a_r_H_t_t_a1 * x + jjj_consts.a_r_H_t_t_a0
 
     return e_r_H_d_t
 
@@ -457,7 +458,7 @@ def get_e_r_H_d_t(q_hs_H_d_t, q_hs_rtd_H, q_hs_min_H, q_hs_mid_H, e_r_mid_H, e_r
 
     return e_r_H_d_t
 
-@constants.jjjexperiment_clone
+@jjj_cloned
 def get_e_r_C_d_t_2023(q_hs_C_d_t):
     """(10-1)(10-2)(10-3)(10-4) _コンプレッサ効率特性
     Args:
@@ -466,7 +467,7 @@ def get_e_r_C_d_t_2023(q_hs_C_d_t):
       日付dの時刻tにおける冷房時のヒートポンプサイクルの理論効率に対する熱源機の効率の比（-）
     """
     x = q_hs_C_d_t / 1000
-    e_r_C_d_t = constants.a_r_C_t_t_a4 * x**4 + constants.a_r_C_t_t_a3 * x**3 + constants.a_r_C_t_t_a2 * x**2 + constants.a_r_C_t_t_a1 * x + constants.a_r_C_t_t_a0
+    e_r_C_d_t = jjj_consts.a_r_C_t_t_a4 * x**4 + jjj_consts.a_r_C_t_t_a3 * x**3 + jjj_consts.a_r_C_t_t_a2 * x**2 + jjj_consts.a_r_C_t_t_a1 * x + jjj_consts.a_r_C_t_t_a0
 
     return e_r_C_d_t
 
@@ -1359,13 +1360,13 @@ def get_alpha_c_hex_C(type, V_fan_x_C, X_hs_in, q_hs_rtd_C):
     A_f_hex = get_A_f_hex(type, q_hs_rtd_C)
 
     # (36b) 熱伝達特性
-    if type == constants.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）_熱伝達特性
+    if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）_熱伝達特性
         x = np.clip(V_hs_supply, 360, None) / (3600 * A_f_hex)
-        alpha_dash_c_hex_C = constants.a_c_hex_c_a4_C * x**4 \
-                        + constants.a_c_hex_c_a3_C * x**3 \
-                        + constants.a_c_hex_c_a2_C * x**2 \
-                        + constants.a_c_hex_c_a1_C * x \
-                        + constants.a_c_hex_c_a0_C
+        alpha_dash_c_hex_C = jjj_consts.a_c_hex_c_a4_C * x**4 \
+                        + jjj_consts.a_c_hex_c_a3_C * x**3 \
+                        + jjj_consts.a_c_hex_c_a2_C * x**2 \
+                        + jjj_consts.a_c_hex_c_a1_C * x \
+                        + jjj_consts.a_c_hex_c_a0_C
     else:
         a = np.clip(V_hs_supply, 400, None)
         alpha_dash_c_hex_C = 0.050 * np.log((a / 3600) / A_f_hex) + 0.073
@@ -1392,11 +1393,11 @@ def get_A_f_hex(type, q_hs_rtd_C):
       q_hs_rtd_C: 熱源機の冷房時の定格出力 (W)
 
     """
-    if type == constants.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+    if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
       if q_hs_rtd_C < 5600:
-        return constants.A_f_hex_small_H
+        return jjj_consts.A_f_hex_small_H
       else:
-        return constants.A_f_hex_large_H
+        return jjj_consts.A_f_hex_large_H
     else:
       return 0.23559
 
@@ -1409,11 +1410,11 @@ def get_A_e_hex(type, q_hs_rtd_C):
       q_hs_rtd_C: 熱源機の冷房時の定格出力 (W)
 
     """
-    if type == constants.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+    if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
       if q_hs_rtd_C < 5600:
-        return constants.A_e_hex_small_H
+        return jjj_consts.A_e_hex_small_H
       else:
-        return constants.A_e_hex_large_H
+        return jjj_consts.A_e_hex_large_H
     else:
       return 6.396
 
@@ -1444,7 +1445,7 @@ def get_E_E_fan_H_d_t(type, P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_ds
     """
     f_SFP = get_f_SFP(f_SFP)
 
-    if type == constants.PROCESS_TYPE_1 or type == constants.PROCESS_TYPE_2 or type == constants.PROCESS_TYPE_4:
+    if type == jjj_consts.PROCESS_TYPE_1 or type == jjj_consts.PROCESS_TYPE_2 or type == jjj_consts.PROCESS_TYPE_4:
 
         fx = (P_fan_rtd_H - f_SFP * V_hs_vent_d_t) \
             * ((V_hs_supply_d_t - V_hs_vent_d_t) / (V_hs_dsgn_H - V_hs_vent_d_t)) * 10 ** (-3)
@@ -1453,13 +1454,13 @@ def get_E_E_fan_H_d_t(type, P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_ds
         E_E_fan_H_d_t[q_hs_H_d_t > 0] = np.clip(fx[q_hs_H_d_t > 0], 0, None)
 
     # (5) ファン消費電力
-    elif type == constants.PROCESS_TYPE_3:
+    elif type == jjj_consts.PROCESS_TYPE_3:
         x = q_hs_H_d_t / 1000  # WARNING: 例外的に四次式では kW 単位で計算しています
-        P_fan_H_d_t = constants.P_fan_H_d_t_a4 * x**4  \
-                    + constants.P_fan_H_d_t_a3 * x**3  \
-                    + constants.P_fan_H_d_t_a2 * x**2  \
-                    + constants.P_fan_H_d_t_a1 * x  \
-                    + constants.P_fan_H_d_t_a0
+        P_fan_H_d_t = jjj_consts.P_fan_H_d_t_a4 * x**4  \
+                    + jjj_consts.P_fan_H_d_t_a3 * x**3  \
+                    + jjj_consts.P_fan_H_d_t_a2 * x**2  \
+                    + jjj_consts.P_fan_H_d_t_a1 * x  \
+                    + jjj_consts.P_fan_H_d_t_a0
 
         fx = (P_fan_H_d_t - f_SFP * V_hs_vent_d_t) * 10 ** (-3)
 
@@ -1514,7 +1515,7 @@ def get_E_E_fan_C_d_t(type, P_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_ds
     """
     f_SFP = get_f_SFP(f_SFP)
 
-    if type == constants.PROCESS_TYPE_1 or type == constants.PROCESS_TYPE_2 or type == constants.PROCESS_TYPE_4:
+    if type == jjj_consts.PROCESS_TYPE_1 or type == jjj_consts.PROCESS_TYPE_2 or type == jjj_consts.PROCESS_TYPE_4:
 
         fx = (P_fan_rtd_C - f_SFP * V_hs_vent_d_t) \
             * ((V_hs_supply_d_t - V_hs_vent_d_t) / (V_hs_dsgn_C - V_hs_vent_d_t)) * 10 ** (-3)
@@ -1522,13 +1523,13 @@ def get_E_E_fan_C_d_t(type, P_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_ds
         E_E_fan_C_d_t = np.zeros(24 * 365)
         E_E_fan_C_d_t[q_hs_C_d_t > 0] = np.clip(fx[q_hs_C_d_t > 0], 0, None)
 
-    elif type == constants.PROCESS_TYPE_3:
+    elif type == jjj_consts.PROCESS_TYPE_3:
         x = q_hs_C_d_t / 1000  # WARNING: 例外的に四次式では kW 単位で計算しています
-        P_fan_C_d_t = constants.P_fan_C_d_t_a4 * x**4  \
-                    + constants.P_fan_C_d_t_a3 * x**3  \
-                    + constants.P_fan_C_d_t_a2 * x**2  \
-                    + constants.P_fan_C_d_t_a1 * x  \
-                    + constants.P_fan_C_d_t_a0
+        P_fan_C_d_t = jjj_consts.P_fan_C_d_t_a4 * x**4  \
+                    + jjj_consts.P_fan_C_d_t_a3 * x**3  \
+                    + jjj_consts.P_fan_C_d_t_a2 * x**2  \
+                    + jjj_consts.P_fan_C_d_t_a1 * x  \
+                    + jjj_consts.P_fan_C_d_t_a0
 
         fx = (P_fan_C_d_t - f_SFP * V_hs_vent_d_t) * 10 ** (-3)
 

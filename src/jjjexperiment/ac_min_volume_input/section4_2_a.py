@@ -1,5 +1,5 @@
 import numpy as np
-from nptyping import NDArray, Shape, Float64
+from jjjexperiment.common import *
 
 # ============================================================================
 # A.6 送風機
@@ -7,10 +7,10 @@ from nptyping import NDArray, Shape, Float64
 
 def get_E_E_fan_d_t(
         P_fan_rtd: float,
-        V_hs_vent_d_t: NDArray[Shape['8760'], Float64],
-        V_hs_supply_d_t: NDArray[Shape['8760'], Float64],
+        V_hs_vent_d_t: Array8760,
+        V_hs_supply_d_t: Array8760,
         V_hs_dsgn: float
-        ) -> NDArray[Shape['8760'], Float64]:
+        ) -> Array8760:
     """(37)改 暖冷房送風機消費電力
 
     Args:

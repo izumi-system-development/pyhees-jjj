@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "pyhees-jjj"
-version = "0.1.0"
+version = "0.1.1"
 description = "Pyheesの検証用のフォークプロジェクトです"
 homepage = "https://github.com/izumi-system-development/pyhees-jjj"
 authors = ["Pyhees Development Team"]
@@ -17,11 +17,12 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "~3.11"  # 3.11.x (= google colab ver.)
-numpy = "~1.26"  # 1.26.x
+numpy = "~2.0"  # 2.0.x (= google colab ver.)
 pandas = ">=2.0.1"
 scipy = ">=1.10.1"
 injector = "*"
-nptyping = "*"
+pydantic = "^2.10.6"
+pyyaml = "^6.0.2"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
@@ -29,6 +30,3 @@ pytest = "*"
 [tool.pytest.ini_options]
 testpaths = ["src/tests"]
 python_files = ["test_*.py"]
-filterwarnings = [
-    "ignore::DeprecationWarning:nptyping",
-]

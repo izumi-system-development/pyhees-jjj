@@ -7,11 +7,14 @@ from math import sqrt
 from functools import lru_cache
 
 # JJJ_EXPERIMENT ADD
-import jjjexperiment.constants as constants
+from injector import Injector
+
+import jjjexperiment.constants as jjj_consts
+from jjjexperiment.common import *
 from jjjexperiment.options import *
 from jjjexperiment.logger import log_res
 from jjjexperiment.di_container import *
-from injector import Injector
+from jjjexperiment.app_config import *
 
 # ============================================================================
 # E.2 床下温度
@@ -29,6 +32,7 @@ def get_ro_air():
     return 1.20
 
 
+# section4_2.get_c_p_air() と単位が異なるので注意
 def get_c_p_air():
     """空気の比熱 (kJ/(kg・K))
 
@@ -316,6 +320,7 @@ def calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR):
 
     # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積 (m2) (7)
     A_s_ufvnt_i = r_A_uf_i * A_HCZ_i * r_A_ufvnt
+    # 部屋面積 * 床面積比 * 有効率
 
     return A_s_ufvnt_i
 
@@ -363,11 +368,11 @@ def get_table_e_6():
 # E.5 地盤またはそれを覆う基礎
 # ============================================================================
 
-@constants.jjjexperiment_mod
+@jjj_mod
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
-               L_dash_H_R_d_t,
-               L_dash_CS_R_d_t, R_g=None, di: Injector = None):
+               L_dash_H_R_d_t_i,
+               L_dash_CS_R_d_t_i, di: Injector = None):
     """床下温度及び地盤またはそれを覆う基礎の表面温度 (℃) (1)(9)
 
     Args:
@@ -382,8 +387,8 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Theta_ex_d_t(ndarray): 外気温度 (℃)
       V_sa_d_t_A(ndarray): 床下空間または居室へ供給する1時間当たりの空気の風量の合計
       H_OR_C(str): TODO: d_tでないと不十分(利用されていない)
-      L_dash_H_R_d_t(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
-      L_dash_CS_R_d_t(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
+      L_dash_H_R_d_t_i(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
+      L_dash_CS_R_d_t_i(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
       R_g: 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
 
     Returns:
@@ -404,12 +409,10 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     """
     # NOTE: 元コードからの利用もあるため、挙動を変えないように注意する
 
-    # 元コードでは R_g は使用していない
-    R_g = constants.R_g if R_g is None else R_g
-
     # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
     #R_g = 0.15
     #R_g = 0.15 + 2.63  #フェノバボード50mm
+    R_g = injector.get(AppConfig).R_g
 
     # 吸熱応答係数の初項
     Phi_A_0 = 0.025504994
@@ -486,11 +489,16 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     if r_A_ufvnt is None:
         r_A_ufvnt = 0
 
-    # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
-    A_s_ufvnt = [calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)]
+    # 暖冷房区画iの 当該住戸の空気を供給する床下空間に接する床の面積(m2) (7)
+    A_s_ufvnt_i = np.array([
+        calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR)
+        for i in range(1, 13)
+    ])
 
     # 当該住戸の空気を供給する床下空間に接する床の面積の合計 (m2) (8)
     A_s_ufvnt_A = get_A_s_ufvnt_A(r_A_ufvnt, A_A, A_MR, A_OR)
+    # CHECK: 上の式、わざわざ sum() にしていないので異なるからか?
+    # assert np.isclose(A_s_ufvnt_A, sum(A_s_ufvnt_i))
 
     # 当該住戸の外気を導入する床下空間の基礎外周長さ (6)
     L_uf = get_L_uf(A_s_ufvnt_A)
@@ -498,6 +506,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     H_floor = 0.7
 
     # 基礎の線熱貫流率Ψ (W/m*K) (5)
+    # CHECK: psi, phi 一致していないが問題ないのか?
     psi = get_phi(region, Q)
 
     Theta_star = np.zeros(12)
@@ -513,42 +522,42 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         # 参照空気温度及び参照温度差係数 (2)(3)
         # TODO: ここをベクトル化する
         for i in range(1, 13):
-            if 0 < L_dash_H_R_d_t[i - 1][dt]:
+            if 0 < L_dash_H_R_d_t_i[i - 1][dt]:
                 Theta_star[i - 1] = Theta_in_H
                 H_star[i - 1] = 1
-            elif 0 < L_dash_CS_R_d_t[i - 1][dt]:
+            elif 0 < L_dash_CS_R_d_t_i[i - 1][dt]:
                 Theta_star[i - 1] = Theta_in_C
                 H_star[i - 1] = 1
-            elif L_dash_H_R_d_t[i - 1][dt] <= 0 and L_dash_CS_R_d_t[i - 1][dt] <= 0 and Theta_ex_d_t[dt] < Theta_in_H:
+            elif L_dash_H_R_d_t_i[i - 1][dt] <= 0 and L_dash_CS_R_d_t_i[i - 1][dt] <= 0 and Theta_ex_d_t[dt] < Theta_in_H:
                 Theta_star[i - 1] = Theta_in_H
                 H_star[i - 1] = 1
-            elif L_dash_H_R_d_t[i - 1][dt] <= 0 and L_dash_CS_R_d_t[i - 1][dt] <= 0 and Theta_in_H <= Theta_ex_d_t[
+            elif L_dash_H_R_d_t_i[i - 1][dt] <= 0 and L_dash_CS_R_d_t_i[i - 1][dt] <= 0 and Theta_in_H <= Theta_ex_d_t[
                 dt] <= Theta_in_C:
                 Theta_star[i - 1] = Theta_ex_d_t[dt]
                 H_star[i - 1] = H_floor
-            elif L_dash_H_R_d_t[i - 1][dt] <= 0 and L_dash_CS_R_d_t[i - 1][dt] <= 0 and Theta_in_C < Theta_ex_d_t[dt]:
+            elif L_dash_H_R_d_t_i[i - 1][dt] <= 0 and L_dash_CS_R_d_t_i[i - 1][dt] <= 0 and Theta_in_C < Theta_ex_d_t[dt]:
                 Theta_star[i - 1] = Theta_in_C
                 H_star[i - 1] = 1
             else:
-                raise ValueError((L_dash_CS_R_d_t[i - 1][dt], L_dash_CS_R_d_t[i - 1][dt]))
+                raise ValueError((L_dash_CS_R_d_t_i[i - 1][dt], L_dash_CS_R_d_t_i[i - 1][dt]))
 
         def calc_Theta_uf(theta_sa):
           endi = 12  # NOTE: 熱貫流は1階床全体とする(=> 12でも内部的には(i=1,2,6,7,8,9))
           # 当該住宅の床下温度 (1)
           theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa
-                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, endi+1)])
+                        + (sum([U_s * A_s_ufvnt_i[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, endi+1)])
                           + psi * L_uf * Theta_ex_d_t[dt]
                           + (A_s_ufvnt_A / R_g)
                             * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g)) * 3.6) \
                       / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                        + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, endi+1)])
+                        + (sum([U_s * A_s_ufvnt_i[i - 1] * H_star[i - 1] for i in range(1, endi+1)])
                           + psi * L_uf
                           + (A_s_ufvnt_A / R_g)
                             * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
           return theta_uf
 
-        if constants.change_underfloor_temperature == 床下空調ロジック.変更する.value \
-          and constants.done_binsearch_newufac == False:
+        if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+          and injector.get(AppConfig).done_binsearch_new_ufac == False:
 
           # NOTE: 床下空調新ロジックでは、Theta_sa_d_t として Theta_uf_d_t の目標値が来ています
           # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
@@ -558,9 +567,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           # Lが0であっても床下を通すことで初めて負荷が生じるケースがあるため
 
           # 暖房時の目標温度が低い
-          is_incomplete_Heating = (L_dash_H_R_d_t[0][dt]>0) and (expected_Theta_uf < Theta_in_H)
+          is_incomplete_Heating = (L_dash_H_R_d_t_i[0][dt]>0) and (expected_Theta_uf < Theta_in_H)
           # 冷房時の目標温度が高い
-          is_incomplete_Cooling = (L_dash_CS_R_d_t[0][dt]>0) and (expected_Theta_uf > Theta_in_C)
+          is_incomplete_Cooling = (L_dash_CS_R_d_t_i[0][dt]>0) and (expected_Theta_uf > Theta_in_C)
 
           # 二分探索を実行しない条件
           if (is_incomplete_Cooling or is_incomplete_Heating):
@@ -609,9 +618,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_star_d_t_i[:, dt] = Theta_star
         H_star_d_t_i[:, dt] = H_star
 
-    if di is not None \
-      and constants.change_underfloor_temperature == 床下空調ロジック.変更する.value \
-      and constants.done_binsearch_newufac == False:
+    if di is not None  \
+      and injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+      and injector.get(AppConfig).done_binsearch_new_ufac == False:
 
       # 床下空調新ロジック調査用 変数出力
       hci = di.get(HaCaInputHolder)
@@ -627,7 +636,12 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           f"Theta_uf_d_t": Theta_uf_d_t,
         })
 
-    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt, A_s_ufvnt_A, Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
+      # θ_supply_d_t の逆算は一度しか行わないため
+      injector.get(AppConfig).done_binsearch_new_ufac = True
+
+    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt_i, A_s_ufvnt_A, \
+      Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, \
+      Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
 
 @log_res(['Theta_uf_d_t'])
 def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_dash_supply_d_t_i, Theta_ex_d_t):

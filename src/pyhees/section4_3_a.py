@@ -3,7 +3,7 @@
 # ============================================================================
 
 # JJJ_EXPERIMENT ADD
-import jjjexperiment.constants as constants
+import jjjexperiment.constants as jjj_consts
 
 # ============================================================================
 # A.2 定格能力
@@ -35,7 +35,7 @@ def get_q_rtd_C(A_HCZ):
 
     """
     q_rtd_C = 190.5 * A_HCZ + 45.6
-    return min(constants.q_rtd_C_limit, q_rtd_C)
+    return min(jjj_consts.q_rtd_C_limit, q_rtd_C)
 
 
 # ============================================================================

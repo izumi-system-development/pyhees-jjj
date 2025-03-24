@@ -90,8 +90,8 @@ def calc_delta_L_dash_H_uf_d_t_i(i, A_A, A_MR, A_OR, A_HCZ_i, region, Q, r_A_ufv
         Theta_ex_d_t=Theta_ex_d_t,
         V_sa_d_t_A=np.repeat(V_A, 24 * 365),
         H_OR_C='H',
-        L_dash_H_R_d_t=L_dash_H_R_d_t_i,
-        L_dash_CS_R_d_t=L_dash_CS_R_d_t_i,
+        L_dash_H_R_d_t_i=L_dash_H_R_d_t_i,
+        L_dash_CS_R_d_t_i=L_dash_CS_R_d_t_i,
     )
 
     delta_L_dash_H_uf_d_t_i[f2] = (ro_air * c_p_air * V_i * (Theta_uf_d_t[f2] - Theta_in_d_t[f2]) * 10 ** (-3)
@@ -176,8 +176,8 @@ def calc_delta_L_dash_CS_R_d_t_i(i, region, Q, r_A_ufvnt, underfloor_insulation,
         Theta_ex_d_t=Theta_ex_d_t,
         V_sa_d_t_A=np.repeat(V_A, 24 * 365),
         H_OR_C='C',
-        L_dash_H_R_d_t=L_dash_H_R_d_t_i,
-        L_dash_CS_R_d_t=L_dash_CS_R_d_t_i
+        L_dash_H_R_d_t_i=L_dash_H_R_d_t_i,
+        L_dash_CS_R_d_t_i=L_dash_CS_R_d_t_i
     )
 
     # 当該住戸の暖冷房区画iの外気を導入する床下空間に接する床の面積

@@ -1,6 +1,6 @@
 import pandas as pd
 from dataclasses import dataclass
-import injector
+from injector import Injector, singleton, inject, provider, Module
 
 # 【injector の基本】
 # DIコンテナという考え方を行うためのライブラリ
@@ -65,7 +65,7 @@ class SampleHouseInfo:
 
 class UfVarsDataFrame:
     '''床下空調 新ロジックの調査用 出力変数'''
-    @injector.inject
+    @inject
     def __init__(self):
         # d_t 長のデータフレーム
         self._df_d_t = pd.DataFrame()
@@ -81,7 +81,7 @@ class UfVarsDataFrame:
 
 class HaCaInputHolder:
     """暖房時・冷房時の判別に使用したい"""
-    @injector.inject
+    @inject
     def __init__(self):
         self.__q_hs_rtd_C = None
         self.__q_hs_rtd_H = None
@@ -117,15 +117,15 @@ class HaCaInputHolder:
 
 
 # DIコンテナの設定
-class JJJExperimentModule(injector.Module):
-    @injector.singleton
-    @injector.provider
+class JJJExperimentModule(Module):
+    @singleton
+    @provider
     def provide_uf_vars_data_frame(self) -> UfVarsDataFrame:
         return UfVarsDataFrame()
 
     # NOTE: シングルトンを暖房用・冷房用に切替えるのは悪手、それぞれのインスタンスとする
-    @injector.singleton
-    @injector.provider
+    @singleton
+    @provider
     def provide_ha_ca_input_holder(self) -> HaCaInputHolder:
         return HaCaInputHolder()
 
@@ -135,8 +135,8 @@ class JJJExperimentModule(injector.Module):
     def set_houseinfo(self, house_info: SampleHouseInfo) -> None:
         self._house_info = house_info
 
-    @injector.singleton
-    @injector.provider
+    @singleton
+    @provider
     def create_houseinfo(self) -> SampleHouseInfo:
         """注入するインスタンスを渡す"""
         # NOTE: ここの定義で、引数を利用できる方法が分からなかった
@@ -145,14 +145,14 @@ class JJJExperimentModule(injector.Module):
 # NOTE: DIコンテナからの取得物への操作
 
 # 関数の定義にinjectデコレータを使用し、DataFrameHolderインスタンスを受け取る
-@injector.inject
+@inject
 def some_function(data_frame_holder: UfVarsDataFrame):
     # 関数内で何らかの処理を行い、途中結果をデータフレームに追加
     intermediate_result = {'x': [1, 2, 3], 'y': [4, 5, 6]}  # 何らかの中間結果
     data_frame_holder.update_df(intermediate_result)
 
 # ネストした関数の例
-@injector.inject
+@inject
 def another_function(data_frame_holder: UfVarsDataFrame):
     # 内部関数も同様にデータフレームを更新
     some_function(data_frame_holder)
