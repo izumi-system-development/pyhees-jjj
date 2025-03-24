@@ -60,7 +60,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     # 制御フラグ
     app_config = injector.get(AppConfig)
 
-    R_g = jjj_consts.R_g  # 追加0416
+    R_g = app_config.R_g
 
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
     df_output2 = pd.DataFrame()
@@ -320,14 +320,14 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
     if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
-        U_s = algo.get_U_s()  # 床の熱貫流率 [W/m2K]
+        U_s_vert = jjj_ipt.ClimateEntity(region).get_U_s_vert(Q)  # 床の熱貫流率 [W/m2K]
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(A_A, A_MR, A_OR)
 
         assert A_s_ufac_i.ndim == 2
         delta_L_room2uf_d_t_i  \
             = np.hstack([
                 jjj_ufac.calc_delta_L_room2uf_i(
-                    U_s,
+                    U_s_vert,
                     A_s_ufac_i,
                     Theta_ex_d_t[t] - Theta_in_d_t[t]
                 ) for t in range(24*365)  # 各要素が shape(12,1)
@@ -338,32 +338,38 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # 2. 床下 -> 外気 (逃げ方向)
         # CHECK: V_dash_supply_d_t の計算には補正前の Q^_hs_d_tを使用していてよいか
         L_H_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
-        V_dash_supply_d_t = np.sum(V_dash_supply_d_t_i, axis=0)
+        r_A_uf_i = jjj_ufac.get_r_A_uf_i()
+        mask_uf_i = r_A_uf_i > 0  # 床下空調部屋のみ
+        V_dash_supply_flr1st_d_t  \
+            = np.sum(
+                V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
         Theta_uf_d_t  \
             = np.array([
                 jjj_ufac.calc_Theta_uf(
                     L_H_d_t_flr1st[t],
                     np.sum(A_s_ufac_i),
+                    U_s_vert,
                     Theta_in_d_t[t],
                     Theta_ex_d_t[t],
-                    V_dash_supply_d_t[t]
+                    V_dash_supply_flr1st_d_t[t]
                 ) for t in range(24*365)
             ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
         climate = jjj_ipt.ClimateEntity(region)
-        psi = climate.get_psi(Q)
+        phi = climate.get_phi(Q)
 
         delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
         delta_L_uf2outdoor_d_t  \
-            = delta_L_uf2outdoor_d_t(psi, L_uf, (Theta_uf_d_t - Theta_ex_d_t))
+            = delta_L_uf2outdoor_d_t(phi, L_uf, (Theta_uf_d_t - Theta_ex_d_t))
         assert np.shape(delta_L_uf2outdoor_d_t) == (24 * 365,)
         Q_hat_hs_d_t += delta_L_uf2outdoor_d_t
 
         # 3. 床下 -> 地盤 (逃げ方向)
         # 吸熱応答係数の初項 定数取得クラスを作成するか
         Phi_A_0 = 0.025504994
-        # TODO: ここで算出する方法が不明なので相談する
+
         sum_Theta_dash_g_surf_A_m = 4.138  # 値は計算例で仮置き
+        # NOTE: 実際には Theta_uf_d_t と共に後に算出される
 
         A_s_ufac_A = np.sum(A_s_ufac_i)
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
@@ -378,9 +384,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['X_star_NR_d_t'] = X_star_NR_d_t
 
     # (52)　負荷バランス時の非居室の室温
-    if False:
-    # TODO: この時点で Theta_NR_d_t が利用できない問題のためコメントアウト
-    # if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+    if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
         V_dash_supply_d_t_A = np.sum(V_dash_supply_d_t_i[0:5, :], axis=0)
         L_H_NR_d_t_A = np.sum(L_H_d_t_i[5:, :], axis=0)
         L_CS_NR_d_t_A = np.sum(L_CS_d_t_i[5:, :], axis=0)
@@ -392,20 +396,20 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Theta_star_NR_d_t = np.vectorize(jjj_ufac.get_Theta_star_NR)
         Theta_star_NR_d_t  \
             = Theta_star_NR_d_t(
-                Theta_star_HBR = Theta_star_HBR_d_t,  #-> Shape[8760]
+                Theta_star_HBR = Theta_star_HBR_d_t,  # (8760,)
                 Q = Q,
                 A_NR = A_NR,
-                V_vent_l_NR = V_vent_l_NR_d_t,  #-> Shape[8760]
-                V_dash_supply_A = V_dash_supply_d_t_A,  #-> Shape[8760]
+                V_vent_l_NR = V_vent_l_NR_d_t,  # (8760,)
+                V_dash_supply_A = V_dash_supply_d_t_A,  # (8760,)
                 U_prt = U_prt,
                 A_prt_A = A_prt_A,
-                L_H_NR_A = L_H_NR_d_t_A,  #-> Shape[8760]
-                L_CS_NR_A = L_CS_NR_d_t_A,  #-> Shape[8760]
-                Theta_NR = Theta_NR_d_t,  #-> Shape[8760]
-                Theta_uf = Theta_uf_d_t,  #-> Shape[8760]
-                HCM = HCM  # Shape[8760]
+                L_H_NR_A = L_H_NR_d_t_A,  # (8760,)
+                L_CS_NR_A = L_CS_NR_d_t_A,  # (8760,)
+                Theta_NR = 20,  # この時点では仮置きの値を使用
+                Theta_uf = Theta_uf_d_t,  # (8760,)
+                HCM = HCM  # (8760,)
             )
-    if True:
+    else:
         Theta_star_NR_d_t  \
             = dc.get_Theta_star_NR_d_t(
                 Theta_star_HBR_d_t, Q, A_NR,
@@ -610,7 +614,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                         algo.calc_Theta(
                             region, A_A, A_MR, A_OR, Q, YUCACO_r_A_ufvnt, underfloor_insulation,
                             Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                            '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                            '', L_H_d_t_i, L_CS_d_t_i)
 
                     if q_hs_rtd_H is not None:
                         mask = Theta_req_d_t_i[i] > Theta_uf_d_t
@@ -657,7 +661,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                         algo.calc_Theta(
                             region, A_A, A_MR, A_OR, Q, YUCACO_r_A_ufvnt, underfloor_insulation,
                             Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                            '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                            '', L_H_d_t_i, L_CS_d_t_i)
 
                     if q_hs_rtd_H is not None:
                         mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
@@ -752,6 +756,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     A_OR = A_OR,
                     Q = Q,
                     r_A_ufac = r_A_ufac,
+                    U_s_vert = U_s_vert,
                     underfloor_insulation = underfloor_insulation,
                     Theta_uf_d_t = Theta_uf_d_t_2023,
                     Theta_ex_d_t = Theta_ex_d_t,
@@ -900,7 +905,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     algo.calc_Theta(
                         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
                         Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                        '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                        '', L_H_d_t_i, L_CS_d_t_i)
 
                 if q_hs_rtd_H is not None:  # 暖房
                   mask = Theta_req_d_t_i[i] > Theta_uf_d_t
@@ -955,7 +960,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     Theta_ex_d_t,
                     V_sa_d_t,  # V_sa_d_t_A=
                     '',  # H_OR_C=
-                    L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g, di= None)
+                    L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, di= None)
                     # NOTE: ここでは L_dash_/L_ の使い分けはあまり気にしない
 
             # CHECK: i=3,4,5(2階居室)は床下通さないので中和がなく高温なのは問題ないか
@@ -975,7 +980,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     algo.calc_Theta(
                         region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation,
                         Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
-                        '', L_H_d_t_i, L_CS_d_t_i, R_g)
+                        '', L_H_d_t_i, L_CS_d_t_i)
 
                 if q_hs_rtd_H is not None:  # 暖房
                     mask = Theta_supply_d_t_i[i] > Theta_uf_d_t

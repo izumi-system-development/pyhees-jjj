@@ -40,7 +40,7 @@ def get_Theta_HBR_i(
     CRV = dc.get_c_p_air() * dc.get_rho_air() * V_supply_i
     assert CRV.shape == (5, 1), '想定外の行列数'
 
-    U_s = dc.get_U_s()
+    U_s = dc.get_U_s()  # U_s_vert でないチェック済み
 
     match HCM:
         # 暖房期 (46-1)
@@ -113,7 +113,7 @@ def get_Theta_NR(
     # (48b) [J/(K・s)]
     k_evp = (Q - 0.35 * 0.5 * 2.4) * A_NR + c_p_air * rho_air * (V_vent_l_NR / 3600)
     # (48a)
-    U_s = dc.get_U_s()
+    U_s = dc.get_U_s()  # U_s_vert でないチェック済み
 
     Theta_NR  \
         = ((k_evp + k_prt_A) * Theta_star_NR  \

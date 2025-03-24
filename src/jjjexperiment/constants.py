@@ -5,7 +5,7 @@ def version_info() -> str:
   """
   # NOTE: subprocessモジュールによるコミット履歴からの生成は \
   # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
-  return '_20250203'
+  return '_20250325'
 
 # FIXME: PROCESS_TYPE の置き場はこのファイル以外で最適な場所があれば移動する
 PROCESS_TYPE_1 = 'ダクト式セントラル空調機'
@@ -232,9 +232,6 @@ def set_constants(input: dict):
   if 'q_rtd_C_limit' in input:
     global q_rtd_C_limit
     q_rtd_C_limit = float(input['q_rtd_C_limit'])
-  if 'R_g' in input:
-    global R_g  # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W) ex. 0.15
-    R_g = float(input['R_g'])
   if 'change_supply_volume_before_vav_adjust' in input:
     global change_supply_volume_before_vav_adjust
     change_supply_volume_before_vav_adjust = int(input['change_supply_volume_before_vav_adjust'])
@@ -248,6 +245,7 @@ def set_constants(input: dict):
     global carry_over_heat
     carry_over_heat = int(input['carry_over_heat'])
   # 床下空調新ロジック > AppConfigへ移動
+  # R_g > AppConfigへ移動
 
   #以下、潜熱評価モデル追加対応
   if 'H_A' in input:

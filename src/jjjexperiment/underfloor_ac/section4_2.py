@@ -52,6 +52,7 @@ def get_A_s_ufac_i(
 def calc_Theta_uf(
         L_H_flr1st: float,
         A_s_ufvnt: float,
+        U_s_vert: float,
         Theta_in: float,
         Theta_ex: float,
         V_flr1st: float,
@@ -61,6 +62,7 @@ def calc_Theta_uf(
     Args:
         L_H_flr1st: 一階部分の1時間当たりの暖房負荷 [MJ/h]
         A_s_ufvnt: 空気を供給する床下空間に接する床の面積 [m2]
+        U_s_vert: 床の熱貫流率 [W/m2K]
         Theta_in: 室温 [℃]
         Theta_ex: 外気温度 [℃]
         V_flr1st: 第1床面積 [m2]
@@ -70,14 +72,13 @@ def calc_Theta_uf(
     """
     ro_air = dc.get_ro_air()    # 空気密度 [kg/m3]
     c_p_air = algo.get_c_p_air()  # 空気の比熱 [kJ/kgK]
-    U_s = dc.get_U_s()          # 床の熱貫流率 [W/m2K]
 
     H_floor = 0.7  # 床の温度差係数(-) 損失として
 
     a1 = L_H_flr1st * 1e+3
-    a2 = U_s * A_s_ufvnt * (Theta_in - Theta_ex) * H_floor * 3.6
-    a3 = Theta_in * (ro_air * c_p_air * V_flr1st + U_s * A_s_ufvnt * 3.6)
-    b1 = ro_air * c_p_air * V_flr1st + U_s * A_s_ufvnt * 3.6
+    a2 = U_s_vert * A_s_ufvnt * (Theta_in - Theta_ex) * H_floor * 3.6
+    a3 = Theta_in * (ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6)
+    b1 = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
 
     Theta_uf = (a1 - a2 + a3) / b1
     return Theta_uf
@@ -85,16 +86,20 @@ def calc_Theta_uf(
 
 # vectorizeできなのいのでhstack-broadcastで対応 (A_s_ufac_iが強制でfloatになるため)
 def calc_delta_L_room2uf_i(
-        U_s: float,
+        U_s_vert: float,
         A_s_ufac_i: Array5x1,
         delta_Theta: float
     ) -> Array5x1:
     """床下空間から居室全体への熱損失 [MJ/h]
+
+    Args:
+        U_s_vert: 床の熱貫流率 [W/m2・K]
+
     """
     assert A_s_ufac_i.ndim == 2
 
     H_floor = 0.7  # 床下空調でなく意図しない熱移動の分なので通常の遮蔽係数(0.7)となる
-    delta_L_uf2room =  U_s * A_s_ufac_i * np.abs(delta_Theta) * H_floor \
+    delta_L_uf2room =  U_s_vert * A_s_ufac_i * np.abs(delta_Theta) * H_floor \
         * 3.6 / 1000  # [W] -> [MJ/h]
     # NOTE: L_H_d_t_i, L_CS_d_t_i に含まれている通常(非床下空調)の床下ロス部分(室内→床下→屋外)
     # 下記の補正を追加する前にコチラを引くことでイコールフッティングできます
@@ -103,17 +108,17 @@ def calc_delta_L_room2uf_i(
 
 
 def calc_delta_L_uf2outdoor(
-        psi: float,
+        phi: float,
         L_uf: float,
         delta_Theta: float
     ) -> float:
     """床下空間から外気への熱損失 [MJ/h]
     Args:
-        psi: 土間床等の外気に接する床の熱貫流率 [W/m2K]
+        phi: 土間床等の外気に接する床の熱貫流率 [W/m2K]
         L_uf: 土間床等の外気に接する床の周辺部の長さ [m]
         delta_Theta: 床下空間と外気の温度差 [℃]
     """
-    return psi * L_uf * np.abs(delta_Theta) * 3.6 / 1000  # [W] -> [MJ/h]
+    return phi * L_uf * np.abs(delta_Theta) * 3.6 / 1000  # [W] -> [MJ/h]
 
 
 def calc_delta_L_uf2gnd(
@@ -140,7 +145,7 @@ def calc_delta_L_uf2gnd(
 
 
 def get_delta_L_star_newuf(
-        region, A_A, A_MR, A_OR, Q, r_A_ufac, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
+        region, A_A, A_MR, A_OR, Q, r_A_ufac, U_s_vert, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
         V_dash_supply_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, Theta_star_HBR_d_t, R_g, di: Injector = None):
     """床下空調に関する 熱負荷の補正項 冷暖房共通(8)(9)
 
@@ -151,6 +156,7 @@ def get_delta_L_star_newuf(
         A_OR(float): その他の居室の床面積 (m2)
         Q(float): 当該住戸の熱損失係数 (W/m2K)
         r_A_ufac(float): 当該住戸において、床下空間全体の面積に対する空気を供給する床下空間の面積の比 (-)
+        U_s_vert: 床の熱貫流率 [W/m2・K]
         underfloor_insulation(bool): 床下空間が断熱空間内である場合はTrue
         Theta_uf_d_t(ndarray): 床下空間の空気の温度 (℃)
         Theta_ex_d_t(ndarray): 外気温度 (℃)
@@ -186,8 +192,7 @@ def get_delta_L_star_newuf(
             Theta_ex_d_t,
             V_sa_d_t,  # V_sa_d_t_A=
             '',  # H_OR_C= 機能してない
-            L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, R_g, di)
-    U_s = dc.get_U_s()  # [W/m2・K]
+            L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, di)
 
     # 温度低下を加味した給気温度 ここでは使わないが後で使うために返す
 
@@ -195,13 +200,13 @@ def get_delta_L_star_newuf(
 
     # 床下 → 床上居室全体()
     assert A_s_ufvnt_i.ndim == 1
-    delta_L_room2uf_d_t_i = np.hstack([
-        calc_delta_L_room2uf_i(U_s, A_s_ufvnt_i.reshape(-1,1),
+    delta_L_room2uf_d_t_i  \
+        = np.hstack([
+            calc_delta_L_room2uf_i(
+                U_s_vert, A_s_ufvnt_i.reshape(-1,1),
                 Theta_uf_d_t[tt] - Theta_star_HBR_d_t[tt])
-        for tt in range(24*365)
-    ])
-    # delta_L_room2uf_d_t_i = np.vectorize(calc_delta_L_room2uf_i)
-    # delta_L_room2uf_d_t_i = delta_L_room2uf_d_t_i(U_s, A_s_ufvnt_i.reshape(-1,1), Theta_uf_d_t - Theta_star_HBR_d_t)
+            for tt in range(24*365)
+        ])
     assert delta_L_room2uf_d_t_i.ndim == 2
 
     # 床下 → 外気

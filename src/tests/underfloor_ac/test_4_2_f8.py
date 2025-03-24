@@ -7,6 +7,7 @@ import pyhees.section3_2 as gihi
 import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
 # JJJ
+from jjjexperiment.app_config import *
 from jjjexperiment.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
@@ -20,6 +21,9 @@ class Test_床下空調時_式8補正:
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
+
+        app_config = injector.get(AppConfig)
+        app_config.update(input.model_dump())
 
         environment = jjj_ipt.EnvironmentEntity(input)
         climate = jjj_ipt.ClimateEntity(input.region)
@@ -128,9 +132,9 @@ class Test_床下空調時_式8補正:
 
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
 
-        U_s = dc.get_U_s()
+        U_s_vert = climate.get_U_s_vert(environment.get_Q())
         delta_L_uf2room_d_t_i = np.hstack([
-            jjj_ufac.calc_delta_L_room2uf_i(U_s, A_s_ufac_i, Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt])
+            jjj_ufac.calc_delta_L_room2uf_i(U_s_vert, A_s_ufac_i, Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt])
             for tt in range(24*365)
         ])
         assert delta_L_uf2room_d_t_i.shape == (12, 8760)

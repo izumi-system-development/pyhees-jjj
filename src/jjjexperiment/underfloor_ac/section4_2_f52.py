@@ -38,14 +38,15 @@ def get_Theta_star_NR(
     # vectorize可能
     c_p_air = dc.get_c_p_air()
     rho_air = dc.get_rho_air()
-    U_s = dc.get_U_s()
+    U_s = dc.get_U_s()  # U_s_vert でないチェック済み
 
     k1 = (Q - 0.35 * 0.5 * 2.4) * A_NR  \
         + c_p_air * rho_air * V_vent_l_NR / 3600  \
         + c_p_air * rho_air * V_dash_supply_A / 3600  \
         + U_prt * A_prt_A
 
-    k2 = U_s * A_NR * (Theta_uf - Theta_NR)
+    k2 = U_s * A_NR * np.abs(Theta_uf - Theta_NR)
+    # NOTE: abs しないとバグる
 
     match HCM:
         case JJJ_HCM.H:

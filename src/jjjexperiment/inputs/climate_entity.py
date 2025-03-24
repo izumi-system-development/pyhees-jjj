@@ -1,5 +1,4 @@
 import numpy as np
-from typing import Any
 
 import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
@@ -7,6 +6,7 @@ import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
 # JJJ
 from jjjexperiment.common import *
+from jjjexperiment.app_config import *
 
 class ClimateEntity:
     """ region に関するデータを保持するクラス """
@@ -28,7 +28,11 @@ class ClimateEntity:
         return Theta_ex_d_t
 
     def get_Theta_g_avg(self) -> float:
-        return algo.get_Theta_g_avg(self.get_Theta_ex_d_t())
+        app_config = injector.get(AppConfig)
+        if app_config.Theta_g_avg is None:
+            return algo.get_Theta_g_avg(self.get_Theta_ex_d_t())
+        else:
+            return app_config.Theta_g_avg
 
     def get_HCM_d_t(self) -> Array8760:
         H, C, M = dc.get_season_array_d_t(self.region)
@@ -47,17 +51,23 @@ class ClimateEntity:
 
         return np.array(HCM)
 
-    def get_psi(self, Q: float) -> float:
+    def get_phi(self, Q: float) -> float:
         """
         Ψ値を計算
         Args:
             Q: 当該住戸の熱損失係数 [W/m2*K]
         Returns:
-            psi: 基礎の線熱貫流率Ψ [W/m2*K]
+            phi: 基礎の線熱貫流率 [W/m*K]
         """
-        # CHECK: psi,phi 異なるが大丈夫か要確認
-        return algo.get_phi(self.region, Q)
+        app_config = injector.get(AppConfig)
+        if app_config.phi is None:
+            return algo.get_phi(self.region, Q)
+        else:
+            return app_config.phi
 
+    # NOTE: algo.get_U_s() =定数 と使い分ける
+    # こちらはユーザー入力
+    # TODO: テストコードでは使用できているが実装コードでは利用できていない
     def get_U_s_vert(self, Q: float) -> float:
         """
         暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
@@ -66,4 +76,8 @@ class ClimateEntity:
         Returns:
             U_s_vert: 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
         """
-        return algo.get_U_s_vert(self.region, Q)
+        app_config = injector.get(AppConfig)
+        if app_config.U_s_vert is None:
+            return algo.get_U_s_vert(self.region, Q)
+        else:
+            return app_config.U_s_vert

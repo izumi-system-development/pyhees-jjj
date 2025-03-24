@@ -9,6 +9,7 @@ import pyhees.section4_1 as HC
 from jjjexperiment.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.app_config import *
 
 class Test_床下空調時_式40:
 
@@ -27,6 +28,9 @@ class Test_床下空調時_式40:
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
+
+        app_config = injector.get(AppConfig)
+        app_config.update(input.model_dump())
 
         environment = jjj_ipt.EnvironmentEntity(input)
         climate = jjj_ipt.ClimateEntity(input.region)
@@ -69,6 +73,8 @@ class Test_床下空調時_式40:
         L_H_d_t = np.sum(L_H_d_t_i, axis=0)
         L_H_d_t_flr1st = r_A_s_ufac * L_H_d_t
 
+        U_s_vert = climate.get_U_s_vert(environment.get_Q())
+
         t = 0  # 01/01 01:00
         assert np.sum(L_H_d_t_flr1st[t]) == pytest.approx(10.09, rel=1e-2)
 
@@ -78,7 +84,9 @@ class Test_床下空調時_式40:
         V_dash_supply_flr1st = V_dash_supply_1 + V_dash_supply_2
         assert V_dash_supply_flr1st == pytest.approx(527.5, rel=1e-2)
 
-        Theta_uf = jjj_ufac.calc_Theta_uf(L_H_d_t_flr1st[t], A_s_ufvnt, Theta_in_d_t[t], Theta_ex_d_t[t], V_dash_supply_flr1st)
+        Theta_uf  \
+            = jjj_ufac.calc_Theta_uf(
+                L_H_d_t_flr1st[t], A_s_ufvnt, U_s_vert, Theta_in_d_t[t], Theta_ex_d_t[t], V_dash_supply_flr1st)
 
         # Assert
         assert Theta_uf == pytest.approx(23.20, rel=1e-2)
@@ -104,6 +112,9 @@ class Test_床下空調時_式40:
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
 
+        app_config = injector.get(AppConfig)
+        app_config.update(input.model_dump())
+
         climate = jjj_ipt.ClimateEntity(input.region)
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
@@ -115,9 +126,7 @@ class Test_床下空調時_式40:
 
         # Arrange - 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
         environment = jjj_ipt.EnvironmentEntity(input)
-        # CHEKC: どちらを使うか確認中
         U_s_vert = climate.get_U_s_vert(environment.get_Q())
-        U_s = algo.get_U_s()
 
         # Act
         # NOTE: ここでは意図した空調ではなく漏れなので 通常の0.7となる
@@ -127,7 +136,7 @@ class Test_床下空調時_式40:
 
         delta_L_uf2room \
             = jjj_ufac.calc_delta_L_room2uf_i(
-                U_s, A_s_ufac_i, Theta_in_d_t[t] - Theta_ex_d_t[t])
+                U_s_vert, A_s_ufac_i, Theta_in_d_t[t] - Theta_ex_d_t[t])
 
         # Assert
         assert np.shape(delta_L_uf2room) == (12, 1)
@@ -144,7 +153,7 @@ class Test_床下空調時_式40:
 
         environment = jjj_ipt.EnvironmentEntity(input)
         climate = jjj_ipt.ClimateEntity(input.region)
-        psi = climate.get_psi(environment.get_Q())
+        phi = climate.get_phi(environment.get_Q())
 
         # Arrange - 基礎外周長さ [m]
         A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
@@ -158,7 +167,7 @@ class Test_床下空調時_式40:
         Theta_uf = 23.2  # 床下温度 [℃]
         delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
         delta_L_uf2outdoor \
-            = delta_L_uf2outdoor_d_t(psi, L_uf, Theta_uf - Theta_ex_d_t[t])
+            = delta_L_uf2outdoor_d_t(phi, L_uf, Theta_uf - Theta_ex_d_t[t])
 
         # Assert
         assert delta_L_uf2outdoor == pytest.approx(2.07, rel=1e-2)
