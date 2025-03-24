@@ -378,9 +378,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output['X_star_NR_d_t'] = X_star_NR_d_t
 
     # (52)　負荷バランス時の非居室の室温
-    if False:
-    # TODO: この時点で Theta_NR_d_t が利用できない問題のためコメントアウト
-    # if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+    if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
         V_dash_supply_d_t_A = np.sum(V_dash_supply_d_t_i[0:5, :], axis=0)
         L_H_NR_d_t_A = np.sum(L_H_d_t_i[5:, :], axis=0)
         L_CS_NR_d_t_A = np.sum(L_CS_d_t_i[5:, :], axis=0)
@@ -392,20 +390,20 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Theta_star_NR_d_t = np.vectorize(jjj_ufac.get_Theta_star_NR)
         Theta_star_NR_d_t  \
             = Theta_star_NR_d_t(
-                Theta_star_HBR = Theta_star_HBR_d_t,  #-> Shape[8760]
+                Theta_star_HBR = Theta_star_HBR_d_t,  # (8760,)
                 Q = Q,
                 A_NR = A_NR,
-                V_vent_l_NR = V_vent_l_NR_d_t,  #-> Shape[8760]
-                V_dash_supply_A = V_dash_supply_d_t_A,  #-> Shape[8760]
+                V_vent_l_NR = V_vent_l_NR_d_t,  # (8760,)
+                V_dash_supply_A = V_dash_supply_d_t_A,  # (8760,)
                 U_prt = U_prt,
                 A_prt_A = A_prt_A,
-                L_H_NR_A = L_H_NR_d_t_A,  #-> Shape[8760]
-                L_CS_NR_A = L_CS_NR_d_t_A,  #-> Shape[8760]
-                Theta_NR = Theta_NR_d_t,  #-> Shape[8760]
-                Theta_uf = Theta_uf_d_t,  #-> Shape[8760]
-                HCM = HCM  # Shape[8760]
+                L_H_NR_A = L_H_NR_d_t_A,  # (8760,)
+                L_CS_NR_A = L_CS_NR_d_t_A,  # (8760,)
+                Theta_NR = 20,  # この時点では仮置きの値を使用
+                Theta_uf = Theta_uf_d_t,  # (8760,)
+                HCM = HCM  # (8760,)
             )
-    if True:
+    else:
         Theta_star_NR_d_t  \
             = dc.get_Theta_star_NR_d_t(
                 Theta_star_HBR_d_t, Q, A_NR,
