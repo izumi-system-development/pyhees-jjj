@@ -186,7 +186,13 @@ def change_testmode_underfloor_old(inputs: dict):
 def change_testmode_underfloor_new(inputs: dict):
     """ 床下空調の新しいロジック
     """
-    fixtures = {"change_underfloor_temperature": 床下空調ロジック.変更する.value}
+    fixtures = {
+        "change_underfloor_temperature": 床下空調ロジック.変更する.value,
+        "input_ufac_consts": 1,  # 変える
+        "Theta_g_avg": 15.7,
+        "U_s_vert": 2.223,
+        "phi": 0.846,
+    }
     inputs_copied = copy.deepcopy(inputs)  # 複製しないと別テストで矛盾する
     return deep_update(inputs_copied, fixtures)
 
