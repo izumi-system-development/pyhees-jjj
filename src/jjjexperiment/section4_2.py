@@ -250,75 +250,62 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
     df_output3['Q_hs_rtd_H'] = [Q_hs_rtd_H]
     ####################################################################################################################
 
-    # (36)　VAV 調整前の熱源機の風量
-    if hs_CAV:
-        H, C, M = dc_a.get_season_array_d_t(region)
-        V_dash_hs_supply_d_t = np.zeros(24 * 365)
-        V_dash_hs_supply_d_t[H] = V_hs_dsgn_H or 0
-        V_dash_hs_supply_d_t[C] = V_hs_dsgn_C or 0
-        V_dash_hs_supply_d_t[M] = 0
-    else:
-        if Q_hs_rtd_H is not None:
-            updated_V_hs_dsgn_H = V_hs_dsgn_H or 0
+    # 脱出条件:
+    should_be_adjusted_Q_hat_hs_d_t  \
+        = app_config.new_ufac_flg == 床下空調ロジック.変更する.value
+    while True:
+        # (36)　VAV 調整前の熱源機の風量
+        if hs_CAV:
+            H, C, M = dc_a.get_season_array_d_t(region)
+            V_dash_hs_supply_d_t = np.zeros(24 * 365)
+            V_dash_hs_supply_d_t[H] = V_hs_dsgn_H or 0
+            V_dash_hs_supply_d_t[C] = V_hs_dsgn_C or 0
+            V_dash_hs_supply_d_t[M] = 0
         else:
-            updated_V_hs_dsgn_H = None
-        if Q_hs_rtd_C is not None:
-            updated_V_hs_dsgn_C = V_hs_dsgn_C or 0
-        else:
-            updated_V_hs_dsgn_C = None
-
-        if type == PROCESS_TYPE_3:
-            # FIXME: 方式3が他方式と比較して大きくなる問題
-            if updated_V_hs_dsgn_C is not None:
-                # 冷房時 => 顕熱負荷のみ
-                V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_CS_d_t, region, True)
+            if Q_hs_rtd_H is not None:
+                updated_V_hs_dsgn_H = V_hs_dsgn_H or 0
             else:
-                # 暖房 => 全熱負荷
-                V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_d_t, region, True)
-            df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
+                updated_V_hs_dsgn_H = None
+
+            if Q_hs_rtd_C is not None:
+                updated_V_hs_dsgn_C = V_hs_dsgn_C or 0
+            else:
+                updated_V_hs_dsgn_C = None
+
+            if type == PROCESS_TYPE_3:
+                # FIXME: 方式3が他方式と比較して大きくなる問題
+                if updated_V_hs_dsgn_C is not None:
+                    # 冷房時 => 顕熱負荷のみ
+                    V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_CS_d_t, region, True)
+                else:
+                    # 暖房 => 全熱負荷
+                    V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_d_t, region, True)
+                df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
+            else:
+                V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t(V_hs_min, updated_V_hs_dsgn_H, updated_V_hs_dsgn_C, Q_hs_rtd_H, Q_hs_rtd_C, Q_hat_hs_d_t, region)
+                df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
+
+        if VAV and jjj_consts.change_supply_volume_before_vav_adjust == VAVありなしの吹出風量.数式を統一する.value:
+            # (45)　風量バランス
+            r_supply_des_d_t_i = dc.get_r_supply_des_d_t_i_2023(region, L_CS_d_t_i, L_H_d_t_i)
+            assert r_supply_des_d_t_i.shape == (5, 24*365)
+            # 出力用
+            r_supply_des_i = r_supply_des_d_t_i[:, 0:1]
+            # (44)　VAV 調整前の吹き出し風量
+            V_dash_supply_d_t_i = dc.get_V_dash_supply_d_t_i_2023(r_supply_des_d_t_i, V_dash_hs_supply_d_t, V_vent_g_i)
         else:
-            V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t(V_hs_min, updated_V_hs_dsgn_H, updated_V_hs_dsgn_C, Q_hs_rtd_H, Q_hs_rtd_C, Q_hat_hs_d_t, region)
-            df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
+            # (45)　風量バランス
+            r_supply_des_i = dc.get_r_supply_des_i(A_HCZ_i)
+            assert r_supply_des_i.shape == (5,)
+            # 出力用
+            r_supply_des_d_t_i = np.tile(r_supply_des_i, 24 * 365).reshape(5, 24 * 365)
+            # (44)　VAV 調整前の吹き出し風量
+            V_dash_supply_d_t_i = dc.get_V_dash_supply_d_t_i(r_supply_des_i, V_dash_hs_supply_d_t, V_vent_g_i)
 
-    if VAV and jjj_consts.change_supply_volume_before_vav_adjust == VAVありなしの吹出風量.数式を統一する.value:
-        # (45)　風量バランス
-        r_supply_des_d_t_i = dc.get_r_supply_des_d_t_i_2023(region, L_CS_d_t_i, L_H_d_t_i)
-        # (44)　VAV 調整前の吹き出し風量
-        V_dash_supply_d_t_i = dc.get_V_dash_supply_d_t_i_2023(r_supply_des_d_t_i, V_dash_hs_supply_d_t, V_vent_g_i)
+        if not should_be_adjusted_Q_hat_hs_d_t:
+            break
 
-        df_output2['r_supply_des_i'] = None
-        df_output = df_output.assign(
-            r_supply_des_d_t_1 = r_supply_des_d_t_i[0],
-            r_supply_des_d_t_2 = r_supply_des_d_t_i[1],
-            r_supply_des_d_t_3 = r_supply_des_d_t_i[2],
-            r_supply_des_d_t_4 = r_supply_des_d_t_i[3],
-            r_supply_des_d_t_5 = r_supply_des_d_t_i[4]
-        )
-    else:
-        # (45)　風量バランス
-        r_supply_des_i = dc.get_r_supply_des_i(A_HCZ_i)
-        # (44)　VAV 調整前の吹き出し風量
-        V_dash_supply_d_t_i = dc.get_V_dash_supply_d_t_i(r_supply_des_i, V_dash_hs_supply_d_t, V_vent_g_i)
-
-        df_output2['r_supply_des_i'] = r_supply_des_i
-        df_output = df_output.assign(
-            r_supply_des_d_t_1 = np.ones(24*365) * r_supply_des_i[0],
-            r_supply_des_d_t_2 = np.ones(24*365) * r_supply_des_i[1],
-            r_supply_des_d_t_3 = np.ones(24*365) * r_supply_des_i[2],
-            r_supply_des_d_t_4 = np.ones(24*365) * r_supply_des_i[3],
-            r_supply_des_d_t_5 = np.ones(24*365) * r_supply_des_i[4]
-        )
-
-    df_output = df_output.assign(
-        V_dash_supply_d_t_1 = V_dash_supply_d_t_i[0],
-        V_dash_supply_d_t_2 = V_dash_supply_d_t_i[1],
-        V_dash_supply_d_t_3 = V_dash_supply_d_t_i[2],
-        V_dash_supply_d_t_4 = V_dash_supply_d_t_i[3],
-        V_dash_supply_d_t_5 = V_dash_supply_d_t_i[4]
-    )
-
-    # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
-    if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+        # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
         U_s_vert = jjj_ipt.ClimateEntity(region).get_U_s_vert(Q)  # 床の熱貫流率 [W/m2K]
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(A_A, A_MR, A_OR)
@@ -378,6 +365,25 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         delta_L_uf2gnd_d_t  \
             = delta_L_uf2gnd_d_t(A_s_ufac_A, R_g, Phi_A_0, Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
         Q_hat_hs_d_t += delta_L_uf2gnd_d_t
+
+        # 補正完了
+        should_be_adjusted_Q_hat_hs_d_t = False
+
+    df_output2['r_supply_des_i'] = r_supply_des_i
+    df_output = df_output.assign(
+        r_supply_des_d_t_1 = r_supply_des_d_t_i[0],
+        r_supply_des_d_t_2 = r_supply_des_d_t_i[1],
+        r_supply_des_d_t_3 = r_supply_des_d_t_i[2],
+        r_supply_des_d_t_4 = r_supply_des_d_t_i[3],
+        r_supply_des_d_t_5 = r_supply_des_d_t_i[4]
+    )
+    df_output = df_output.assign(
+        V_dash_supply_d_t_1 = V_dash_supply_d_t_i[0],
+        V_dash_supply_d_t_2 = V_dash_supply_d_t_i[1],
+        V_dash_supply_d_t_3 = V_dash_supply_d_t_i[2],
+        V_dash_supply_d_t_4 = V_dash_supply_d_t_i[3],
+        V_dash_supply_d_t_5 = V_dash_supply_d_t_i[4]
+    )
 
     # (53)　負荷バランス時の非居室の絶対湿度
     X_star_NR_d_t = dc.get_X_star_NR_d_t(X_star_HBR_d_t, L_CL_d_t_i, L_wtr, V_vent_l_NR_d_t, V_dash_supply_d_t_i, region)
