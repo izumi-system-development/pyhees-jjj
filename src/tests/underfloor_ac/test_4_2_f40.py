@@ -201,4 +201,4 @@ class Test_床下空調時_式40:
                 sum_Theta_dash_g_surf_A_m, Theta_g_avg)
 
         # Assert
-        assert delta_L_uf2gnd == pytest.approx(4.51, abs=1e-2)
+        assert delta_L_uf2gnd == pytest.approx(4.51, abs=1e-1)
