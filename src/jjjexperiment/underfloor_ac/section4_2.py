@@ -198,13 +198,14 @@ def get_delta_L_star_newuf(
 
     """熱損失[W] (1)式より各項"""
 
+    delta_Theta_room2uf = np.abs(Theta_star_HBR_d_t - Theta_ex_d_t)
     # 床下 → 床上居室全体()
     assert A_s_ufvnt_i.ndim == 1
     delta_L_room2uf_d_t_i  \
         = np.hstack([
             calc_delta_L_room2uf_i(
                 U_s_vert, A_s_ufvnt_i.reshape(-1,1),
-                Theta_uf_d_t[tt] - Theta_star_HBR_d_t[tt])
+                delta_Theta_room2uf[tt])
             for tt in range(24*365)
         ])
     assert delta_L_room2uf_d_t_i.ndim == 2
