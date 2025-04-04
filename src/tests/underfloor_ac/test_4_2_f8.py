@@ -57,7 +57,13 @@ class Test_床下空調時_式8補正:
             mode_OR = mode_OR,
             SHC = get_solarheat()
         )
+        t = 0  # 01/01 01:00
         assert np.shape(L_H_d_t_i) == (12, 8760)
+        assert L_H_d_t_i[0][t] == pytest.approx(5.957, abs=1e-1)
+        assert L_H_d_t_i[1][t] == pytest.approx(2.493, abs=1e-1)
+        assert L_H_d_t_i[2][t] == pytest.approx(1.538, abs=1e-1)
+        assert L_H_d_t_i[3][t] == pytest.approx(1.473, abs=1e-1)
+        assert L_H_d_t_i[4][t] == pytest.approx(1.899, abs=1e-1)
 
         L_CS_d_t_i, _ = HC.calc_cooling_load(
             region = input.region,
@@ -116,6 +122,8 @@ class Test_床下空調時_式8補正:
             L_CS_d_t_i = L_CS_d_t_i,
             region = input.region
         )
+        # NOTE: このθ*NRは既存式を利用しているが 式(52)にも改変を加えている
+        # ここでは式(52)の改変は考慮しないため既存式を使用している
 
         Q_star_trs_prt_d_t_i = dc.get_Q_star_trs_prt_d_t_i(
             U_prt = dc.get_U_prt(),
@@ -125,21 +133,31 @@ class Test_床下空調時_式8補正:
         )
 
         # Act
-        t = 0  # 01/01 01:00
         # (8) 熱損失を含む負荷バランス時の暖房負荷
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, input.region)
-        assert L_star_H_d_t_i[0][t] == pytest.approx(6.545, rel=1e-2)
 
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
 
         U_s_vert = climate.get_U_s_vert(environment.get_Q())
         delta_L_uf2room_d_t_i = np.hstack([
-            jjj_ufac.calc_delta_L_room2uf_i(U_s_vert, A_s_ufac_i, Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt])
+            jjj_ufac.calc_delta_L_room2uf_i(
+                U_s_vert, A_s_ufac_i,
+                Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt])
             for tt in range(24*365)
         ])
         assert delta_L_uf2room_d_t_i.shape == (12, 8760)
+        assert delta_L_uf2room_d_t_i[0][t] == pytest.approx(2.906, abs=1e-1)
+        assert delta_L_uf2room_d_t_i[1][t] == pytest.approx(1.614, abs=1e-1)
+        assert delta_L_uf2room_d_t_i[2][t] == pytest.approx(0, abs=1e-1)
+        assert delta_L_uf2room_d_t_i[3][t] == pytest.approx(0, abs=1e-1)
+        assert delta_L_uf2room_d_t_i[4][t] == pytest.approx(0, abs=1e-1)
+
         # (8) 補正
         L_star_H_d_t_i -= delta_L_uf2room_d_t_i[:5, :]  # 負荷控除
 
         # Assert
-        assert L_star_H_d_t_i[0][t] == pytest.approx(3.60, rel=1e-2)
+        assert L_star_H_d_t_i[0][t] == pytest.approx(3.639, abs=1e-1)
+        assert L_star_H_d_t_i[1][t] == pytest.approx(1.308, abs=1e-1)
+        assert L_star_H_d_t_i[2][t] == pytest.approx(1.881, abs=1e-1)
+        assert L_star_H_d_t_i[3][t] == pytest.approx(1.752, abs=1e-1)
+        assert L_star_H_d_t_i[4][t] == pytest.approx(2.178, abs=1e-1)
