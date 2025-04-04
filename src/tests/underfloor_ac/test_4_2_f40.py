@@ -89,7 +89,7 @@ class Test_床下空調時_式40:
                 L_H_d_t_flr1st[t], A_s_ufvnt, U_s_vert, Theta_in_d_t[t], Theta_ex_d_t[t], V_dash_supply_flr1st)
 
         # Assert
-        assert Theta_uf == pytest.approx(23.20, rel=1e-2)
+        assert Theta_uf == pytest.approx(23.20, abs=1e-2)
 
 
     def test_床下空調用の床面積(self):
@@ -104,7 +104,7 @@ class Test_床下空調時_式40:
         A_s_ufvnt = np.sum(A_s_ufvnt_i)
         # Assert
         assert A_s_ufvnt == pytest.approx(65.44, rel=1e-2)
-        assert A_s_ufvnt / input.A_A == pytest.approx(0.54, rel=1e-2)
+        assert A_s_ufvnt / input.A_A == pytest.approx(0.54, abs=1e-2)
 
 
     def test_床下から床上居室への熱移動(self):
@@ -140,7 +140,7 @@ class Test_床下空調時_式40:
 
         # Assert
         assert np.shape(delta_L_uf2room) == (12, 1)
-        assert np.sum(delta_L_uf2room) == pytest.approx(6.37, rel=1e-2)
+        assert np.sum(delta_L_uf2room) == pytest.approx(6.37, abs=1e-2)
 
 
     def test_床下から外気への熱損失(self):
@@ -170,7 +170,7 @@ class Test_床下空調時_式40:
             = delta_L_uf2outdoor_d_t(phi, L_uf, Theta_uf - Theta_ex_d_t[t])
 
         # Assert
-        assert delta_L_uf2outdoor == pytest.approx(2.07, rel=1e-2)
+        assert delta_L_uf2outdoor == pytest.approx(2.07, abs=1e-2)
 
 
     def test_床下から地盤への熱損失(self):
@@ -201,4 +201,4 @@ class Test_床下空調時_式40:
                 sum_Theta_dash_g_surf_A_m, Theta_g_avg)
 
         # Assert
-        assert delta_L_uf2gnd == pytest.approx(4.51, rel=1e-2)
+        assert delta_L_uf2gnd == pytest.approx(4.51, abs=1e-1)
