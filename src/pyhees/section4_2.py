@@ -1527,7 +1527,7 @@ def get_Q_hs_rtd_C(q_hs_rtd_C):
     else:
         return None
 
-
+# NOTE: jjj_V_min_input.get_V_hs_min でデコレートしたのでそちらを使用する
 def get_V_hs_min(V_vent_g_i):
     """(39)
 

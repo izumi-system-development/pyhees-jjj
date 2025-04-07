@@ -14,6 +14,7 @@ from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE
 import jjjexperiment.denchu_2 as denchu_2
 from jjjexperiment.options import *
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
+from jjjexperiment.app_config import *
 
 @log_res(['E_E_fan_H_d_t', 'q_hs_H_d_t'])
 def calc_E_E_fan_H_d_t(
@@ -29,13 +30,15 @@ def calc_E_E_fan_H_d_t(
     # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
     q_hs_H_d_t = dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
 
+    app_config = injector.get(AppConfig)
+
     # (37) 送風機の付加分 [kWh/h]
-    if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
+    if app_config.input_V_hs_min_H == 最低風量直接入力.入力する.value:
         E_E_fan_H_d_t \
             = jjj_V_min_input.get_E_E_fan_d_t(
                 P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H)
 
-    elif jjj_consts.input_V_hs_min == 最低風量直接入力.入力しない.value:
+    elif app_config.input_V_hs_min_H == 最低風量直接入力.入力しない.value:
         # デフォルト条件では V_hs_vent_d_t は既存式(35)のまま
         E_E_fan_H_d_t \
             = dc_a.get_E_E_fan_H_d_t(type,
@@ -47,7 +50,7 @@ def calc_E_E_fan_H_d_t(
                     q_hs_H_d_t,  # [W]
                     f_SFP_H)
     else:
-        raise ValueError(jjj_consts.input_V_hs_min)
+        raise ValueError(app_config.input_V_hs_min_H)
 
     return E_E_fan_H_d_t, q_hs_H_d_t
 
@@ -65,13 +68,15 @@ def calc_E_E_fan_C_d_t(
     # (4) 日付dの時刻tにおける1時間当たりの熱源機の平均冷房能力(-)
     q_hs_CS_d_t, q_hs_CL_d_t = dc_a.get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
 
+    app_config = injector.get(AppConfig)
+
     # (38) 送風機の付加分 [kWh/h]
-    if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
+    if app_config.input_V_hs_min_C == 最低風量直接入力.入力する.value:
         E_E_fan_C_d_t \
             = jjj_V_min_input.get_E_E_fan_d_t(
                 P_rac_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C)
 
-    elif jjj_consts.input_V_hs_min == 最低風量直接入力.入力しない.value:
+    elif app_config.input_V_hs_min_C == 最低風量直接入力.入力しない.value:
         if (type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3):
             # (4) 潜熱/顕熱を使用せずに全熱負荷を再計算する
             q_hs_C_d_t = dc_a.get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
@@ -89,7 +94,7 @@ def calc_E_E_fan_C_d_t(
                     q_hs_C_d_t,  # [W]
                     f_SFP_C)
     else:
-        raise ValueError(jjj_consts.input_V_hs_min)
+        raise ValueError(app_config.input_V_hs_min_C)
 
     return E_E_fan_C_d_t, q_hs_CS_d_t, q_hs_CL_d_t
 
