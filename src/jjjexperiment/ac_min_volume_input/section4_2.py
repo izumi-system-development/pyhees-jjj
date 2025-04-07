@@ -5,6 +5,7 @@ import pyhees.section4_2 as dc
 from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.options import *
+from jjjexperiment.app_config import *
 
 def get_V_hs_min(
         q_hs_rtd_H: float,
@@ -22,19 +23,21 @@ def get_V_hs_min(
 
     """
     # 暖房時/冷房時で異なるユーザー入力を使用する
+    app_config = injector.get(AppConfig)
+
     match(q_hs_rtd_H, q_hs_rtd_C):
         case(None, None):
             raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
         case(_, None):  # 暖房時
             # CHECK: フラグの個別化
-            if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
-                V_hs_min = jjj_consts.V_hs_min_H
+            if app_config.input_V_hs_min_H == 最低風量直接入力.入力する.value:
+                V_hs_min = app_config.V_hs_min_H
             else:
                 V_hs_min = dc.get_V_hs_min(V_vent_g_i)  # 従来式
         case(None, _):  # 冷房時
             # CHECK: フラグの個別化
-            if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
-                V_hs_min = jjj_consts.V_hs_min_C
+            if app_config.input_V_hs_min_C == 最低風量直接入力.入力する.value:
+                V_hs_min = app_config.V_hs_min_C
             else:
                 V_hs_min = dc.get_V_hs_min(V_vent_g_i)  # 従来式
         case(_, _):
