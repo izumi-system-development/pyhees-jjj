@@ -6,6 +6,41 @@ from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.options import *
 
+def get_V_hs_min(
+        q_hs_rtd_H: float,
+        q_hs_rtd_C: float,
+        V_vent_g_i: Array5
+    ) -> float:
+    """(39)-改変 熱源機の最低風量
+
+    Args:
+        q_hs_rtd_H: 定格暖房能力 (HC判別) [kW]
+        q_hs_rtd_C: 定格冷房能力 (HC判別) [kW]
+        V_vent_g_i: 暖冷房区画iの全般換気量 [m3/h]
+    Returns:
+        熱源機の最低風量 [m3/h]
+
+    """
+    # 暖房時/冷房時で異なるユーザー入力を使用する
+    match(q_hs_rtd_H, q_hs_rtd_C):
+        case(None, None):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+        case(_, None):  # 暖房時
+            # CHECK: フラグの個別化
+            if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
+                V_hs_min = jjj_consts.V_hs_min_H
+            else:
+                V_hs_min = dc.get_V_hs_min(V_vent_g_i)  # 従来式
+        case(None, _):  # 冷房時
+            # CHECK: フラグの個別化
+            if jjj_consts.input_V_hs_min == 最低風量直接入力.入力する.value:
+                V_hs_min = jjj_consts.V_hs_min_C
+            else:
+                V_hs_min = dc.get_V_hs_min(V_vent_g_i)  # 従来式
+        case(_, _):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+    return V_hs_min
+
 def get_V_hs_vent_d_t(
         region: int,
         V_vent_g_i: Array5,
