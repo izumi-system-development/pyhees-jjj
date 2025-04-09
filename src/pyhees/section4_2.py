@@ -1339,6 +1339,7 @@ def get_V_hs_supply_d_t(V_supply_d_t_i):
     return np.sum(V_supply_d_t_i[:5, :], axis=0)
 
 
+@jjj_cloned
 def get_V_hs_vent_d_t(V_vent_g_i, general_ventilation):
     """(35-1)(35-2)
 

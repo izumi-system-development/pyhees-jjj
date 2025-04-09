@@ -34,13 +34,14 @@ def calc_E_E_fan_H_d_t(
 
     # (37) 送風機の付加分 [kWh/h]
     if app_config.input_V_hs_min_H == 最低風量直接入力.入力する.value:
-        E_E_fan_H_d_t \
+        E_E_fan_H_d_t  \
             = jjj_V_min_input.get_E_E_fan_d_t(
                 P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H)
+        # TODO: 改変式の方も同様に q_hs_H_d_t でのフィルタを使用すべきか確認中
 
     elif app_config.input_V_hs_min_H == 最低風量直接入力.入力しない.value:
         # デフォルト条件では V_hs_vent_d_t は既存式(35)のまま
-        E_E_fan_H_d_t \
+        E_E_fan_H_d_t  \
             = dc_a.get_E_E_fan_H_d_t(type,
                     # NOTE: ルームエアコンファン(P_rac_fan) / 循環ファン(P_fan) 切替
                     P_rac_fan_rtd_H if type == PROCESS_TYPE_2 else P_fan_rtd_H,

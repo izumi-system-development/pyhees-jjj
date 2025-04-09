@@ -5,6 +5,7 @@ from jjjexperiment.common import *
 # A.6 送風機
 # ============================================================================
 
+@jjj_cloning
 def get_E_E_fan_d_t(
         P_fan_rtd: float,
         V_hs_vent_d_t: Array8760,

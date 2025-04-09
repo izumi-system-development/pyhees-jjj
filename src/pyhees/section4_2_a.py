@@ -1427,6 +1427,7 @@ def get_A_e_hex(type, q_hs_rtd_C):
 # A.6 送風機
 # ============================================================================
 
+@jjj_cloned  # ac_min_volume_input
 def get_E_E_fan_H_d_t(type, P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, q_hs_H_d_t, f_SFP = None):
     """(37)
 
