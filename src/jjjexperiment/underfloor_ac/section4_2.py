@@ -75,12 +75,11 @@ def calc_Theta_uf(
 
     H_floor = 0.7  # 床の温度差係数(-) 損失として
 
+    b = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
     a1 = L_H_flr1st * 1e+3
-    a2 = U_s_vert * A_s_ufvnt * (Theta_in - Theta_ex) * H_floor * 3.6
-    a3 = Theta_in * (ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6)
-    b1 = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
+    a2 = U_s_vert * A_s_ufvnt * np.abs(Theta_in - Theta_ex) * H_floor * 3.6
 
-    Theta_uf = (a1 - a2 + a3) / b1
+    Theta_uf = (a1 - a2 + Theta_in * b) / b
     return Theta_uf
 
 

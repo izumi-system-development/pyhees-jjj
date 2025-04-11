@@ -74,9 +74,18 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         climate = load_climate(region)
     else:
         climate = pd.read_csv(climateFile, nrows=24 * 365, encoding="SHIFT-JIS")
-    Theta_in_d_t = uf.get_Theta_in_d_t('H')
     Theta_ex_d_t = np.array(get_Theta_ex(climate))
     X_ex_d_t = get_X_ex(climate)
+
+    match (q_hs_rtd_H, q_hs_rtd_C):
+        case (None, None):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C のいずれかのみ 想定')
+        case (_, None):
+            Theta_in_d_t = uf.get_Theta_in_d_t('H')
+        case (None, _):
+            Theta_in_d_t = uf.get_Theta_in_d_t('CS')
+        case (_, _):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C のいずれかのみ 想定')
 
     J_d_t = calc_I_s_d_t(0, 0, get_climate_df(climate))
     h_ex_d_t = calc_h_ex(X_ex_d_t, Theta_ex_d_t)
@@ -312,17 +321,25 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Q_hat_hs_d_t -= np.sum(delta_L_room2uf_d_t_i, axis=0)
 
         # 2. 床下 -> 外気 (逃げ方向)
-        # CHECK: V_dash_supply_d_t の計算には補正前の Q^_hs_d_tを使用していてよいか
-        L_H_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
+        match (q_hs_rtd_H, q_hs_rtd_C):
+            case (None, None):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
+            case (_, None):
+                L_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
+            case (None, _):
+                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i + L_CL_d_t_i, axis=0)  # 一階冷房負荷
+            case (_, _):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
+
         r_A_uf_i = jjj_ufac.get_r_A_uf_i()
         mask_uf_i = r_A_uf_i > 0  # 床下空調部屋のみ
         V_dash_supply_flr1st_d_t  \
-            = np.sum(
-                V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
+            = np.sum(V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
+
         Theta_uf_d_t  \
             = np.array([
                 jjj_ufac.calc_Theta_uf(
-                    L_H_d_t_flr1st[t],
+                    L_d_t_flr1st[t],
                     np.sum(A_s_ufac_i),
                     U_s_vert,
                     Theta_in_d_t[t],
