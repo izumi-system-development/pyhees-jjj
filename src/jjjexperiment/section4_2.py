@@ -741,12 +741,30 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # (8) 熱損失を含む負荷バランス時の暖房負荷
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region)
 
-        # (8)(9) 負荷バランス時の暖冷房負荷 補正
         if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+            delta_Theta_d_t = np.abs(Theta_star_HBR_d_t - Theta_ex_d_t)
+            # 部屋→床下への熱移動分が戻ってくるため負荷控除する
+            delta_L_uf2room_d_t_i = np.hstack([
+                jjj_ufac.calc_delta_L_room2uf_i(
+                    U_s_vert, A_s_ufac_i, delta_Theta_d_t[t]
+                ) for t in range(24*365)
+            ])
+            H, C, M = dc.get_season_array_d_t(region)
+            # (9)-補正
+            Cf = np.logical_and(C, L_CS_d_t_i[:5, :] > 0)
+            assert Cf.shape == (5, 24*365)
+            L_star_CS_d_t_i[Cf] -= delta_L_uf2room_d_t_i[:5, :][Cf]
+            # (8)-補正
+            Hf = np.logical_and(H, L_H_d_t_i[:5, :] > 0)
+            assert Hf.shape == (5, 24*365)
+            L_star_H_d_t_i[Hf] -= delta_L_uf2room_d_t_i[:5, :][Hf]
+
+            # ここまでOK
+
             # FIXME: 床下限定の数値だがとりあえず評価する L_star_の計算で不要なら無視されている
             # NOTE: 新ロジックでのみ 期待される床下温度を事前に計算(本計算は後で行う)
             Theta_uf_d_t_2023 = algo.calc_Theta_uf_d_t_2023(
-                L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
+                L_star_H_d_t_i, L_star_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
 
             # CHECK: フラグ管理不要なら消す
             # if jjj_consts.done_binsearch_newufac:
@@ -768,16 +786,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
                     Theta_star_HBR_d_t = Theta_star_HBR_d_t,
                     R_g = R_g)
-
-            H, C, M = dc.get_season_array_d_t(region)
-            # (9) 補正
-            Cf = np.logical_and(C, L_CS_d_t_i[:5, :] > 0)
-            assert Cf.shape == (5, 24*365)
-            L_star_CS_d_t_i[Cf] -= delta_L_uf2room_d_t_i[:5, :][Cf]  # 負荷控除
-            # (8) 補正
-            Hf = np.logical_and(H, L_H_d_t_i[:5, :] > 0)
-            assert Hf.shape == (5, 24*365)
-            L_star_H_d_t_i[Hf] -= delta_L_uf2room_d_t_i[:5, :][Hf]  # 負荷控除
 
             # NOTE: 送風経路のその他負荷は 部屋の負荷には含めない(24'07)
 
