@@ -31,8 +31,9 @@ class Test_床下空調時_式46_式48:
         A_HCZ_i = environment.get_A_HCZ_i().reshape(-1, 1)
 
         # Act
+        Theta_star_HBR = 20.0
         Theta_HBR_i = jjj_ufac.get_Theta_HBR_i(
-            Theta_star_HBR = 20.0,
+            Theta_star_HBR = Theta_star_HBR,
             V_supply_i = np.array([342.3, 190.2, 152.0, 123.6, 123.7]).reshape(-1, 1),
             Theta_supply_i = np.array([24.89, 24.89, 36.78, 35.39, 36.85]).reshape(-1, 1),
             U_prt = 2.17,
@@ -47,11 +48,12 @@ class Test_床下空調時_式46_式48:
         )
 
         # Assert
-        assert Theta_HBR_i[0, 0] == pytest.approx(19.62, abs=1e-2)
-        assert Theta_HBR_i[1, 0] == pytest.approx(20.65, abs=1e-2)
-        assert Theta_HBR_i[2, 0] == pytest.approx(22.60, abs=1e-2)
-        assert Theta_HBR_i[3, 0] == pytest.approx(21.45, abs=1e-2)
-        assert Theta_HBR_i[4, 0] == pytest.approx(20.90, abs=1e-2)
+        # NOTE: 従来式同様のキャップロジックも今回も有効にする(確認済:25'04/11)
+        assert Theta_HBR_i[0, 0] == pytest.approx(max(19.62, Theta_star_HBR), abs=1e-2)
+        assert Theta_HBR_i[1, 0] == pytest.approx(max(20.65, Theta_star_HBR), abs=1e-2)
+        assert Theta_HBR_i[2, 0] == pytest.approx(max(22.60, Theta_star_HBR), abs=1e-2)
+        assert Theta_HBR_i[3, 0] == pytest.approx(max(21.45, Theta_star_HBR), abs=1e-2)
+        assert Theta_HBR_i[4, 0] == pytest.approx(max(20.90, Theta_star_HBR), abs=1e-2)
 
 
     def test_式48_時点計算例(self):
