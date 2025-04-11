@@ -611,16 +611,21 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                             Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                             '', L_H_d_t_i, L_CS_d_t_i)
 
-                    if q_hs_rtd_H is not None:
-                        mask = Theta_req_d_t_i[i] > Theta_uf_d_t
-                    elif q_hs_rtd_C is not None:
-                        mask = Theta_req_d_t_i[i] < Theta_uf_d_t
-                    else:
-                        raise IOError("冷房時・暖房時の判断に失敗しました。")
+                    # 暖冷房期 判別
+                    match(q_hs_rtd_H, q_hs_rtd_C):
+                        case (None, None):
+                            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+                        case (_, None):  # 暖房期
+                            mask = Theta_req_d_t_i[i] > Theta_uf_d_t
+                        case (None, _):  # 冷房期
+                            mask = Theta_req_d_t_i[i] < Theta_uf_d_t
+                        case (_, _):
+                            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-                    Theta_req_d_t_i[i] = np.where(mask,
-                                                  Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
-                                                  Theta_req_d_t_i[i])
+                    Theta_req_d_t_i[i]  \
+                        = np.where(mask,
+                                Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
+                                Theta_req_d_t_i[i])
 
             # NOTE: 過剰熱量繰越 未利用の場合では、式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
             # Theta_NR_d_t = np.zeros(24 * 365)
@@ -658,12 +663,15 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                             Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                             '', L_H_d_t_i, L_CS_d_t_i)
 
-                    if q_hs_rtd_H is not None:
-                        mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
-                    elif q_hs_rtd_C is not None:
-                        mask = Theta_supply_d_t_i[i] < Theta_uf_d_t
-                    else:
-                        raise IOError("冷房時・暖房時の判断に失敗しました。")
+                    match(q_hs_rtd_H, q_hs_rtd_C):
+                        case (None, None):
+                            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+                        case (_, None):  # 暖房期
+                            mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
+                        case (None, _):  # 冷房期
+                            mask = Theta_supply_d_t_i[i] < Theta_uf_d_t
+                        case (_, _):
+                            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
                     Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
@@ -902,17 +910,22 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                         Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                         '', L_H_d_t_i, L_CS_d_t_i)
 
-                if q_hs_rtd_H is not None:  # 暖房
-                  mask = Theta_req_d_t_i[i] > Theta_uf_d_t
-                elif q_hs_rtd_C is not None:  # 冷房
-                  mask = Theta_req_d_t_i[i] < Theta_uf_d_t
-                else:
-                    raise IOError("冷房時・暖房時の判断に失敗しました。")
+                match(q_hs_rtd_H, q_hs_rtd_C):
+                    case(None, None):
+                        raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+                    case(_, None):  # 暖房
+                        mask = Theta_req_d_t_i[i] > Theta_uf_d_t
+                    case(None, _):  # 冷房
+                        mask = Theta_req_d_t_i[i] < Theta_uf_d_t
+                    case(_, _):
+                        raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-                Theta_req_d_t_i[i] = np.where(mask,
-                                            # 熱源機出口 -> 居室床下までの温度低下分を見込む
-                                            Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
-                                            Theta_req_d_t_i[i])
+                Theta_req_d_t_i[i]  \
+                    = np.where(mask,
+                            # 熱源機出口 -> 居室床下までの温度低下分を見込む
+                            Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
+                            Theta_req_d_t_i[i])
+
             assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
 
         # (15)　熱源機の出口における絶対湿度
@@ -977,12 +990,15 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                         Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                         '', L_H_d_t_i, L_CS_d_t_i)
 
-                if q_hs_rtd_H is not None:  # 暖房
-                    mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
-                elif q_hs_rtd_C is not None:  # 冷房
-                    mask = Theta_supply_d_t_i[i] < Theta_uf_d_t
-                else:
-                    raise IOError("冷房時・暖房時の判断に失敗しました。")
+                match(q_hs_rtd_H, q_hs_rtd_C):
+                    case (None, None):
+                        raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+                    case (_, None):  # 暖房
+                        mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
+                    case (None, _):  # 冷房
+                        mask = Theta_supply_d_t_i[i] < Theta_uf_d_t
+                    case (_, _):
+                        raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
                 Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
@@ -1059,12 +1075,19 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             carryovers_i_4 = carryovers[3],
             carryovers_i_5 = carryovers[4]
         )
-        if q_hs_rtd_H is not None and q_hs_rtd_C is None:
-            df_carryover_output.to_csv(case_name + jjj_consts.version_info() + '_H_carryover_output.csv', encoding = 'cp932')
-        elif q_hs_rtd_C is not None and q_hs_rtd_H is None:
-            df_carryover_output.to_csv(case_name + jjj_consts.version_info() + '_C_carryover_output.csv', encoding = 'cp932')
-        else:
-            raise IOError("冷房時・暖房時の判断に失敗しました。")
+        match (q_hs_rtd_H, q_hs_rtd_C):
+            case (None, None):
+                raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+            case (_, None):
+                df_carryover_output.to_csv(
+                    case_name + jjj_consts.version_info() + '_H_carryover_output.csv',
+                    encoding = 'cp932')
+            case (None, _):
+                df_carryover_output.to_csv(
+                    case_name + jjj_consts.version_info() + '_C_carryover_output.csv',
+                    encoding = 'cp932')
+            case (_, _):
+                raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
     """ 熱損失・熱取得を含む負荷バランス時の熱負荷 - 熱損失・熱取得を含む負荷バランス時(2) """
     df_output = df_output.assign(
@@ -1196,6 +1219,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
     """ 熱源機の入口 - 熱源機の風量の計算 """
     # (35)　熱源機の風量のうちの全般換気分
+    # TODO: ここでは従来式を使用するらしい
     V_hs_vent_d_t \
         = jjj_V_min_input.get_V_hs_vent_d_t(
             q_hs_rtd_H, q_hs_rtd_C, region,
@@ -1285,14 +1309,20 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         survey_df_uf = di.get(UfVarsDataFrame)  # ネスト関数内で更新されているデータフレーム
         survey_df_uf.export_to_csv(filename)
 
-    if q_hs_rtd_H is not None:
-        df_output3.to_csv(case_name + jjj_consts.version_info() + '_H_output3.csv', encoding = 'cp932')
-        df_output2.to_csv(case_name + jjj_consts.version_info() + '_H_output4.csv', encoding = 'cp932')
-        df_output.to_csv(case_name  + jjj_consts.version_info() + '_H_output5.csv', encoding = 'cp932')
-    else:
-        df_output3.to_csv(case_name + jjj_consts.version_info() + '_C_output3.csv', encoding = 'cp932')
-        df_output2.to_csv(case_name + jjj_consts.version_info() + '_C_output4.csv', encoding = 'cp932')
-        df_output.to_csv(case_name  + jjj_consts.version_info() + '_C_output5.csv', encoding = 'cp932')
+    match(q_hs_rtd_H, q_hs_rtd_C):
+        case(None, None):
+            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+        case(_, None):
+            df_output3.to_csv(case_name + jjj_consts.version_info() + '_H_output3.csv', encoding = 'cp932')
+            df_output2.to_csv(case_name + jjj_consts.version_info() + '_H_output4.csv', encoding = 'cp932')
+            df_output.to_csv(case_name  + jjj_consts.version_info() + '_H_output5.csv', encoding = 'cp932')
+        case(None, _):
+            df_output3.to_csv(case_name + jjj_consts.version_info() + '_C_output3.csv', encoding = 'cp932')
+            df_output2.to_csv(case_name + jjj_consts.version_info() + '_C_output4.csv', encoding = 'cp932')
+            df_output.to_csv(case_name  + jjj_consts.version_info() + '_C_output5.csv', encoding = 'cp932')
+        case(_, _):
+            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-    return E_C_UT_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, \
-           X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t
+    return E_C_UT_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i,  \
+            Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  \
+            X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t

@@ -12,6 +12,7 @@ def get_V_hs_min_H(V_vent_g_i: Array5) -> float:
 def get_V_hs_min_C(V_vent_g_i: Array5) -> float:
     return get_V_hs_min(None, 1, V_vent_g_i)
 
+@jjj_cloning
 def get_V_hs_min(
         q_hs_rtd_H: float,
         q_hs_rtd_C: float,
@@ -49,6 +50,7 @@ def get_V_hs_min(
             raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
     return V_hs_min
 
+@jjj_cloning
 def get_V_hs_vent_d_t(
         q_hs_rtd_H: float,
         q_hs_rtd_C: float,
@@ -75,13 +77,16 @@ def get_V_hs_vent_d_t(
 
     app_config = injector.get(AppConfig)
 
-    # 暖房時/冷房時
-    if q_hs_rtd_H is not None:
-        input_V_hs_min = app_config.input_V_hs_min_H
-    elif q_hs_rtd_C is not None:
-        input_V_hs_min = app_config.input_V_hs_min_C
-    else:
-        raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+    # 暖房期/冷房期 判別
+    match(q_hs_rtd_H, q_hs_rtd_C):
+        case(None, None):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提')
+        case(_, None):
+            input_V_hs_min = app_config.input_V_hs_min_H
+        case(None, _):
+            input_V_hs_min = app_config.input_V_hs_min_C
+        case(_, _):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提')
 
     # 全般換気の機能を有する場合
     if general_ventilation == True:

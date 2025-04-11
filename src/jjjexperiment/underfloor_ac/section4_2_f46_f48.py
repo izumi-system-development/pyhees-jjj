@@ -52,6 +52,7 @@ def get_Theta_HBR_i(
                     / (CRV
                         + (U_prt * A_prt_i + Q * A_HCZ_i) * 3600
                         + U_s * A_s_ufac_i * 3600)  ##
+            # NOTE: 仕様書の計算例にはなかったためテストの値修正も必要
             # return np.clip(Theta_HBR_i, Theta_star_HBR, None)
             return Theta_HBR_i
 
@@ -64,7 +65,7 @@ def get_Theta_HBR_i(
                     / (CRV
                         + (U_prt * A_prt_i + Q * A_HCZ_i) * 3600
                         + U_s * A_s_ufac_i * 3600)  ##
-            # return np.clip(Theta_HBR_i, None, Theta_star_HBR)
+            return np.clip(Theta_HBR_i, None, Theta_star_HBR)
             return Theta_HBR_i
 
         # 中間期 (46-3)
