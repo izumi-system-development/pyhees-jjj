@@ -11,7 +11,8 @@ def get_E_E_fan_d_t(
         P_fan_rtd: float,
         V_hs_vent_d_t: Array8760,
         V_hs_supply_d_t: Array8760,
-        V_hs_dsgn: float
+        V_hs_dsgn: float,
+        q_hs_d_t: Array8760
         ) -> Array8760:
     """(37)改 暖冷房送風機消費電力
 
@@ -28,8 +29,12 @@ def get_E_E_fan_d_t(
     E_E_fan_1_d_t = P_fan_rtd * (V_hs_supply_d_t / V_hs_dsgn) * 10 ** (-3)
     E_E_fan_2_d_t = P_fan_rtd * (V_hs_vent_d_t / V_hs_dsgn) * 10 ** (-3)
 
-    assert E_E_fan_1_d_t.shape == (8760,), "Invalid Shape: E_E_fan_H1_d_t"
-    assert E_E_fan_2_d_t.shape == (8760,), "Invalid Shape: E_E_fan_H2_d_t"
+    assert E_E_fan_1_d_t.shape == (8760,), "想定外の行列数"
+    assert E_E_fan_2_d_t.shape == (8760,), "想定外の行列数"
 
-    E_E_fan_H_d_t = np.maximum(E_E_fan_1_d_t, E_E_fan_2_d_t)
+    E_E_fan_H_d_t = np.zeros(24 * 365)
+    E_E_fan_H_d_t[q_hs_d_t > 0]  \
+        = np.maximum(E_E_fan_1_d_t, E_E_fan_2_d_t)[q_hs_d_t > 0]
+
+    assert E_E_fan_H_d_t.shape == (8760,), "想定外の行列数"
     return E_E_fan_H_d_t
