@@ -2019,7 +2019,8 @@ def get_r_supply_des_d_t_i_2023(region, L_CS_d_t_i, L_H_d_t_i):
 # 11.1 実際の居室の室温・絶対湿度
 # ============================================================================
 
-@jjj_cloned
+@jjj_cloned  # carryover_heat
+@jjj_cloned  # underfloor_ac
 def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, U_prt, A_prt_i, Q, A_HCZ_i, L_star_H_d_t_i, L_star_CS_d_t_i, region):
     """(46-1)(46-2)(46-3)
 
@@ -2087,6 +2088,7 @@ def get_X_HBR_d_t_i(X_star_HBR_d_t):
 # ============================================================================
 
 @jjj_cloned  # underfloor_ac/section4_2/get_Theta_NR
+@jjj_cloned  # carryover_heat
 def get_Theta_NR_d_t(Theta_star_NR_d_t, Theta_star_HBR_d_t, Theta_HBR_d_t_i, A_NR, V_vent_l_NR_d_t, V_dash_supply_d_t_i, V_supply_d_t_i, U_prt, A_prt_i, Q):
     """(48a)(48b)(48c)(48d)
 

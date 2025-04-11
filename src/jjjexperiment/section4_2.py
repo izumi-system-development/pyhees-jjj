@@ -622,9 +622,10 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                         case (_, _):
                             raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-                    Theta_req_d_t_i[i] = np.where(mask,
-                                                  Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
-                                                  Theta_req_d_t_i[i])
+                    Theta_req_d_t_i[i]  \
+                        = np.where(mask,
+                                Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
+                                Theta_req_d_t_i[i])
 
             # NOTE: 過剰熱量繰越 未利用の場合では、式(14)(46)(48)の条件に合わせてTheta_NR_d_tを初期化
             # Theta_NR_d_t = np.zeros(24 * 365)
