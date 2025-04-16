@@ -185,6 +185,7 @@ class Test_床下空調時_式40:
         Phi_A_0 = 0.025504994
 
         # Arrange - 地盤の不易層温度 [℃]
+        environment = jjj_ipt.EnvironmentEntity(input)
         climate = jjj_ipt.ClimateEntity(input.region)
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
@@ -196,7 +197,7 @@ class Test_床下空調時_式40:
 
         delta_L_uf2gnd_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2gnd)
         delta_L_uf2gnd \
-            = delta_L_uf2gnd_d_t(
+            = delta_L_uf2gnd_d_t(1, None,  # 暖房期
                 np.sum(A_s_ufac_i), R_g, Phi_A_0, Theta_uf,
                 sum_Theta_dash_g_surf_A_m, Theta_g_avg)
 

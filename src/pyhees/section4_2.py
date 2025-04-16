@@ -2051,8 +2051,7 @@ def get_Theta_HBR_d_t_i(Theta_star_HBR_d_t, V_supply_d_t_i, Theta_supply_d_t_i, 
                                                     (Theta_supply_d_t_i[:, H] - Theta_star_HBR_d_t[H]) - L_star_H_d_t_i[:, H] * 10 ** 6) / \
                          (c_p_air * rho_air * V_supply_d_t_i[:, H] + (U_prt * A_prt_i[:, np.newaxis] + Q * A_HCZ_i[:, np.newaxis]) * 3600)
 
-    # 暖冷房区画iの実際の居室の室温θ_(HBR,d,t,i)は、暖房期において負荷バランス時の居室の室温θ_(HBR,d,t)^*を下回る場合、
-    # 負荷バランス時の居室の室温θ_(HBR,d,t)^*に等しい
+    # 暖房期において負荷バランス時の居室の室温θ_(HBR,d,t)^*を下回る場合、負荷バランス時の居室の室温θ_(HBR,d,t)^*に等しい
     Theta_HBR_d_t_i[:, H] = np.clip(Theta_HBR_d_t_i[:, H], Theta_star_HBR_d_t[H], None)
 
     # 冷房期 (46-2)

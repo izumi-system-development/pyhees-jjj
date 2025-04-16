@@ -75,12 +75,11 @@ def calc_Theta_uf(
 
     H_floor = 0.7  # 床の温度差係数(-) 損失として
 
+    b = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
     a1 = L_H_flr1st * 1e+3
-    a2 = U_s_vert * A_s_ufvnt * (Theta_in - Theta_ex) * H_floor * 3.6
-    a3 = Theta_in * (ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6)
-    b1 = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
+    a2 = U_s_vert * A_s_ufvnt * np.abs(Theta_in - Theta_ex) * H_floor * 3.6
 
-    Theta_uf = (a1 - a2 + a3) / b1
+    Theta_uf = (a1 - a2 + Theta_in * b) / b
     return Theta_uf
 
 
@@ -122,6 +121,8 @@ def calc_delta_L_uf2outdoor(
 
 
 def calc_delta_L_uf2gnd(
+        q_hs_rtd_H: float,
+        q_hs_rtd_C: float,
         A_s_ufvnt_A: float,
         R_g: float,
         Phi_A_0: float,
@@ -139,9 +140,21 @@ def calc_delta_L_uf2gnd(
         Theta_g_avg: 地盤の不易層温度 [℃]
     """
     # CHECK: θ'g_surf_A_d_t の値に不一致アリ
-    return (A_s_ufvnt_A / R_g) / (1 + Phi_A_0 / R_g) \
-        * (Theta_uf - sum_Theta_dash_g_surf_A_m - Theta_g_avg) \
-        * 3.6 / 1000  # [W] -> [MJ/h]
+    delta_Theta = Theta_uf - sum_Theta_dash_g_surf_A_m - Theta_g_avg
+
+    # 暖冷房期 判別
+    match(q_hs_rtd_H, q_hs_rtd_C):
+        case (None, None):
+            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+        case (_, None):  # 暖房期
+            delta_Theta = 1 * delta_Theta
+        case (None, _):  # 冷房期
+            delta_Theta = -1 * delta_Theta
+        case (_, _):
+            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
+
+    return (A_s_ufvnt_A / R_g) / (1 + Phi_A_0 / R_g)  \
+        * delta_Theta * 3.6 / 1000  # [W] -> [MJ/h]
 
 
 def get_delta_L_star_newuf(
@@ -217,10 +230,7 @@ def get_delta_L_star_newuf(
     assert delta_L_uf2outdoor_d_t.ndim == 1
 
     # 床下 → 地盤
-    delta_L_uf2gnd_d_t = np.vectorize(calc_delta_L_uf2gnd)
-    delta_L_uf2gnd_d_t \
-        = delta_L_uf2gnd_d_t(A_s_ufvnt_A, R_g, Phi_A_0, Theta_uf_d_t, np.sum(Theta_dash_g_surf_A_m_d_t), Theta_g_avg)
-    assert delta_L_uf2gnd_d_t.ndim == 1
+    # 他へ移動しました
 
     """それぞれをd_t_i化する(面積比で按分)"""
 
@@ -230,6 +240,5 @@ def get_delta_L_star_newuf(
 
     ratio = ratio.reshape(1, -1)  # -1,1 に合わせるか
     delta_L_uf2outdoor_d_t_i = ratio.T * delta_L_uf2outdoor_d_t
-    delta_L_uf2gnd_d_t_i = ratio.T * delta_L_uf2gnd_d_t
 
-    return delta_L_room2uf_d_t_i, delta_L_uf2outdoor_d_t_i[:5], delta_L_uf2gnd_d_t_i[:5], Theta_uf_supply_d_t
+    return delta_L_room2uf_d_t_i, delta_L_uf2outdoor_d_t_i[:5], Theta_uf_supply_d_t

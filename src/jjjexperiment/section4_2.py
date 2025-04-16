@@ -74,9 +74,18 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         climate = load_climate(region)
     else:
         climate = pd.read_csv(climateFile, nrows=24 * 365, encoding="SHIFT-JIS")
-    Theta_in_d_t = uf.get_Theta_in_d_t('H')
     Theta_ex_d_t = np.array(get_Theta_ex(climate))
     X_ex_d_t = get_X_ex(climate)
+
+    match (q_hs_rtd_H, q_hs_rtd_C):
+        case (None, None):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C のいずれかのみ 想定')
+        case (_, None):
+            Theta_in_d_t = uf.get_Theta_in_d_t('H')
+        case (None, _):
+            Theta_in_d_t = uf.get_Theta_in_d_t('CS')
+        case (_, _):
+            raise Exception('q_hs_rtd_H, q_hs_rtd_C のいずれかのみ 想定')
 
     J_d_t = calc_I_s_d_t(0, 0, get_climate_df(climate))
     h_ex_d_t = calc_h_ex(X_ex_d_t, Theta_ex_d_t)
@@ -312,17 +321,26 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Q_hat_hs_d_t -= np.sum(delta_L_room2uf_d_t_i, axis=0)
 
         # 2. 床下 -> 外気 (逃げ方向)
-        # CHECK: V_dash_supply_d_t の計算には補正前の Q^_hs_d_tを使用していてよいか
-        L_H_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
-        r_A_uf_i = jjj_ufac.get_r_A_uf_i()
-        mask_uf_i = r_A_uf_i > 0  # 床下空調部屋のみ
+        match (q_hs_rtd_H, q_hs_rtd_C):
+            case (None, None):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
+            case (_, None):
+                # 一階暖房負荷
+                L_d_t_flr1st = 1 * r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)
+            case (None, _):
+                # 一階冷房負荷
+                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i + L_CL_d_t_i, axis=0)
+            case (_, _):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
+
+        mask_uf_i = jjj_ufac.get_r_A_uf_i() > 0  # 床下空調部屋のみ
         V_dash_supply_flr1st_d_t  \
-            = np.sum(
-                V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
+            = np.sum(V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
+
         Theta_uf_d_t  \
             = np.array([
                 jjj_ufac.calc_Theta_uf(
-                    L_H_d_t_flr1st[t],
+                    L_d_t_flr1st[t],
                     np.sum(A_s_ufac_i),
                     U_s_vert,
                     Theta_in_d_t[t],
@@ -344,15 +362,24 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # 吸熱応答係数の初項 定数取得クラスを作成するか
         Phi_A_0 = 0.025504994
 
-        sum_Theta_dash_g_surf_A_m = 4.138  # 値は計算例で仮置き
         # NOTE: 実際には Theta_uf_d_t と共に後に算出される
+        match (q_hs_rtd_H, q_hs_rtd_C):
+            case (None, None):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
+            case (_, None):
+                sum_Theta_dash_g_surf_A_m = 4.138
+            case (None, _):
+                sum_Theta_dash_g_surf_A_m = 9.824
+            case (_, _):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
 
         A_s_ufac_A = np.sum(A_s_ufac_i)
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 
         delta_L_uf2gnd_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2gnd)
         delta_L_uf2gnd_d_t  \
-            = delta_L_uf2gnd_d_t(A_s_ufac_A, R_g, Phi_A_0, Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
+            = delta_L_uf2gnd_d_t(q_hs_rtd_H, q_hs_rtd_C, A_s_ufac_A, R_g, Phi_A_0,
+                                Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
         Q_hat_hs_d_t += delta_L_uf2gnd_d_t
 
         # 補正完了
@@ -741,17 +768,35 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # (8) 熱損失を含む負荷バランス時の暖房負荷
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region)
 
-        # (8)(9) 負荷バランス時の暖冷房負荷 補正
         if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+            delta_Theta_d_t = np.abs(Theta_star_HBR_d_t - Theta_ex_d_t)
+            # 部屋→床下への熱移動分が戻ってくるため負荷控除する
+            delta_L_uf2room_d_t_i = np.hstack([
+                jjj_ufac.calc_delta_L_room2uf_i(
+                    U_s_vert, A_s_ufac_i, delta_Theta_d_t[t]
+                ) for t in range(24*365)
+            ])
+            H, C, M = dc.get_season_array_d_t(region)
+            # (9)-補正
+            Cf = np.logical_and(C, L_CS_d_t_i[:5, :] > 0)
+            assert Cf.shape == (5, 24*365)
+            L_star_CS_d_t_i[Cf] -= delta_L_uf2room_d_t_i[:5, :][Cf]
+            # (8)-補正
+            Hf = np.logical_and(H, L_H_d_t_i[:5, :] > 0)
+            assert Hf.shape == (5, 24*365)
+            L_star_H_d_t_i[Hf] -= delta_L_uf2room_d_t_i[:5, :][Hf]
+
+            # ここまでOK
+
             # FIXME: 床下限定の数値だがとりあえず評価する L_star_の計算で不要なら無視されている
             # NOTE: 新ロジックでのみ 期待される床下温度を事前に計算(本計算は後で行う)
             Theta_uf_d_t_2023 = algo.calc_Theta_uf_d_t_2023(
-                L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
+                L_star_H_d_t_i, L_star_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
 
             # CHECK: フラグ管理不要なら消す
             # if jjj_consts.done_binsearch_newufac:
 
-            delta_L_uf2room_d_t_i, delta_L_uf2outdoor_d_t_i, delta_L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
+            delta_L_uf2room_d_t_i, delta_L_uf2outdoor_d_t_i, Theta_uf_supply_d_t \
                 = jjj_ufac.get_delta_L_star_newuf(
                     region = region,
                     A_A = A_A,
@@ -768,16 +813,6 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
                     Theta_star_HBR_d_t = Theta_star_HBR_d_t,
                     R_g = R_g)
-
-            H, C, M = dc.get_season_array_d_t(region)
-            # (9) 補正
-            Cf = np.logical_and(C, L_CS_d_t_i[:5, :] > 0)
-            assert Cf.shape == (5, 24*365)
-            L_star_CS_d_t_i[Cf] -= delta_L_uf2room_d_t_i[:5, :][Cf]  # 負荷控除
-            # (8) 補正
-            Hf = np.logical_and(H, L_H_d_t_i[:5, :] > 0)
-            assert Hf.shape == (5, 24*365)
-            L_star_H_d_t_i[Hf] -= delta_L_uf2room_d_t_i[:5, :][Hf]  # 負荷控除
 
             # NOTE: 送風経路のその他負荷は 部屋の負荷には含めない(24'07)
 
@@ -920,11 +955,10 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     case(_, _):
                         raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-                Theta_req_d_t_i[i]  \
-                    = np.where(mask,
-                            # 熱源機出口 -> 居室床下までの温度低下分を見込む
-                            Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
-                            Theta_req_d_t_i[i])
+                Theta_req_d_t_i[i] = np.where(mask,
+                                    # 熱源機出口 -> 居室床下までの温度低下分を見込む
+                                    Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
+                                    Theta_req_d_t_i[i])
 
             assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
 

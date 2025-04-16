@@ -644,12 +644,12 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
 
 @log_res(['Theta_uf_d_t'])
-def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_dash_supply_d_t_i, Theta_ex_d_t):
+def calc_Theta_uf_d_t_2023(L_star_H_d_t_i, L_star_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_dash_supply_d_t_i, Theta_ex_d_t):
     """定常状態での床下温度を求める
 
     Args:
-      L_H_d_t_i(ndarray): 暖冷房区画iの1時間当たりの暖房負荷 (MJ/h)
-      L_CS_d_t_i(ndarray): 暖冷房区画iの1時間当たりの冷房顕熱負荷 (MJ/h)
+      L_star_H_d_t_i(ndarray): 暖冷房区画iの1時間当たりの暖房負荷 (MJ/h)
+      L_star_CS_d_t_i(ndarray): 暖冷房区画iの1時間当たりの冷房顕熱負荷 (MJ/h)
       A_A(float): 床面積の合計 (m2)
       A_MR(float): 主たる居室の床面積 (m2)
       A_OR(float): その他の居室の床面積 (m2)
@@ -688,28 +688,41 @@ def calc_Theta_uf_d_t_2023(L_H_d_t_i, L_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufvnt, V_
     # 暖冷房区画iの床面積のうち床下空間に接する床面積の割合 (-)
     r_A_uf_i = np.array([get_r_A_uf_i(i) for i in range(1, endi+1)])
     # 床下への供給風量の合計
-    V_dash_supply_d_t = np.sum(r_A_uf_i[:endi, np.newaxis] * V_dash_supply_d_t_i[:endi, :], axis=0)
+    V_dash_supply_flr1st_d_t  \
+      = np.sum(r_A_uf_i[:endi, np.newaxis] * V_dash_supply_d_t_i[:endi, :], axis=0)
 
     H = Theta_ex_d_t < Theta_in_H
     C = Theta_ex_d_t > Theta_in_C
     M = np.logical_not(np.logical_or(H, C))
 
     # TODO: 冷房が 暖房と同じでよいかは要検討
-    upper1_H = np.sum(r_A_uf_i[:endi, np.newaxis] * L_H_d_t_i[:endi, H], axis=0) * 1000  # [kJ/h]
-    upper1_C = np.sum(r_A_uf_i[:endi, np.newaxis] * L_CS_d_t_i[:endi, C], axis=0) * 1000  # [kJ/h]
-    upper2_H = U_s * A_s_ufvnt * ((Theta_in_H - Theta_ex_d_t[H]) * H_floor - Theta_in_H) * 3.6
-    upper2_C = U_s * A_s_ufvnt * ((Theta_in_C - Theta_ex_d_t[C]) * H_floor - Theta_in_C) * 3.6
-    upper3_H = ro_air * c_p_air * V_dash_supply_d_t[H] * Theta_in_H
-    upper3_C = ro_air * c_p_air * V_dash_supply_d_t[C] * Theta_in_C
+    L_star_H_flr1st_d_t = np.zeros(24 * 365)
+    L_star_H_flr1st_d_t[H]  \
+      = np.sum(r_A_uf_i[:endi, np.newaxis] * L_star_H_d_t_i[:endi, H], axis=0)  \
+        * 1000  # [kJ/h]
+    L_star_CS_flr1st_d_t = np.zeros(24 * 365)
+    L_star_CS_flr1st_d_t[C]  \
+      = np.sum(r_A_uf_i[:endi, np.newaxis] * L_star_CS_d_t_i[:endi, C], axis=0)  \
+        * 1000  # [kJ/h]
 
-    lower1_H = ro_air * c_p_air * V_dash_supply_d_t[H]
-    lower1_C = ro_air * c_p_air * V_dash_supply_d_t[C]
-    lower2 = U_s * A_s_ufvnt * 3.6
+    assert L_star_H_flr1st_d_t.shape == (24 * 365,)
+    assert L_star_CS_flr1st_d_t.shape == (24 * 365,)
+
+    # upper2_H = U_s * A_s_ufvnt * ((Theta_in_H - Theta_ex_d_t[H]) * H_floor - Theta_in_H) * 3.6
+    # upper2_C = U_s * A_s_ufvnt * ((Theta_in_C - Theta_ex_d_t[C]) * H_floor - Theta_in_C) * 3.6
+
+    Q1_H_d_t = np.zeros(24 * 365)
+    Q1_H_d_t[H] = ro_air * c_p_air * V_dash_supply_flr1st_d_t[H]
+    Q1_C_d_t = np.zeros(24 * 365)
+    Q1_C_d_t[C] = ro_air * c_p_air * V_dash_supply_flr1st_d_t[C]
+    Q2 = U_s * A_s_ufvnt * 3.6
+
+    assert Q1_H_d_t.shape == (24 * 365,)
+    assert Q1_C_d_t.shape == (24 * 365,)
 
     Theta_uf_d_t = np.zeros(24 * 365)  # NOTE: 床下はつながっているので d_t_i にならない
-
-    Theta_uf_d_t[H] = (upper1_H - upper2_H + upper3_H) / (lower1_H + lower2)
-    Theta_uf_d_t[C] = (upper1_C - upper2_C + upper3_C) / (lower1_C + lower2)
+    Theta_uf_d_t[H] = ((L_star_H_flr1st_d_t + Theta_in_H * (Q1_H_d_t + Q2)) / (Q1_H_d_t + Q2))[H]
+    Theta_uf_d_t[C] = ((-1 * L_star_CS_flr1st_d_t + Theta_in_C * (Q1_C_d_t + Q2)) / (Q1_C_d_t + Q2))[C]
     Theta_uf_d_t[M] = Theta_ex_d_t[M]
 
     return Theta_uf_d_t
