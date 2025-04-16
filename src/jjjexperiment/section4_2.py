@@ -325,14 +325,15 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             case (None, None):
                 raise Exception('暖房・冷房の定格能力が指定されていません。')
             case (_, None):
-                L_d_t_flr1st = r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)  # 一階暖房負荷
+                # 一階暖房負荷
+                L_d_t_flr1st = 1 * r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)
             case (None, _):
-                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i + L_CL_d_t_i, axis=0)  # 一階冷房負荷
+                # 一階冷房負荷
+                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i + L_CL_d_t_i, axis=0)
             case (_, _):
                 raise Exception('暖房・冷房の定格能力が指定されていません。')
 
-        r_A_uf_i = jjj_ufac.get_r_A_uf_i()
-        mask_uf_i = r_A_uf_i > 0  # 床下空調部屋のみ
+        mask_uf_i = jjj_ufac.get_r_A_uf_i() > 0  # 床下空調部屋のみ
         V_dash_supply_flr1st_d_t  \
             = np.sum(V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
 
@@ -361,15 +362,24 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         # 吸熱応答係数の初項 定数取得クラスを作成するか
         Phi_A_0 = 0.025504994
 
-        sum_Theta_dash_g_surf_A_m = 4.138  # 値は計算例で仮置き
         # NOTE: 実際には Theta_uf_d_t と共に後に算出される
+        match (q_hs_rtd_H, q_hs_rtd_C):
+            case (None, None):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
+            case (_, None):
+                sum_Theta_dash_g_surf_A_m = 4.138
+            case (None, _):
+                sum_Theta_dash_g_surf_A_m = 9.824
+            case (_, _):
+                raise Exception('暖房・冷房の定格能力が指定されていません。')
 
         A_s_ufac_A = np.sum(A_s_ufac_i)
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 
         delta_L_uf2gnd_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2gnd)
         delta_L_uf2gnd_d_t  \
-            = delta_L_uf2gnd_d_t(A_s_ufac_A, R_g, Phi_A_0, Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
+            = delta_L_uf2gnd_d_t(q_hs_rtd_H, q_hs_rtd_C, A_s_ufac_A, R_g, Phi_A_0,
+                                Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
         Q_hat_hs_d_t += delta_L_uf2gnd_d_t
 
         # 補正完了
@@ -786,7 +796,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # CHECK: フラグ管理不要なら消す
             # if jjj_consts.done_binsearch_newufac:
 
-            delta_L_uf2room_d_t_i, delta_L_uf2outdoor_d_t_i, delta_L_uf2gnd_d_t_i, Theta_uf_supply_d_t \
+            delta_L_uf2room_d_t_i, delta_L_uf2outdoor_d_t_i, Theta_uf_supply_d_t \
                 = jjj_ufac.get_delta_L_star_newuf(
                     region = region,
                     A_A = A_A,
@@ -945,11 +955,10 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     case(_, _):
                         raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-                Theta_req_d_t_i[i]  \
-                    = np.where(mask,
-                            # 熱源機出口 -> 居室床下までの温度低下分を見込む
-                            Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
-                            Theta_req_d_t_i[i])
+                Theta_req_d_t_i[i] = np.where(mask,
+                                    # 熱源機出口 -> 居室床下までの温度低下分を見込む
+                                    Theta_req_d_t_i[i] + (Theta_req_d_t_i[i] - Theta_uf_d_t),
+                                    Theta_req_d_t_i[i])
 
             assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
 
