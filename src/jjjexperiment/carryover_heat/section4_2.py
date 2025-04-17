@@ -7,8 +7,8 @@ import jjjexperiment.carryover_heat as jjj_carryover_heat
 from jjjexperiment.logger import log_res
 
 def calc_carryover(
-        H: bool,
-        C: bool,
+        H: np.bool,
+        C: np.bool,
         A_HCZ_i: Array5,
         Theta_HBR_i: Array5x1,
         Theta_star_HBR: float,
@@ -30,23 +30,27 @@ def calc_carryover(
     A_HCZ_i = A_HCZ_i.reshape(-1,1)  # (5,) -> (5, 1)
     cbri = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
 
-    # 季節の判断
-    if H and C:
-        raise ValueError("想定外の季節")
-    # 暖冷房ともに有効であれば正となるように算出
-    elif H:
-        # 過剰熱量がない部屋は負の過剰熱量にならないようクリップする
-        temperature_diff = np.clip(Theta_HBR_i - Theta_star_HBR, 0, None)
-    elif C:
-        # 過剰熱量がない部屋は負の過剰熱量にならないようクリップする
-        temperature_diff = np.clip(Theta_star_HBR - Theta_HBR_i, 0, None)
-    else:
-        # 空調なし -> 過剰熱量なし
-        return np.zeros((5, 1))
+    # NOTE('25/04): キャップはかけない
+    # 温度が過剰の時に得をするだけでなく、未達の時に損する分を考慮するとのこと
+    match (H, C):
+        case (np.True_, np.True_):
+            raise ValueError("想定外の季節")
+        case (np.True_, np.False_):
+            # temperature_diff = np.clip(Theta_HBR_i - Theta_star_HBR, 0, None)
+            temperature_diff = Theta_HBR_i - Theta_star_HBR
+        case (np.False_, np.True_):
+            # temperature_diff = np.clip(Theta_star_HBR - Theta_HBR_i, 0, None)
+            temperature_diff = Theta_star_HBR - Theta_HBR_i
+        case (np.False_, np.False_):
+            # 空調なし -> 過剰熱量なし
+            return np.zeros((5, 1))
+        case _:
+            raise ValueError("判別に失敗")
 
     # 事後条件:
     assert np.all(0 <= cbri), "居室の熱容量は負にならない"
-    assert np.all(0 <= temperature_diff), "ここで温度差は正になるよう算出"
+    # assert np.all(0 <= temperature_diff), "ここで温度差は正になるよう算出"
+    # NOTE: 負の過剰熱量を仕様上許容しています
 
     return cbri * temperature_diff / 1_000_000  # J/h -> MJ/h
 
@@ -255,6 +259,7 @@ def get_Theta_NR_2023(
 
     val1 = -1 * np.sum(k_prt_dash_i) * (Theta_star_HBR - Theta_star_NR)
     val2 = np.sum(k_prt_i * (Theta_HBR_i - Theta_star_NR))
+    val3 = k_evp + np.sum(k_prt_i)
 
     # 過剰熱量発生条件
     H = H and (Theta_NR_before >= Theta_star_NR)
@@ -275,14 +280,10 @@ def get_Theta_NR_2023(
         ac_theta_diff = 0  # 使用されないが定義は必要
         pass
 
-    # val3, 4 は同じ条件で有効・無効切替
-    val3 = ac_theta_diff \
-        * (0 if (isFirst or not (H or C)) else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
-    val4 = k_evp + np.sum(k_prt_i) \
-        + (0 if (isFirst or not (H or C)) else jjj_carryover_heat.get_C_NR(A_NR) / 3600)
-
     # (48a) NOTE: isFirst と過剰熱量無効のとき元式と一致するべき
-    Theta_NR = Theta_star_NR + (val1 + val2 + val3) / val4
+    C_NR = 0 if isFirst or not (H or C)  \
+        else jjj_carryover_heat.get_C_NR(A_NR) / 3600
+    Theta_NR = Theta_star_NR + (val1 + val2 + ac_theta_diff * C_NR) / (val3 + C_NR)
 
     # TODO: Theta_NR が単増加してしまう問題がある
     # -> 過剰熱量持越しの追い空調の停止条件を追加することが考えられる
