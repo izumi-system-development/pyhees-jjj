@@ -516,16 +516,16 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 carryover = np.zeros((5, 1))
             # 暖房期 前時刻にて 暖かさに余裕があるとき
             elif H[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] > Theta_star_HBR_d_t[t-1]):
-                carryover = jjj_carryover_heat \
-                    .calc_carryover(H[t], C[t], A_HCZ_i,
+                carryover = jjj_carryover_heat.calc_carryover(
+                                    H[t], C[t], A_HCZ_i,
                                     Theta_HBR_d_t_i[:, t-1:t],
-                                    Theta_star_HBR_d_t[t-1])
+                                    Theta_star_HBR_d_t[t])
             # 冷房期 前時刻にて 涼しさに余裕があるとき
             elif C[t] and np.any(Theta_HBR_d_t_i[:, t-1:t] < Theta_star_HBR_d_t[t-1]):
-                carryover = jjj_carryover_heat \
-                    .calc_carryover(H[t], C[t], A_HCZ_i,
+                carryover = jjj_carryover_heat.calc_carryover(
+                                    H[t], C[t], A_HCZ_i,
                                     Theta_HBR_d_t_i[:, t-1:t],
-                                    Theta_star_HBR_d_t[t-1])
+                                    Theta_star_HBR_d_t[t])
             else:
                 carryover = np.zeros((5, 1))
                 # 前時刻の Theta_HBR_d_t_i を使用するため
