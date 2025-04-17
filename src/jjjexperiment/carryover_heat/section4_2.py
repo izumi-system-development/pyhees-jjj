@@ -30,16 +30,17 @@ def calc_carryover(
     A_HCZ_i = A_HCZ_i.reshape(-1,1)  # (5,) -> (5, 1)
     cbri = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
 
-    # 季節の判断
+    # NOTE('25/04): キャップはかけない
+    # 温度が過剰の時に得をするだけでなく、未達の時に損する分を考慮するとのこと
     match (H, C):
         case (np.True_, np.True_):
             raise ValueError("想定外の季節")
         case (np.True_, np.False_):
-            # 過剰熱量がない部屋は負の過剰熱量にならないようクリップする
-            temperature_diff = np.clip(Theta_HBR_i - Theta_star_HBR, 0, None)
+            # temperature_diff = np.clip(Theta_HBR_i - Theta_star_HBR, 0, None)
+            temperature_diff = Theta_HBR_i - Theta_star_HBR
         case (np.False_, np.True_):
-            # 過剰熱量がない部屋は負の過剰熱量にならないようクリップする
-            temperature_diff = np.clip(Theta_star_HBR - Theta_HBR_i, 0, None)
+            # temperature_diff = np.clip(Theta_star_HBR - Theta_HBR_i, 0, None)
+            temperature_diff = Theta_star_HBR - Theta_HBR_i
         case (np.False_, np.False_):
             # 空調なし -> 過剰熱量なし
             return np.zeros((5, 1))
@@ -48,7 +49,8 @@ def calc_carryover(
 
     # 事後条件:
     assert np.all(0 <= cbri), "居室の熱容量は負にならない"
-    assert np.all(0 <= temperature_diff), "ここで温度差は正になるよう算出"
+    # assert np.all(0 <= temperature_diff), "ここで温度差は正になるよう算出"
+    # NOTE: 負の過剰熱量を仕様上許容しています
 
     return cbri * temperature_diff / 1_000_000  # J/h -> MJ/h
 
