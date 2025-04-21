@@ -156,7 +156,7 @@ def calc_delta_L_uf2gnd(
     return (A_s_ufvnt_A / R_g) / (1 + Phi_A_0 / R_g)  \
         * delta_Theta * 3.6 / 1000  # [W] -> [MJ/h]
 
-
+# もう使用しないことにした、これで問題ないならメソッドごと消す
 def get_delta_L_star_newuf(
         region, A_A, A_MR, A_OR, Q, r_A_ufac, U_s_vert, underfloor_insulation, Theta_uf_d_t, Theta_ex_d_t,
         V_dash_supply_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i, Theta_star_HBR_d_t, R_g, di: Injector = None):

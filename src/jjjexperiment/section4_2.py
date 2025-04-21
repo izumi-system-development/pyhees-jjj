@@ -382,7 +382,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                                 Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
         Q_hat_hs_d_t += delta_L_uf2gnd_d_t
 
-        # 補正完了
+        # 補正完了した Q^hs を使って V'supply を再計算する
         should_be_adjusted_Q_hat_hs_d_t = False
 
     df_output2['r_supply_des_i'] = r_supply_des_i
@@ -692,15 +692,15 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
                     match(q_hs_rtd_H, q_hs_rtd_C):
                         case (None, None):
-                            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
-                        case (_, None):  # 暖房期
-                            mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
-                        case (None, _):  # 冷房期
-                            mask = Theta_supply_d_t_i[i] < Theta_uf_d_t
+                            raise Exception("どちらかのみを前提")
+                        case (_, None):
+                            # 暖房期は 床下温度以上の温度は吹き出てこない
+                            Theta_supply_d_t_i[i] = np.clip(Theta_supply_d_t_i[i], None, Theta_uf_d_t)
+                        case (None, _):
+                            # 冷房期は 床下温度以下の温度は吹き出てこない
+                            Theta_supply_d_t_i[i] = np.clip(Theta_supply_d_t_i[i], Theta_uf_d_t, None)
                         case (_, _):
-                            raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
-
-                    Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
+                            raise Exception("どちらかのみを前提")
 
             # NOTE: t==0 でも最後までループを走ることに注意(途中で continue しない)
             # 0 の扱いは全てのメソッドで考慮されていること
@@ -796,7 +796,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             # CHECK: フラグ管理不要なら消す
             # if jjj_consts.done_binsearch_newufac:
 
-            delta_L_uf2room_d_t_i, delta_L_uf2outdoor_d_t_i, Theta_uf_supply_d_t \
+            _, delta_L_uf2outdoor_d_t_i, Theta_uf_supply_d_t \
                 = jjj_ufac.get_delta_L_star_newuf(
                     region = region,
                     A_A = A_A,
