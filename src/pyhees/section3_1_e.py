@@ -506,8 +506,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     H_floor = 0.7
 
     # 基礎の線熱貫流率Ψ (W/m*K) (5)
-    # CHECK: psi, phi 一致していないが問題ないのか?
-    psi = get_phi(region, Q)
+    phi = get_phi(region, Q)
 
     Theta_star = np.zeros(12)
     H_star = np.zeros(12)
@@ -544,16 +543,23 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         def calc_Theta_uf(theta_sa):
           endi = 12  # NOTE: 熱貫流は1階床全体とする(=> 12でも内部的には(i=1,2,6,7,8,9))
           # 当該住宅の床下温度 (1)
-          theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa
-                        + (sum([U_s * A_s_ufvnt_i[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in range(1, endi+1)])
-                          + psi * L_uf * Theta_ex_d_t[dt]
-                          + (A_s_ufvnt_A / R_g)
-                            * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g)) * 3.6) \
-                      / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                        + (sum([U_s * A_s_ufvnt_i[i - 1] * H_star[i - 1] for i in range(1, endi+1)])
-                          + psi * L_uf
-                          + (A_s_ufvnt_A / R_g)
-                            * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
+          theta_uf_upper  \
+            = ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa  \
+              + (
+                  sum([U_s * A_s_ufvnt_i[i-1] * H_star[i-1] * Theta_star[i-1] for i in range(1, endi+1)])
+                  + phi * L_uf * Theta_ex_d_t[dt]
+                  + (A_s_ufvnt_A / R_g)
+                      * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg)
+                      / (1.0 + Phi_A_0 / R_g)
+                ) * 3.6
+          theta_uf_lower  \
+            = ro_air * c_p_air * V_sa_d_t_A[dt]  \
+              + (
+                  sum([U_s * A_s_ufvnt_i[i-1] * H_star[i-1] for i in range(1, endi+1)])
+                  + phi * L_uf
+                  + (A_s_ufvnt_A / R_g) * (1.0 / (1.0 + Phi_A_0 / R_g))
+                ) * 3.6
+          theta_uf = theta_uf_upper / theta_uf_lower
           return theta_uf
 
         if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
@@ -640,7 +646,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       injector.get(AppConfig).done_binsearch_new_ufac = True
 
     return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt_i, A_s_ufvnt_A, \
-      Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, psi, \
+      Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, \
       Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
 
 
