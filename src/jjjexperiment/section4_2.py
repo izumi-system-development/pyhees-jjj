@@ -928,9 +928,23 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             assert Theta_uf_supply_d_t is not None, "1階居室の差替え用の床下温度が必要です"
 
             # 対象居室 i=1,2(1階居室)の損失分を補正する
-            Theta_req_d_t_i = \
-              np.vstack((np.tile(Theta_uf_supply_d_t, (2, 1)), Theta_req_d_t_i[2:, :]))
-            assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数です"
+            Theta_req_d_t_i = np.vstack([
+                    np.tile(Theta_uf_supply_d_t, (2, 1)),
+                    Theta_req_d_t_i[2:, :]
+                ])
+            assert np.shape(Theta_req_d_t_i)==(5, 8760), "想定外の行列数"
+
+            match (q_hs_rtd_H, q_hs_rtd_C):
+                case (None, None):
+                    raise Exception("どちらかのみを前提")
+                case (_, None):
+                    Theta_in_H = Theta_in_d_t[0]
+                    Theta_req_d_t_i = np.clip(Theta_req_d_t_i, Theta_in_H, None)
+                case (None, _):
+                    Theta_in_C = Theta_in_d_t[0]
+                    Theta_req_d_t_i = np.clip(Theta_req_d_t_i, None, Theta_in_C)
+                case (_, _):
+                    raise Exception("どちらかのみを前提")
 
             survey_df_uf = di.get(UfVarsDataFrame)
             survey_df_uf.update_df({
