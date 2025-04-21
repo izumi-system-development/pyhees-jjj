@@ -15,8 +15,6 @@ class AppConfig:
         # 床下空調新ロジック(F24-05)
         self.new_ufac_flg: int = 床下空調ロジック.変更しない.value
         """床下空調ロジック"""
-        self.done_binsearch_new_ufac: bool = False
-        """床下空調新ロジック 二分探索完了"""
 
     # 熱源機ファン最低風量ユーザー入力(F24-02)
     V_hs_min_H: float = None

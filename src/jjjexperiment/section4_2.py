@@ -981,8 +981,9 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
         # 実行条件: 床下新空調ロジックのみ
         if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
+            # 新床下空調では、毎時の二分探索を行っているため、一度しか実行しないことを確認する
             Theta_uf_d_t, *others  \
-                = algo.calc_Theta(  # 新床下空調-1st
+                = algo.calc_Theta(  # 新床下空調-just1time
                     region = region,
                     A_A = A_A,
                     A_MR = A_MR,
