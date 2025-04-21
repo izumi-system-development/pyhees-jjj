@@ -790,7 +790,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
             # FIXME: 床下限定の数値だがとりあえず評価する L_star_の計算で不要なら無視されている
             # NOTE: 新ロジックでのみ 期待される床下温度を事前に計算(本計算は後で行う)
-            Theta_uf_d_t_2023 = algo.calc_Theta_uf_d_t_2023(
+            Theta_uf_d_t_2023 = jjj_ufac.calc_Theta_uf_d_t_2023(
                 L_star_H_d_t_i, L_star_CS_d_t_i, A_A, A_MR, A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
 
             # CHECK: フラグ管理不要なら消す
@@ -1014,6 +1014,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             survey_df_uf = di.get(UfVarsDataFrame)
             survey_df_uf.update_df({
                 "Theta_hs_out_d_t": Theta_hs_out_d_t,
+                "Theta_uf_d_t": Theta_uf_d_t,
                 "Theta_supply_d_t_1": Theta_supply_d_t_i[0], "Theta_supply_d_t_2": Theta_supply_d_t_i[1], "Theta_supply_d_t_3": Theta_supply_d_t_i[2], "Theta_supply_d_t_4": Theta_supply_d_t_i[3], "Theta_supply_d_t_5": Theta_supply_d_t_i[4]
             })
         elif underfloor_air_conditioning_air_supply:
