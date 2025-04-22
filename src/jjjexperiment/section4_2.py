@@ -903,7 +903,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     Q = Q,
                     r_A_ufvnt = r_A_ufac,
                     underfloor_insulation = underfloor_insulation,
-                    Theta_sa_d_t = Theta_uf_d_t_2023,  #
+                    Theta_sa_d_t = Theta_uf_d_t_2023,  # ★
                     Theta_ex_d_t = Theta_ex_d_t,
                     # 熱源機出口温度から吹き出し温度を計算する
                     V_sa_d_t_A = np.sum(V_dash_supply_d_t_i[:2, :], axis=0),  # i=1,2
@@ -1002,7 +1002,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                     Q = Q,
                     r_A_ufvnt = r_A_ufac,
                     underfloor_insulation = underfloor_insulation,
-                    Theta_sa_d_t = Theta_hs_out_d_t,
+                    Theta_sa_d_t = Theta_hs_out_d_t,  # ★
                     Theta_ex_d_t = Theta_ex_d_t,
                     # 熱源機出口温度から吹き出し温度を計算する
                     V_sa_d_t_A = np.sum(V_dash_supply_d_t_i[:2, :], axis=0),  # i=1,2
