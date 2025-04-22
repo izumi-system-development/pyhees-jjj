@@ -372,7 +372,7 @@ def get_table_e_6():
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
                L_dash_H_R_d_t_i,
-               L_dash_CS_R_d_t_i, di: Injector = None):
+               L_dash_CS_R_d_t_i, calc_backwards: bool = False, di: Injector = None):
     """床下温度及び地盤またはそれを覆う基礎の表面温度 (℃) (1)(9)
 
     Args:
@@ -386,24 +386,14 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Theta_sa_d_t(ndarray): 床下空間または居室へ供給する空気の温度 (℃)
       Theta_ex_d_t(ndarray): 外気温度 (℃)
       V_sa_d_t_A(ndarray): 床下空間または居室へ供給する1時間当たりの空気の風量の合計
-      H_OR_C(str): TODO: d_tでないと不十分(利用されていない)
+      H_OR_C(str): ※利用されていない
       L_dash_H_R_d_t_i(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
       L_dash_CS_R_d_t_i(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
-      R_g: 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
+      calc_backwards(bool): θuf_supply_d_t の逆算が必要か(その分時間かかる)
 
     Returns:
       Theta_uf_d_t: 日付dの時刻tにおける 床下温度 (℃)
       Theta_g_surf_d_t: 日付dの時刻tにおける 地盤の表面温度 (℃)
-      A_s_ufvnt: 当該住戸の外気を導入する床下空間に接する 床の面積の部分合計 (m2)
-      A_s_ufvnt_A: 当該住戸の外気を導入する床下空間に接する 床の面積の合計 (m2)
-      Theta_g_avg: 地盤の不易層温度 (℃)
-      Theta_dash_g_surf_A_m_d_t: 日付dの時刻tにおける指数項mの吸熱応答の項別成分 (℃)
-      L_uf: 当該住戸の外気を導入する床下空間の基礎外周長さ
-      H_floor: 床の温度差係数 (-)
-      psi: Ψ基礎の線熱貫流率 (W/m2*K)
-      Phi_A_0: 吸熱応答係数の初項 (m2*K/W)
-      H_star_d_t_i: 温度差係数 (-)
-      Theta_star_d_t_i: -
       Theta_supply_d_t: 床下空調新案にて床下中和を見込んだ吹き出し温度 (℃)
 
     """
@@ -436,10 +426,6 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     Theta_uf_d_t = np.zeros(24 * 365)
     Theta_g_surf_d_t = np.zeros(24 * 365)
     Theta_dash_g_surf_A_m = np.zeros(M)
-    Theta_dash_g_surf_A_m_d_t_preparing = np.zeros((24 * 365, M))  # 助走時
-    Theta_dash_g_surf_A_m_d_t = np.zeros((24 * 365, M))
-    Theta_star_d_t_i = np.zeros((12, 24 * 365))
-    H_star_d_t_i = np.zeros((12, 24 * 365))
 
     Theta_supply_d_t = np.zeros(24 * 365)
 
@@ -472,8 +458,6 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
 
         # 日付dの時刻tにおける指数項mの吸熱応答の項別成分 (℃) (11)
         Theta_dash_g_surf_A_m = phi_1_A_m * q_g_prev + r_m * Theta_dash_g_surf_A_m_prev
-        # 床下空調(新案) 調査用
-        Theta_dash_g_surf_A_m_d_t_preparing[dt] = Theta_dash_g_surf_A_m
 
         # 地盤またはそれを覆う基礎の表面温度 (℃) (9)
         Theta_g_surf = (((Phi_A_0 / R_g) * Theta_uf + np.sum(Theta_dash_g_surf_A_m) + Theta_g_avg)
@@ -562,7 +546,9 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           theta_uf = theta_uf_upper / theta_uf_lower
           return theta_uf
 
-        if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value:
+        if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+          and calc_backwards == True:
+          # NOTE: 新床下空調ロジックでも θuf_supply 計算するときとそうでないときで複数使用している
 
           # NOTE: 床下空調新ロジックでは、Theta_sa_d_t として Theta_uf_d_t の目標値が来ています
           # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
@@ -583,7 +569,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           else:
             # 目標床下温度となる給気温度を探索する(二分探索)
             # 探索範囲(冷暖房 両対応なので上下) 実行時間は許容範囲
-            L_bnd = expected_Theta_uf - 50  # CHECK: マイナス温度での給気を許可するか
+            L_bnd = max(expected_Theta_uf - 50, 0)
             U_bnd = expected_Theta_uf + 50
             tolerance = 0.001  # まずはe-3を目標とする
 
@@ -619,9 +605,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         # 計算結果の保存
         Theta_uf_d_t[dt] = Theta_uf
         Theta_g_surf_d_t[dt] = Theta_g_surf
-        Theta_dash_g_surf_A_m_d_t[dt] = Theta_dash_g_surf_A_m
-        Theta_star_d_t_i[:, dt] = Theta_star
-        H_star_d_t_i[:, dt] = H_star
+
 
     if di is not None  \
       and injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value:
@@ -632,17 +616,11 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       df_holder.update_df({
           f"V_sa{hci.flg_char()}_d_t_A": V_sa_d_t_A,
           f"Theta_ex{hci.flg_char()}_d_t": Theta_ex_d_t,
-          f"Theta_uf_EXP_d_t": Theta_sa_d_t,
-          f"Theta_star_d_t": Theta_star_d_t_i[0, :],
-          f"Theta_dash_g_surf_A_d_t_preparing": Theta_dash_g_surf_A_m_d_t_preparing.sum(axis=1),
-          f"Theta_dash_g_surf_A_d_t": Theta_dash_g_surf_A_m_d_t.sum(axis=1),  # shape(8760, 10) -> shape(8760, )
-          f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
           f"Theta_uf_d_t": Theta_uf_d_t,
+          f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
         })
 
-    return Theta_uf_d_t, Theta_g_surf_d_t, A_s_ufvnt_i, A_s_ufvnt_A, \
-      Theta_g_avg, Theta_dash_g_surf_A_m_d_t, L_uf, H_floor, phi, \
-      Phi_A_0, H_star_d_t_i, Theta_star_d_t_i, Theta_supply_d_t
+    return Theta_uf_d_t, Theta_g_surf_d_t, Theta_supply_d_t
 
 
 def get_Theta_g_avg(Theta_ex_d_t):
