@@ -340,11 +340,11 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         Theta_uf_d_t  \
             = np.array([
                 jjj_ufac.calc_Theta_uf(
+                    q_hs_rtd_H, q_hs_rtd_C,
                     L_d_t_flr1st[t],
                     np.sum(A_s_ufac_i),
                     U_s_vert,
-                    Theta_in_d_t[t],
-                    Theta_ex_d_t[t],
+                    Theta_in_d_t[t], Theta_ex_d_t[t],
                     V_dash_supply_flr1st_d_t[t]
                 ) for t in range(24*365)
             ])
