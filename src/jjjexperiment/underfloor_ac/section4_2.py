@@ -78,7 +78,6 @@ def calc_Theta_uf(
 
     # TODO: sympy の方程式で記述できればコードの意味が理解しやすくなる
     b = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
-    a1 = L_flr1st * 1e+3
 
     match (q_hs_rtd_H, q_hs_rtd_C):
         case (None, None):
@@ -87,13 +86,15 @@ def calc_Theta_uf(
         case (_, None):  # 暖房期
             delta_Theta = max(Theta_in - Theta_ex, 0)
             a2 = U_s_vert * A_s_ufvnt * delta_Theta * H_floor * 3.6
-            Theta_uf = (a1 - a2 + Theta_in * b) / b
+            assert L_flr1st >= 0, "暖房期の負荷は正の値"
+            Theta_uf = (L_flr1st * 1e+3 - a2 + Theta_in * b) / b
             return Theta_uf
 
         case (None, _):  # 冷房期
             delta_Theta = max(Theta_ex - Theta_in, 0)
             a2 = U_s_vert * A_s_ufvnt * delta_Theta * H_floor * 3.6
-            Theta_uf = (-1 * a1 + a2 + Theta_in * b) / b
+            assert L_flr1st <= 0, "冷房期の負荷は負の値"
+            Theta_uf = (L_flr1st * 1e+3 + a2 + Theta_in * b) / b
             return Theta_uf
 
         case (_, _):
