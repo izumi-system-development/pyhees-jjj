@@ -314,7 +314,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 jjj_ufac.calc_delta_L_room2uf_i(
                     U_s_vert,
                     A_s_ufac_i,
-                    Theta_ex_d_t[t] - Theta_in_d_t[t]
+                    np.abs(Theta_ex_d_t[t] - Theta_in_d_t[t])
                 ) for t in range(24*365)  # 各要素が shape(12,1)
             ])
         assert delta_L_room2uf_d_t_i.ndim == 2
@@ -765,11 +765,12 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, region)
 
         if app_config.new_ufac_flg == 床下空調ロジック.変更する.value:
-            delta_Theta_d_t = np.abs(Theta_star_HBR_d_t - Theta_ex_d_t)
             # 部屋→床下への熱移動分が戻ってくるため負荷控除する
             delta_L_uf2room_d_t_i = np.hstack([
                 jjj_ufac.calc_delta_L_room2uf_i(
-                    U_s_vert, A_s_ufac_i, delta_Theta_d_t[t]
+                    U_s_vert,
+                    A_s_ufac_i,
+                    np.abs(Theta_star_HBR_d_t[t] - Theta_ex_d_t[t])
                 ) for t in range(24*365)
             ])
             H, C, M = dc.get_season_array_d_t(region)
