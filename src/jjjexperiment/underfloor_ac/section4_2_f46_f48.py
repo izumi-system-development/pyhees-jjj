@@ -57,7 +57,7 @@ def get_Theta_HBR_i(
         # 冷房期 (46-2)
         case JJJ_HCM.C:
             Theta_HBR_i = Theta_star_HBR  \
-                + (CRV * (Theta_star_HBR - Theta_supply_i)
+                - (CRV * (Theta_star_HBR - Theta_supply_i)
                     + U_s * A_s_ufac_i * (Theta_star_HBR - Theta_uf) * 3600  ##
                     - L_star_CS_i * 1e+6)  \
                     / (CRV

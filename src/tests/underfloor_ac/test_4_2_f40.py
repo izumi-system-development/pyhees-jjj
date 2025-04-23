@@ -85,7 +85,7 @@ class Test_床下空調時_式40:
         assert V_dash_supply_flr1st == pytest.approx(527.5, rel=1e-2)
 
         Theta_uf  \
-            = jjj_ufac.calc_Theta_uf(
+            = jjj_ufac.calc_Theta_uf(1, None,  # 暖房期
                 L_H_d_t_flr1st[t], A_s_ufvnt, U_s_vert, Theta_in_d_t[t], Theta_ex_d_t[t], V_dash_supply_flr1st)
 
         # Assert

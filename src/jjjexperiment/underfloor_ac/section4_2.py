@@ -50,7 +50,9 @@ def get_A_s_ufac_i(
 
 
 def calc_Theta_uf(
-        L_H_flr1st: float,
+        q_hs_rtd_H: float,
+        q_hs_rtd_C: float,
+        L_flr1st: float,
         A_s_ufvnt: float,
         U_s_vert: float,
         Theta_in: float,
@@ -70,17 +72,32 @@ def calc_Theta_uf(
     Returns:
         床下空間の温度 [℃]
     """
-    ro_air = dc.get_ro_air()    # 空気密度 [kg/m3]
+    ro_air = dc.get_ro_air()  # 空気密度 [kg/m3]
     c_p_air = algo.get_c_p_air()  # 空気の比熱 [kJ/kgK]
-
     H_floor = 0.7  # 床の温度差係数(-) 損失として
 
+    # TODO: sympy の方程式で記述できればコードの意味が理解しやすくなる
     b = ro_air * c_p_air * V_flr1st + U_s_vert * A_s_ufvnt * 3.6
-    a1 = L_H_flr1st * 1e+3
-    a2 = U_s_vert * A_s_ufvnt * np.abs(Theta_in - Theta_ex) * H_floor * 3.6
+    a1 = L_flr1st * 1e+3
 
-    Theta_uf = (a1 - a2 + Theta_in * b) / b
-    return Theta_uf
+    match (q_hs_rtd_H, q_hs_rtd_C):
+        case (None, None):
+            raise Exception("どちらかのみを前提")
+
+        case (_, None):  # 暖房期
+            delta_Theta = max(Theta_in - Theta_ex, 0)
+            a2 = U_s_vert * A_s_ufvnt * delta_Theta * H_floor * 3.6
+            Theta_uf = (a1 - a2 + Theta_in * b) / b
+            return Theta_uf
+
+        case (None, _):  # 冷房期
+            delta_Theta = max(Theta_ex - Theta_in, 0)
+            a2 = U_s_vert * A_s_ufvnt * delta_Theta * H_floor * 3.6
+            Theta_uf = (-1 * a1 + a2 + Theta_in * b) / b
+            return Theta_uf
+
+        case (_, _):
+            raise Exception("どちらかのみを前提")
 
 
 # vectorizeできなのいのでhstack-broadcastで対応 (A_s_ufac_iが強制でfloatになるため)
@@ -96,9 +113,10 @@ def calc_delta_L_room2uf_i(
 
     """
     assert A_s_ufac_i.ndim == 2
+    assert delta_Theta >= 0, "温度差は正を前提に計算"
 
     H_floor = 0.7  # 床下空調でなく意図しない熱移動の分なので通常の遮蔽係数(0.7)となる
-    delta_L_uf2room =  U_s_vert * A_s_ufac_i * np.abs(delta_Theta) * H_floor \
+    delta_L_uf2room =  U_s_vert * A_s_ufac_i * delta_Theta * H_floor  \
         * 3.6 / 1000  # [W] -> [MJ/h]
     # NOTE: L_H_d_t_i, L_CS_d_t_i に含まれている通常(非床下空調)の床下ロス部分(室内→床下→屋外)
     # 下記の補正を追加する前にコチラを引くことでイコールフッティングできます

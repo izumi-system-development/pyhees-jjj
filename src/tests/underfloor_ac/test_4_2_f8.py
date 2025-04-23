@@ -142,7 +142,7 @@ class Test_床下空調時_式8補正:
         delta_L_uf2room_d_t_i = np.hstack([
             jjj_ufac.calc_delta_L_room2uf_i(
                 U_s_vert, A_s_ufac_i,
-                Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt])
+                np.abs(Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt]))
             for tt in range(24*365)
         ])
         assert delta_L_uf2room_d_t_i.shape == (12, 8760)
