@@ -260,26 +260,25 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
             V_dash_hs_supply_d_t[C] = V_hs_dsgn_C or 0
             V_dash_hs_supply_d_t[M] = 0
         else:
-            if Q_hs_rtd_H is not None:
-                updated_V_hs_dsgn_H = V_hs_dsgn_H or 0
-            else:
-                updated_V_hs_dsgn_H = None
-
-            if Q_hs_rtd_C is not None:
-                updated_V_hs_dsgn_C = V_hs_dsgn_C or 0
-            else:
-                updated_V_hs_dsgn_C = None
-
             if type == PROCESS_TYPE_3:
                 # FIXME: 方式3が他方式と比較して大きくなる問題
-                if updated_V_hs_dsgn_C is not None:
-                    # 冷房時 => 顕熱負荷のみ
-                    V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_CS_d_t, region, True)
-                else:
-                    # 暖房 => 全熱負荷
-                    V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_d_t, region, True)
+                match (Q_hs_rtd_H, Q_hs_rtd_C):
+                    case (None, None):
+                        raise Exception("どちらかのみを想定")
+                    case (_, None):  # 暖房期(=q_hs_rtd_H) => 全熱負荷
+                        V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_d_t, region, False)
+                    case (None, _):  # 冷房期(=q_hs_rtd_H) => 顕熱負荷のみ
+                        V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t_2023(Q_hat_hs_CS_d_t, region, True)
+                    case (_, _):
+                        raise Exception("どちらかのみを想定")
+
                 df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
             else:
+                updated_V_hs_dsgn_H = V_hs_dsgn_H or 0 if Q_hs_rtd_H is not None  \
+                        else None
+                updated_V_hs_dsgn_C = V_hs_dsgn_C or 0 if Q_hs_rtd_C is not None  \
+                    else None
+
                 V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t(V_hs_min, updated_V_hs_dsgn_H, updated_V_hs_dsgn_C, Q_hs_rtd_H, Q_hs_rtd_C, Q_hat_hs_d_t, region)
                 df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
 
