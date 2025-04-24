@@ -274,17 +274,10 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
 
                 df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
             else:
-                match (Q_hs_rtd_H, Q_hs_rtd_C):
-                    case (None, None):
-                        raise Exception("どちらかのみを想定")
-                    case (_, None):
-                        updated_V_hs_dsgn_H = V_hs_dsgn_H or 0
-                        updated_V_hs_dsgn_C = None
-                    case (None, _):
-                        updated_V_hs_dsgn_C = V_hs_dsgn_C or 0
-                        updated_V_hs_dsgn_H = None
-                    case (_, _):
-                        raise Exception("どちらかのみを想定")
+                updated_V_hs_dsgn_H = V_hs_dsgn_H or 0 if Q_hs_rtd_H is not None  \
+                        else None
+                updated_V_hs_dsgn_C = V_hs_dsgn_C or 0 if Q_hs_rtd_C is not None  \
+                    else None
 
                 V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t(V_hs_min, updated_V_hs_dsgn_H, updated_V_hs_dsgn_C, Q_hs_rtd_H, Q_hs_rtd_C, Q_hat_hs_d_t, region)
                 df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
