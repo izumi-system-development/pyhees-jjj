@@ -1372,11 +1372,11 @@ def get_V_hs_vent_d_t(V_vent_g_i, general_ventilation):
 def get_V_dash_hs_supply_d_t_2023(Q_hat_hs_d_t, region, for_cooling):
     """ルームエアコンディショナ活用型全館空調（潜熱評価モデル）_風量特性 \n
     Args:
-      Q_hat_hs_d_t: 日付dの時刻tにおける１時間当たりの熱源機の風量を計算するための熱源機の出力（MJ/h） \n
-      region: 地域区分 \n
-      cooling: 冷房であるか \n
+        Q_hat_hs_d_t: 日付dの時刻tにおける１時間当たりの熱源機の風量を計算するための熱源機の出力（MJ/h） \n
+        region: 地域区分 \n
+        cooling: 冷房の消費電力計算であるか \n
     Returns:
-      日付dの時刻tにおけるVAV調整前の熱源機の風量（m3/h） \n
+        日付dの時刻tにおけるVAV調整前の熱源機の風量（m3/h） \n
 
     """
     # 暖房期：顕熱2.5kW未満
@@ -1388,31 +1388,30 @@ def get_V_dash_hs_supply_d_t_2023(Q_hat_hs_d_t, region, for_cooling):
     V_dash_hs_supply_d_t = np.zeros(24 * 365)
 
     # 暖房期
-
     if for_cooling == True:
       V_dash_hs_supply_d_t[H] = jjj_consts.airvolume_minimum_C
     else:
-      V_dash_hs_supply_d_t[H] = \
-        np.clip(
+      V_dash_hs_supply_d_t[H]  \
+        = np.clip(
           (jjj_consts.airvolume_coeff_a4_H * Q_hat_hs_d_t_kw ** 4
             + jjj_consts.airvolume_coeff_a3_H * Q_hat_hs_d_t_kw ** 3
             + jjj_consts.airvolume_coeff_a2_H * Q_hat_hs_d_t_kw ** 2
             + jjj_consts.airvolume_coeff_a1_H * Q_hat_hs_d_t_kw
             + jjj_consts.airvolume_coeff_a0_H)[H],
-          jjj_consts.airvolume_minimum_H, jjj_consts.airvolume_maximum_H
-        )
+          jjj_consts.airvolume_minimum_H,
+          jjj_consts.airvolume_maximum_H)
 
     # 冷房期
     if for_cooling == True:
-      V_dash_hs_supply_d_t[C] =  \
-        np.clip(
+      V_dash_hs_supply_d_t[C]  \
+        = np.clip(
           (jjj_consts.airvolume_coeff_a4_C * Q_hat_hs_d_t_kw ** 4
             + jjj_consts.airvolume_coeff_a3_C * Q_hat_hs_d_t_kw ** 3
             + jjj_consts.airvolume_coeff_a2_C * Q_hat_hs_d_t_kw ** 2
             + jjj_consts.airvolume_coeff_a1_C * Q_hat_hs_d_t_kw
             + jjj_consts.airvolume_coeff_a0_C)[C],
-          jjj_consts.airvolume_minimum_C, jjj_consts.airvolume_maximum_C
-        )
+          jjj_consts.airvolume_minimum_C,
+          jjj_consts.airvolume_maximum_C)
     else:
       V_dash_hs_supply_d_t[C] = jjj_consts.airvolume_minimum_H
 
