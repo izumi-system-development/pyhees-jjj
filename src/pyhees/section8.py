@@ -22,34 +22,34 @@ def calc_E_G_CG_d_t(bath_function, CG, E_E_dmd_d_t,
                     L_dashdash_k_d_t, L_dashdash_w_d_t, L_dashdash_s_d_t, L_dashdash_b1_d_t, L_dashdash_b2_d_t,
                     L_dashdash_ba1_d_t,
                     L_dashdash_ba2_d_t,
-                    H_HS, H_MR, H_OR, A_A, A_MR, A_OR, region, mode_MR, mode_OR, L_T_H_rad):
+                    H_HS, H_MR, H_OR, A_A, A_MR, A_OR, region, mode_MR, mode_OR, L_T_H_rad, HW=None):
     """1時間当たりのコージェネレーション設備のガス消費量 (1)
 
     Args:
-      bath_function(str): ふろ機能の種類
-      CG(dict): コージェネレーション設備の仕様
-      E_E_dmd_d_t(ndarray): 1時間当たりの電力需要 (kWh/h)
-      L_dashdash_k_d_t(ndarray): 1時間当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_w_d_t(ndarray): 1時間当たりの洗面水栓における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_b2_d_t(ndarray): 1時間当たりの浴槽自動追焚時における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_ba2_d_t(ndarray): 1時間当たりの浴槽追焚の太陽熱補正給湯熱負荷 (MJ/h)
-      H_HS: param H_MR:
-      H_OR: param A_A:
-      A_MR: param A_OR:
-      region: param mode_MR:
-      mode_OR: param L_T_H_rad:
-      H_MR: 
-      A_A: 
-      A_OR: 
-      mode_MR: 
-      L_T_H_rad: 
+        bath_function (str): ふろ機能の種類
+        CG (dict): コージェネレーション設備の仕様
+        E_E_dmd_d_t (ndarray): 1時間当たりの電力需要 (kWh/h)
+        L_dashdash_k_d_t (ndarray): 1時間当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/h)
+        L_dashdash_w_d_t (ndarray): 1時間当たりの洗面水栓における太陽熱補正給湯熱負荷 (MJ/h)
+        L_dashdash_s_d_t (ndarray): 1時間当たりの浴室シャワー水栓における太陽熱補正給湯熱負荷 (MJ/h)
+        L_dashdash_b1_d_t (ndarray): 1時間当たりの浴槽水栓湯はり時における太陽熱補正給湯熱負荷 (MJ/h)
+        L_dashdash_b2_d_t (ndarray): 1時間当たりの浴槽自動追焚時における太陽熱補正給湯熱負荷 (MJ/h)
+        L_dashdash_ba1_d_t (ndarray): 1時間当たりの浴槽水栓さし湯における太陽熱補正給湯熱負荷 (MJ/h)
+        L_dashdash_ba2_d_t (ndarray): 1時間当たりの浴槽追焚の太陽熱補正給湯熱負荷 (MJ/h)
+        H_HS (dict): 温水暖房システムの仕様
+        H_MR (dict): 主たる居室の暖房機器の仕様
+        H_OR (dict, optional): その他の居室の暖房機器の仕様。Defaults to None。
+        A_A (float): 床面積の合計 (m2)
+        A_MR (float): 主たる居室の床面積 (m2)
+        A_OR (float, optional): その他の居室の床面積 (m2)。Defaults to None。
+        region (int): 省エネルギー地域区分
+        mode_MR (str): 主たる居室の運転モード ('い', 'ろ', 'は')
+        mode_OR (str, optional): その他の居室の運転モード ('い', 'ろ', 'は')。Defaults to None。
+        L_T_H_rad (ndarray): 放熱器の暖房負荷
+        HW (dict, optional): 給湯機の仕様。Defaults to None。
 
     Returns:
-      tuple: 1時間当たりのコージェネレーション設備の一次エネルギー消費量及び1時間当たりのコージェネレーション設備による発電量
-
+        tuple: 1時間当たりのコージェネレーション設備のガス消費量 (MJ/h), 1時間当たりのコージェネレーション設備による発電量 (kWh/h), 1年あたりのコージェネレーション設備のガス消費量のうちの売電に係る控除対象分 (MJ/yr), 1年当たりのコージェネレーション設備による発電量のうちの自己消費分 (kWH/yr), 1年あたりのコージェネレーション設備による製造熱量のうちの自家消費算入分 (MJ/yr),  1時間当たりのタンクユニットの補機消費電力量 (kWh/h), 給湯時のバックアップボイラーの年間平均効率 (-)
     """
     # ----- パラメータの取得 -----
 
@@ -190,21 +190,25 @@ def calc_E_G_CG_d_t(bath_function, CG, E_E_dmd_d_t,
     # ----- 温水暖房用熱源機の負荷および温水供給運転率の計算 -----
 
     if H_HS is not None and H_HS['type'] == 'コージェネレーションを使用する':
+      # 温水暖房機の種類
+        hs_type = H_HS['type']
+        
         # 主たる居室、その他の居室という単位で設定された放熱機器を暖房区画ごとの配列に変換
         rad_list = hwh.get_rad_list(H_MR, H_OR)
 
-        # 主たる居室で温水床暖房とエアコンを併用する場合か否か
-        racfh_combed = H_MR['type'] == '温水床暖房（併用運転に対応）'
-
+        # 低出力モード
+        hs_low_power_mode = H_HS.get('low_power_mode')
+        
         # 温水暖房用熱源機の往き温水温度
-        Theta_SW_hs_op = hwh.get_Theta_SW_hs_op(type_BB_HWH, racfh_combed=racfh_combed)
-        p_hs = hwh.calc_p_hs_d_t(Theta_SW_hs_op, rad_list, L_T_H_rad, A_A, A_MR, A_OR, region, mode_MR, mode_OR)
+        Theta_SW_hs_op = hwh.get_Theta_SW_hs_op(hs_type, hs_low_power_mode, HW, CG)
+        p_hs = hwh.calc_p_hs_d_t(Theta_SW_hs_op, rad_list, L_T_H_rad, A_A, A_MR, A_OR, region, mode_MR, mode_OR, hs_type, hs_low_power_mode, HW, CG)
         Theta_SW_d_t = hwh.get_Theta_SW_d_t(Theta_SW_hs_op, p_hs)
 
         # 1時間当たりの温水暖房の熱負荷 (MJ/h)
         L_HWH_d_t = hwh.calc_Q_dmd_H_hs_d_t(rad_list, H_HS['pipe_insulation'], H_HS['underfloor_pipe_insulation'],
+                                            H_HS['type'], H_HS.get('low_power_mode'),
                                             Theta_SW_d_t, A_A, A_MR, A_OR, region,
-                                            mode_MR, mode_OR, L_T_H_rad)
+                                            mode_MR, mode_OR, L_T_H_rad, HW, CG)
 
         # 処理暖房負荷
         Q_T_H_rad = np.zeros((5, 24 * 365))
@@ -217,19 +221,19 @@ def calc_E_G_CG_d_t(bath_function, CG, E_E_dmd_d_t,
             A_HCZ = hwh.calc_A_HCZ_i(i, A_A, A_MR, A_OR)
             R_type = '主たる居室' if i == 1 else 'その他の居室'
             mode = mode_MR if i == 1 else mode_OR
-            Q_max_H_rad_d_t_i = hwh.calc_Q_max_H_rad_d_t_i(rad_list[i - 1], A_HCZ, Theta_SW_d_t, region, mode, R_type)
+            Q_max_H_rad_d_t_i = hwh.calc_Q_max_H_rad_d_t_i(rad_list[i - 1], A_HCZ, Theta_SW_d_t, region, mode, R_type, hs_type, hs_low_power_mode, HW, CG)
 
             # 1時間当たりの暖冷房区画iに設置された放熱器の処理暖房負荷
             Q_T_H_rad[i - 1, :] = hwh.calc_Q_T_H_rad_d_t_i(Q_max_H_rad_d_t_i, L_T_H_rad[i - 1])
 
         # 温水暖房用熱源機の温水供給運転率
         r_WS_HWH_d_t = hwh.calc_r_WS_hs_d_t(rad_list, L_HWH_d_t, Q_T_H_rad, Theta_SW_d_t, region, A_A, A_MR, A_OR,
-                                            mode_MR)
+                                            mode_MR, hs_type, hs_low_power_mode, HW, CG)
         # 戻り温水温度 (9)
         Theta_RW_hs = hwh.calc_Theta_RW_hs_d_t(Theta_SW_d_t, rad_list, H_HS['pipe_insulation'],
-                                               H_HS['underfloor_pipe_insulation'], A_A, A_MR, A_OR, region,
+                                               H_HS['underfloor_pipe_insulation'], H_HS['type'], H_HS.get('low_power_mode'), A_A, A_MR, A_OR, region,
                                                mode_MR, mode_OR,
-                                               L_T_H_rad)
+                                               L_T_H_rad, HW, CG)
 
         # 定格能力の計算のためのパラメータの取得
         rad_types = hwh.get_rad_type_list()

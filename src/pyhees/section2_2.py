@@ -18,7 +18,7 @@ import pyhees.section2_5_a as sc2_5_a
 from pyhees.section3_1 import get_Q
 from pyhees.section3_2 import calc_insulation_performance
 from pyhees.section4_1 import calc_heating_load, calc_heating_mode, get_virtual_heating_devices, get_virtual_heatsource, \
-    get_E_E_H_d_t, get_E_G_H_d_t, calc_E_K_H_d_t, calc_E_M_H_d_t, calc_E_UT_H_d_t
+    get_E_E_H_d_t, get_E_G_H_d_t, calc_E_K_H_d_t, calc_E_WF_H_d_t, calc_E_M_H_d_t, calc_E_UT_H_d_t
 from pyhees.section4_1 import calc_cooling_load, calc_E_E_C_d_t, calc_E_G_C_d_t, calc_E_K_C_d_t, calc_E_M_C_d_t, calc_E_UT_C_d_t
 import pyhees.section4_2 as dc
 import pyhees.section4_2_b as dc_spec
@@ -343,10 +343,16 @@ def calc_E_T(spec) -> Tuple[DesignedPrimaryEnergyTotal, DesignedPrimaryEnergyTot
 
     # エネルギー利用効率化設備による設計一次エネルギー消費量の削減量
     E_E_CG_h = get_E_E_CG_h(E_E_CG_h_d_t)
-    E_S, E_S_CG, E_R, E_S_PV_h, E_S_CG_h, E_S_sell = calc_E_S(spec['region'], spec['sol_region'], spec['PV'], spec['CG'], E_E_dmd_d_t, E_E_CG_gen_d_t,
+    E_S, E_S_CG, E_S_PV_h, E_S_CG_h, E_S_sell, E_PV_sell = calc_E_S(spec['region'], spec['sol_region'], spec['PV'], spec['CG'], E_E_dmd_d_t, E_E_CG_gen_d_t,
                    E_E_TU_aux_d_t, E_E_CG_h, E_G_CG_ded, e_BB_ave, Q_CG_h)
 
     E_E_gen = np.sum(calc_E_E_PV_d_t(spec['PV'], solrad) + E_E_CG_gen_d_t)
+
+    # ---- 1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量の評価 ----
+
+    # 再生可能エネルギー源の利用に資する設備で生成される利用設備を用いて得られるエネルギー量（誘導建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で考慮勘案されるものを除く）
+    E_WF_H_d_t = calc_E_WF_H_d_t(spec['region'], A_A, A_MR, A_OR, H_A, H_MR, H_OR, Q, L_T_H_d_t_i)
+    E_R = calc_E_R(E_S_PV_h, E_PV_sell, E_WF_H_d_t)
 
     # ---- 合計 ----
 
@@ -598,7 +604,7 @@ def get_E_T_enh_du(E_H, E_C, E_V, E_L, E_W, E_S_CG, E_R, E_M) -> float:
         E_L (float): 1年当たりの照明設備の設計一次エネルギー消費量 (MJ/年)
         E_W (float): 1年当たりの給湯設備(コージェネレーション設備を含む)の設計一次エネルギー消費量 (MJ/年)
         E_S_CG (float): 1年当たりのエネルギー利用効率化設備（コージェネレーション設備に限る）による設計一次エネルギー消費量の削減量 (MJ/年)
-        E_R (float): 1年当たりの再生可能エネルギー源の利用に資する設備で生成されるエネルギー量（誘導設計一次エネルギー消費量の算定で考慮されるものを除く） (MJ/年)
+        E_R (float): 1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量（建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で勘案されるものを除く） (MJ/年)
         E_M (float): 1年当たりのその他の設計一次エネルギー消費量 (MJ/年)
 
     Returns:
@@ -621,7 +627,7 @@ def get_E_star_T_enh_du(E_H, E_C, E_V, E_L, E_W, E_S_CG, E_R, E_M):
         E_L (float): 1年当たりの照明設備の設計一次エネルギー消費量 (MJ/年)
         E_W (float): 1年当たりの給湯設備(コージェネレーション設備を含む)の設計一次エネルギー消費量 (MJ/年)
         E_S_CG (float): 1年当たりのエネルギー利用効率化設備（コージェネレーション設備に限る）による設計一次エネルギー消費量の削減量 (MJ/年)
-        E_R (float): 1年当たりの再生可能エネルギー源の利用に資する設備で生成されるエネルギー量（誘導設計一次エネルギー消費量の算定で考慮されるものを除く） (MJ/年)
+        E_R (float): 1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量（建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で勘案されるものを除く） (MJ/年)
         E_M (float): 1年当たりのその他の設計一次エネルギー消費量 (MJ/年)
 
     Returns:
@@ -927,6 +933,9 @@ def get_E_H_d_t(region, sol_region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, mode_
         # (第四章第一節) 暖房設備の灯油消費量（MJ/h）
         E_K_H_d_t = calc_E_K_H_d_t(region, A_A, A_MR, A_OR, H_A, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
                                    L_T_H_d_t_i)
+        
+        # (第四章第一節) 暖房設備の木質燃料消費量（MJ/h）
+        E_WF_H_d_t = calc_E_WF_H_d_t(region, A_A, A_MR, A_OR, H_A, spec_MR, spec_OR, Q, L_T_H_d_t_i)
 
         # (第四章第一節) 暖房設備のその他の燃料による一次エネルギー消費量（MJ/h）
         E_M_H_d_t = calc_E_M_H_d_t(region, A_A, A_MR, A_OR, H_A, spec_MR, spec_OR, spec_HS, L_T_H_d_t_i)
@@ -936,7 +945,7 @@ def get_E_H_d_t(region, sol_region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, mode_
                                      HW, CG, L_T_H_d_t_i, L_CS_d_t_i, L_CL_d_t_i)
 
         # 式(25) 1時間当たりの暖房設備の設計一次エネルギー消費量 （MJ/h）
-        return E_E_H_d_t * f_prim / 1000 + E_G_H_d_t + E_K_H_d_t + E_M_H_d_t + E_UT_H_d_t
+        return E_E_H_d_t * f_prim / 1000 + E_G_H_d_t + E_K_H_d_t + E_WF_H_d_t + E_M_H_d_t + E_UT_H_d_t
 
 
 # ============================================================================
@@ -1380,7 +1389,7 @@ def calc_E_CG_d_t(A_A, region, sol_region, HW, SHC, CG, H_A=None, H_MR=None, H_O
                         L_dashdash_b2_d_t,
                         L_dashdash_ba1_d_t, L_dashdash_ba2_d_t,
                         spec_HS, spec_MR, spec_OR, A_A, A_MR, A_OR, region, mode_MR, mode_OR,
-                        L_T_H_d_t_i)
+                        L_T_H_d_t_i, HW)
 
     # 1時間当たりのコージェネレーション設備による発電量のうちの自家消費分 (kWh/h) (44)
     E_E_CG_h_d_t = get_E_E_CG_h_d_t(E_E_CG_gen_d_t, E_E_dmd_d_t, True)
@@ -1647,8 +1656,10 @@ def calc_E_S(region, sol_region, PV, CG, E_E_dmd_d_t, E_E_CG_gen_d_t, E_E_TU_aux
     Returns:
       E_S(float): 1年当たりのエネルギー利用効率化設備による設計一次エネルギー消費量の削減量 (MJ/yr)
       E_S_CG(float): 1年当たりのエネルギー利用効率化設備（コージェネレーション設備に限る）による設計一次エネルギー消費量の削減量 (MJ/yr)
-      E_R(float): 1年当たりの再生可能エネルギー源の利用に資する設備で生成されるエネルギー量（誘導設計一次エネルギー消費量の算定で考慮されるものを除く）（MJ/yr）
-
+      E_S_PV_h(float): 1年当たりの太陽光発電設備による発電量のうちの自家消費分に係る設計一次エネルギー消費量の削減量 (MJ/yr)
+      E_S_CG_h(float):  1年当たりのコージェネレーション設備による発電量のうちの自家消費分に係る設計一次エネルギー消費量の削減量 (MJ/yr)
+      E_S_sell(float): 1年当たりのコージェネレーション設備の売電量に係る設計一次エネルギー消費量の控除量 (MJ/yr) 
+      E_PV_sell(float): 1年当たりの太陽光発電設備による売電量（一次エネルギー換算値）(MJ/yr) 
     """
 
     if CG is not None:
@@ -1711,10 +1722,8 @@ def calc_E_S(region, sol_region, PV, CG, E_E_dmd_d_t, E_E_CG_gen_d_t, E_E_TU_aux
     # 1年当たりのエネルギー利用効率化設備（コージェネレーション設備に限る）による設計一次エネルギー消費量の削減量 (MJ/yr) (37)
     E_S_CG = get_E_S_CG(E_S_CG_h, E_S_sell)
 
-    # 1年当たりの再生可能エネルギー源の利用に資する設備で生成されるエネルギー量（誘導設計一次エネルギー消費量の算定で考慮されるものを除く）（MJ/yr） (53)
-    E_R = get_E_R(E_S_PV_h, E_PV_sell)
 
-    return E_S, E_S_CG, E_R, E_S_PV_h, E_S_CG_h, E_S_sell
+    return E_S, E_S_CG, E_S_PV_h, E_S_CG_h, E_S_sell, E_PV_sell
 
 
 def get_E_S(E_S_h, E_S_sell):
@@ -2004,18 +2013,62 @@ def get_E_E_CG_sell_d_t(E_E_CG_gen_d_t, E_E_CG_h_d_t, has_CG_reverse):
 #   （誘導設計一次エネルギー消費量の算定で考慮されるものを除く）
 # ============================================================================
 
-def get_E_R(E_S_PV_h, E_PV_sell):
-    """1年当たりの再生可能エネルギー源の利用に資する設備で生成されるエネルギー量（誘導設計一次エネルギー消費量の算定で考慮されるものを除く） (MJ/yr) (53)
+def calc_E_R(E_S_PV_h, E_PV_sell, E_WF_H_d_t):
+    """1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量（建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で勘案されるものを除く） (MJ/yr) (51) を算出する
 
     Args:
-        E_S_PV_h (float): 1年当たりの太陽光発電設備による発電量のうちの自家消費分に係る設計一次エネルギー消費量の削減量 (MJ/yr)
-        E_PV_sell (float): 1年当たりの太陽光発電設備による売電量（一次エネルギー）(MJ/yr)
+        E_S_PV_h (float): 1年当たりの太陽光発電設備による発電量のうちの自家消費分に係る設計一次エネルギー消費量の削減量（MJ/yr）
+        E_PV_sell (float): 1年当たりの太陽光発電設備による売電量（一次エネルギー）（MJ/yr）
+        E_WF_H_d_t (ndarray): 日付dの時刻tにおける1時間当たりの暖房設備の木質燃料消費量（MJ/h）
 
     Returns:
-        float: 1年当たりの再生可能エネルギー源の利用に資する設備で生成されるエネルギー量（誘導設計一次エネルギー消費量の算定で考慮されるものを除く） (MJ/yr)
+        float: 1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量（建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で勘案されるものを除く） (MJ/yr)
+    """
+    
+    # 1年当たりの再生可能エネルギー発電設備の発電量（MJ/yr）
+    E_R_E = get_E_R_E(E_S_PV_h, E_PV_sell)
+    
+    # 1年当たりの再生可能エネルギー熱利用設備の再生可能エネルギー利用量（MJ/yr）
+    E_R_HS = get_E_R_HS(E_WF_H_d_t)
+
+    # 1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量（建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で勘案されるものを除く） (MJ/yr)
+    E_R = get_E_R(E_R_E, E_R_HS)
+    return E_R
+
+def get_E_R(E_R_E, E_R_HS):
+    """1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量（建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で勘案されるものを除く） (MJ/yr) (51) を取得する
+
+    Args:
+        E_S_E (float): 1年当たりの再生可能エネルギー発電設備の発電量（MJ/yr）
+        E_R_HS (float): 1年当たりの再生可能エネルギー熱利用設備の再生可能エネルギー利用量（MJ/yr）
+
+    Returns:
+        float: 1年当たりの再生可能エネルギー利用設備を用いて得られるエネルギー量（建築物エネルギー消費性能誘導基準における設計一次エネルギー消費量の算定で勘案されるものを除く） (MJ/yr)
+    """
+    return E_R_E + E_R_HS
+
+def get_E_R_E(E_S_PV_h, E_PV_sell):
+    """1年当たりの再生可能エネルギー発電設備の発電量（MJ/yr）(52)を取得する
+
+    Args:
+        E_S_PV_h (float): 1年当たりの太陽光発電設備による発電量のうちの自家消費分に係る設計一次エネルギー消費量の削減量
+        E_PV_sell (float): 1年当たりの太陽光発電設備による売電量（一次エネルギー）（MJ/yr）
+
+    Returns:
+        float: 1年当たりの太陽光発電設備による発電量のうちの自家消費分に係る設計一次エネルギー消費量の削減量
     """
     return E_S_PV_h + E_PV_sell
 
+def get_E_R_HS(E_WF_H_d_t):
+    """1年当たりの再生可能エネルギー熱利用設備の再生可能エネルギー利用量（MJ/yr）(53)を取得する
+
+    Args:
+        E_WF_H_d_t (ndarray): 日付dの時刻tにおける1時間当たりの暖房設備の木質燃料消費量（MJ/h）
+
+    Returns:
+        float: 1年当たりの再生可能エネルギー熱利用設備の再生可能エネルギー利用量（MJ/yr）
+    """
+    return sum(E_WF_H_d_t)
 
 # ============================================================================
 # 15.設計二次エネルギー消費量(参考)
@@ -2297,6 +2350,22 @@ def calc_E_K(region, sol_region, A_A, A_MR, A_OR, H_A, spec_MR, spec_OR, spec_HS
     E_K = Decimal(E_K_raw).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
 
     return E_K
+
+def get_E_WF(E_WF_H_d_t):
+    """1年当たりの設計木質燃料消費量
+
+    Args:
+        E_WF_H_d_t (ndarray): 日付dの時刻tにおける1時間当たりの暖房設備の木質燃料消費量（MJ/h）
+
+    Returns:
+        float_type_: 1年当たりの設計木質燃料消費量（MJ/yr）
+    """
+    
+    E_WF_raw = sum(E_WF_H_d_t)
+    
+    # 小数点以下一位未満の端数があるときは、これを四捨五入する。
+    E_WF = Decimal(E_WF_raw).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+    return E_WF
 
 
 def calc_E_UT_H(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, mode_H, H_A, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,

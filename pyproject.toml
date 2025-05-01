@@ -7,7 +7,7 @@ name="pyhees"
 authors = [
     {name = "Pyhees Development Team"}
 ]
-version="3.7.0"
+version="3.8.0"
 license = {file = "LICENSE"}
 
 dependencies = [

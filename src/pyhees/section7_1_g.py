@@ -1,443 +1,321 @@
 # ============================================================================
-# 付録 G 電気ヒートポンプ・ガス瞬間式併用型給湯温水暖房機
-#        （給湯熱源：電気ヒートポンプ・ガス瞬間式併用、暖房熱源：ガス瞬間式）
+# 付録 G 太陽熱利用設備
 # ============================================================================
+
 
 import numpy as np
 
 
 # ============================================================================
-# G.2.3 消費電力量
+# G.2 各用途における補正集熱量
 # ============================================================================
 
-def calc_E_E_hs_d_t(hybrid_category, theta_ex_d_Ave_d, L_dashdash_k_d_t, L_dashdash_s_d_t, L_dashdash_w_d_t,
-                    L_dashdash_b2_d_t, L_dashdash_ba2_d_t):
-    """1時間当たりの給湯機の消費電力量 (1)
+def calc_L_sun_d_t(hw_connection_type, solar_device, solar_water_tap, Theta_sw_s, 
+                L_sun_total_d_t, L_dash_k_d_t, L_dash_s_d_t, L_dash_w_d_t,
+                L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t, Theta_w_sun_d_t):
+    """各用途における太陽熱利用設備による補正集熱量 (MJ/h)
 
     Args:
-      hybrid_category(str): 電気ヒートポンプ・ガス瞬間式併用型給湯温水暖房機の区分
-      theta_ex_d_Ave_d(ndarray): 日平均外気温度 (℃)
-      L_dashdash_k_d_t(ndarray): 1時間当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における対応熱補正給湯負荷 (MJ/hd)
-      L_dashdash_w_d_t(ndarray): 1時間当たりの洗面水栓における対応熱補正給湯負荷 (MJ/h)
-      L_dashdash_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における対応熱補正給湯負荷 (MJ/h)
-      L_dashdash_ba2_d_t(ndarray): 1時間当たりの浴槽追焚時における対応熱補正給湯負荷 (MJ/h)
+      hw_connection_type(str): 給湯接続方式の種類 (-)
+      solar_device(str): 太陽熱利用設備の種類 (-)
+      solar_water_tap(str): 太陽熱用水栓 (-)
+      Theta_w_sun_d_t(ndarray): 太陽熱利用設備から供給される水の温度
+      Theta_sw_s(int): 浴室シャワー水栓における基準給湯温度
+      L_sun_total_d_t(ndarray): 1時間当たりの太陽熱利用給湯設備による補正集熱量の総量 (MJ/h)
+      L_dash_k_d_t(ndarray): 1時間当たりの台所水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_w_d_t(ndarray): 1時間当たりの洗面水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯時における節湯補正給湯熱負荷（MJ/h）
 
     Returns:
-      ndarray: 1時間当たりの給湯機の消費電力量 (kWh/h)
+      tuple: 各用途における太陽熱利用設備による補正集熱量 (MJ/h)
+  """
 
-    """
-    # 1日当たりの太陽熱補正給湯熱負荷
-    L_dashdash_k_d = get_L_dashdash_k_d(L_dashdash_k_d_t)
-    L_dashdash_s_d = get_L_dashdash_s_d(L_dashdash_s_d_t)
-    L_dashdash_w_d = get_L_dashdash_w_d(L_dashdash_w_d_t)
-    L_dashdash_b2_d = get_L_dashdash_b2_d(L_dashdash_b2_d_t)
-    L_dashdash_ba2_d = get_L_dashdash_ba2_d(L_dashdash_ba2_d_t)
+    # 各用途における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合
+    r_sun_k_d_t, r_sun_s_d_t, r_sun_w_d_t, r_sun_b1_d_t, r_sun_b2_d_t, r_sun_ba1_d_t = [np.zeros(24 * 365) for _ in range(6)]
 
-    # 1日当たりの給湯機の消費電力量 (2)
-    E_E_hs_d = calc_E_E_hs_d(hybrid_category, theta_ex_d_Ave_d, L_dashdash_k_d, L_dashdash_s_d, L_dashdash_w_d,
-                             L_dashdash_b2_d, L_dashdash_ba2_d)
+    for dt in range(24 * 365):
+      r_sun_k_d_t[dt], r_sun_s_d_t[dt], r_sun_w_d_t[dt], \
+        r_sun_b1_d_t[dt], r_sun_b2_d_t[dt], r_sun_ba1_d_t[dt] = get_r_sun(hw_connection_type, solar_device, solar_water_tap, Theta_w_sun_d_t[dt], Theta_sw_s,
+                  L_dash_b1_d_t[dt], L_dash_b2_d_t[dt], L_dash_ba1_d_t[dt])
 
-    # 1日当たりの太陽熱補正給湯熱負荷、給湯機の消費電力量の配列要素を1時間ごとに引き延ばす(合計値は24倍になることに注意)
-    E_E_hs_d = np.repeat(E_E_hs_d, 24)
-    L_dashdash_k_d = np.repeat(L_dashdash_k_d, 24)
-    L_dashdash_s_d = np.repeat(L_dashdash_s_d, 24)
-    L_dashdash_w_d = np.repeat(L_dashdash_w_d, 24)
-    L_dashdash_b2_d = np.repeat(L_dashdash_b2_d, 24)
-    L_dashdash_ba2_d = np.repeat(L_dashdash_ba2_d, 24)
+    # 給湯熱需要のうちの太陽熱利用設備の分担分
+    Q_W_dmd_sun_d_t = get_Q_W_dmd_sun_d_t(L_dash_k_d_t, L_dash_s_d_t, L_dash_w_d_t, L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t,
+                          r_sun_k_d_t, r_sun_s_d_t, r_sun_w_d_t, r_sun_b1_d_t, r_sun_b2_d_t, r_sun_ba1_d_t)
 
-    E_E_hs_d_t = np.zeros(24 * 365)
+    # 各用途における太陽熱利用設備による補正集熱量 (1)
+    L_sun_k_d_t, L_sun_s_d_t, L_sun_w_d_t, \
+      L_sun_b1_d_t, L_sun_b2_d_t, L_sun_ba1_d_t = get_L_sun_d_t(L_sun_total_d_t, L_dash_k_d_t, L_dash_s_d_t, L_dash_w_d_t,
+                                                      L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t, Q_W_dmd_sun_d_t,
+                                                      r_sun_k_d_t, r_sun_s_d_t, r_sun_w_d_t,
+                                                      r_sun_b1_d_t, r_sun_b2_d_t, r_sun_ba1_d_t)
 
-    # (1-1) 太陽熱補正給湯熱負荷が発生しない日 => 24時間で単純分割
-    f1 = (L_dashdash_k_d + L_dashdash_s_d + L_dashdash_w_d + L_dashdash_b2_d + L_dashdash_ba2_d == 0)
-    E_E_hs_d_t[f1] = E_E_hs_d[f1] / 24
-
-    # (1-2) 太陽熱補正給湯熱負荷が発生する日 => 負荷で按分
-    f2 = (L_dashdash_k_d + L_dashdash_s_d + L_dashdash_w_d + L_dashdash_b2_d + L_dashdash_ba2_d > 0)
-    E_E_hs_d_t[f2] = E_E_hs_d[f2] * (
-            L_dashdash_k_d_t[f2] + L_dashdash_s_d_t[f2] + L_dashdash_w_d_t[f2] + L_dashdash_b2_d_t[f2] +
-            L_dashdash_ba2_d_t[f2]) / (
-                             L_dashdash_k_d[f2] + L_dashdash_s_d[f2] + L_dashdash_w_d[f2] + L_dashdash_b2_d[f2] +
-                             L_dashdash_ba2_d[f2])
-
-    return E_E_hs_d_t
+    return L_sun_k_d_t, L_sun_s_d_t, L_sun_w_d_t, L_sun_b1_d_t, L_sun_b2_d_t, L_sun_ba1_d_t
 
 
-def calc_E_E_hs_d(hybrid_category, theta_ex_d_Ave_d, L_dashdash_k_d, L_dashdash_s_d, L_dashdash_w_d,
-                  L_dashdash_b2_d, L_dashdash_ba2_d):
-    """1日当たりの給湯機の消費電力量 (2)
+def get_L_sun_d_t(L_sun_total_d_t, L_dash_k_d_t, L_dash_s_d_t, L_dash_w_d_t,
+                L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t, Q_W_dmd_sun_d_t,
+                r_sun_k_d_t, r_sun_s_d_t, r_sun_w_d_t,
+                r_sun_b1_d_t, r_sun_b2_d_t, r_sun_ba1_d_t):
+    """各用途における太陽熱利用設備による補正集熱量 (MJ/h) (1)
 
     Args:
-      hybrid_category(str): 電気ヒートポンプ・ガス瞬間式併用型給湯温水暖房機の区分
-      theta_ex_d_Ave_d(ndarray): 日平均外気温度 (℃)
-      L_dashdash_k_d(ndarray): 1日当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/d)
-      L_dashdash_s_d(ndarray): 1日当たりの浴室シャワー水栓における対応熱補正給湯負荷 (MJ/d)
-      L_dashdash_w_d(ndarray): 1日当たりの洗面水栓における対応熱補正給湯負荷 (MJ/d)
-      L_dashdash_b2_d(ndarray): 1日当たりの浴槽自動湯はり時における対応熱補正給湯負荷 (MJ/d)
-      L_dashdash_ba2_d(ndarray): 1日当たりの浴槽追焚時における対応熱補正給湯負荷 (MJ/d)
+      L_sun_total_d_t(ndarray): 1時間当たりの太陽熱利用給湯設備による補正集熱量の総量 (MJ/h)
+      L_dash_k_d_t(ndarray): 1時間当たりの台所水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_w_d_t(ndarray): 1時間当たりの洗面水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯時における節湯補正給湯熱負荷（MJ/h）
+      Q_W_dmd_sun_d_t(ndarray): 給湯熱需要のうちの太陽熱利用設備の分担分 (MJ/h)
+      r_sun_k_d_t(ndarray): 1時間当たりの台所水栓における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_w_d_t(ndarray): 1時間当たりの洗面水栓における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯時における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
 
     Returns:
-      ndarray: 1日当たりの給湯機の消費電力量 (kWh/d)
-
+      tuple: 各用途における太陽熱利用設備による補正集熱量 (MJ/h)
     """
-    # 係数a,b,c
-    a, b, c = get_coeff_eq1(hybrid_category)
+    L_sun_k_d_t, L_sun_s_d_t, L_sun_w_d_t, L_sun_b1_d_t, L_sun_b2_d_t, L_sun_ba1_d_t = [np.zeros(24 * 365) for _ in range(6)]
 
-    # デフロスト運転による消費電力量の補正係数 (3)
-    C_E_def = get_C_E_def_d(theta_ex_d_Ave_d)
+    # Q_W_dmd_sun_d_t = 0の場合
+    f1 = Q_W_dmd_sun_d_t == 0
+    # Q_W_dmd_sun_d_t != 0の場合
+    f2 = Q_W_dmd_sun_d_t != 0
 
-    # 1日当たりの給湯機の消費電力量 (2)
-    E_E_hs_d = ((a * theta_ex_d_Ave_d + b * (
-            L_dashdash_k_d + L_dashdash_s_d + L_dashdash_w_d + L_dashdash_b2_d) + c) * C_E_def
-                + (0.01723 * L_dashdash_ba2_d + 0.06099)) * 10 ** 3 / 3600
-    E_E_hs_d = np.clip(E_E_hs_d, 0, None)
+    # 1時間当たりの台所水栓における太陽熱利用設備による補正集熱量
+    # (1a-1)
+    L_sun_k_d_t[f1] = 0.0
+    # (1a-2)
+    L_sun_k_d_t[f2] = L_sun_total_d_t[f2] * ((r_sun_k_d_t[f2] * L_dash_k_d_t[f2]) / Q_W_dmd_sun_d_t[f2])
 
-    return E_E_hs_d
+    # 1時間当たりの浴室シャワーにおける太陽熱利用設備による補正集熱量
+    # (1b-1)
+    L_sun_s_d_t[f1] = 0.0
+    # (1b-2)
+    L_sun_s_d_t[f2] = L_sun_total_d_t[f2] * ((r_sun_s_d_t[f2] * L_dash_s_d_t[f2]) / Q_W_dmd_sun_d_t[f2])
+
+    # 1時間当たりの洗面水栓における太陽熱利用設備による補正集熱量
+    # (1c-1)
+    L_sun_w_d_t[f1] = 0.0
+    # (1c-2)
+    L_sun_w_d_t[f2] = L_sun_total_d_t[f2] * ((r_sun_w_d_t[f2] * L_dash_w_d_t[f2]) / Q_W_dmd_sun_d_t[f2])
+
+    # 1時間当たりの浴槽水栓湯はり時における太陽熱利用設備による補正集熱量
+    # (1d-1)
+    L_sun_b1_d_t[f1] = 0.0
+    # (1d-2)
+    L_sun_b1_d_t[f2] = L_sun_total_d_t[f2] * ((r_sun_b1_d_t[f2] * L_dash_b1_d_t[f2]) / Q_W_dmd_sun_d_t[f2])
+
+    # 1時間当たりの浴槽自動湯はり時における太陽熱利用設備による補正集熱量
+    # (1e-1)
+    L_sun_b2_d_t[f1] = 0.0
+    # (1e-2)
+    L_sun_b2_d_t[f2] = L_sun_total_d_t[f2] * ((r_sun_b2_d_t[f2] * L_dash_b2_d_t[f2]) / Q_W_dmd_sun_d_t[f2])
+
+    # 1時間当たりの浴槽水栓さし湯時における太陽熱利用設備による補正集熱量
+    # (1f-1)
+    L_sun_ba1_d_t[f1] = 0.0
+    # (1f-2)
+    L_sun_ba1_d_t[f2] = L_sun_total_d_t[f2] * ((r_sun_ba1_d_t[f2] * L_dash_ba1_d_t[f2]) / Q_W_dmd_sun_d_t[f2])
+
+    return L_sun_k_d_t, L_sun_s_d_t, L_sun_w_d_t, L_sun_b1_d_t, L_sun_b2_d_t, L_sun_ba1_d_t
 
 
-def get_coeff_eq1(hybrid_category):
-    """係数a,b,c
+# ============================================================================
+# G.3 給湯熱需要のうちの太陽熱利用設備の分担分
+# ============================================================================
+
+def get_Q_W_dmd_sun_d_t(L_dash_k_d_t, L_dash_s_d_t, L_dash_w_d_t, L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t,
+                        r_sun_k_d_t, r_sun_s_d_t, r_sun_w_d_t, r_sun_b1_d_t, r_sun_b2_d_t, r_sun_ba1_d_t):
+    """給湯熱需要のうちの太陽熱利用設備の分担分 (MJ/h) (2)
 
     Args:
-      hybrid_category(str): 電気ヒートポンプ・ガス瞬間式併用型給湯温水暖房機の区分
+      L_dash_k_d_t(ndarray): 1時間当たりの台所水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_w_d_t(ndarray): 1時間当たりの洗面水栓における節湯補正給湯熱負荷（MJ/h）
+      L_dash_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯時における節湯補正給湯熱負荷（MJ/h）
+      r_sun_k_d_t(ndarray): 1時間当たりの台所水栓における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_w_d_t(ndarray): 1時間当たりの洗面水栓における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
+      r_sun_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯時における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合（-）
 
     Returns:
-      tuple: 式(1)における係数 a, b, c
-
+      ndarray: 給湯熱需要のうちの太陽熱利用設備の分担分 (MJ/h)
     """
-    if hybrid_category == '区分1':
-        return get_table_g_2()[0][0], get_table_g_2()[1][0], get_table_g_2()[2][0]
-    elif hybrid_category == '区分2':
-        return get_table_g_2()[0][1], get_table_g_2()[1][1], get_table_g_2()[2][1]
-    elif hybrid_category == '区分3':
-        return get_table_g_2()[0][2], get_table_g_2()[1][2], get_table_g_2()[2][2]
+    return r_sun_k_d_t * L_dash_k_d_t + r_sun_s_d_t * L_dash_s_d_t + r_sun_w_d_t * L_dash_w_d_t + \
+            r_sun_b1_d_t * L_dash_b1_d_t + r_sun_b2_d_t * L_dash_b2_d_t + r_sun_ba1_d_t * L_dash_ba1_d_t
+
+
+# ============================================================================
+# G.4 節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合
+# ============================================================================
+
+def get_r_sun(hw_connection_type, solar_device, solar_water_tap, Theta_w_sun_d_t, Theta_sw_s,
+                  L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t):
+    """各用途における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合 (-)
+
+    Args:
+      supplied_target_d_t(ndarray): 太陽熱利用設備により供給される熱を利用する水栓等 (str)
+
+    Returns:
+      tuple: 各用途における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合 (-)
+    """
+    table_3 = get_table_3()
+
+    # 太陽熱利用設備により供給される熱を利用する水栓等
+    if solar_device == '液体集熱式':
+        supplied_target = get_swh_supplied_target(hw_connection_type, solar_water_tap, Theta_w_sun_d_t, Theta_sw_s, L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t)
+    elif solar_device == '空気集熱式':
+        supplied_target = get_open_swh_supplied_target()
     else:
-        raise ValueError(hybrid_category)
+        raise ValueError(solar_device)
 
-
-def get_table_g_2():
-    """表G.2 係数
-
-    Args:
-
-    Returns:
-      list: 表G.2 係数
-
-    """
-    # 表G.2 係数
-    table_g_2 = [
-        (-0.18441, -0.18114, -0.18441),
-        (0.18530, 0.10483, 0.18530),
-        (3.51058, 5.85285, 3.51058)
-    ]
-    return table_g_2
-
-def get_C_E_def_d(theta_ex_d_Ave_d):
-    """1日当たりのデフロスト運転による消費電力量の補正係数 (3)
-
-    Args:
-      theta_ex_d_Ave_d(ndarray): 日平均外気温度 (℃)
-
-    Returns:
-      ndarray: 1日当たりのデフロスト運転による消費電力量の補正係数 (-)
-
-    """
-    C_E_def_d = np.ones(365)
-
-    # theta_ex_d_Ave_d < 7 の場合
-    f = theta_ex_d_Ave_d < 7
-    C_E_def_d[f] = 1.0 + (7 - theta_ex_d_Ave_d[f]) * 0.0091
-
-    return C_E_def_d
-
-
-# ============================================================================
-# G.2 ガス消費量
-# ============================================================================
-
-def calc_E_G_hs_d_t(hybrid_category, theta_ex_d_Ave_d, L_dashdash_k_d_t, L_dashdash_s_d_t, L_dashdash_w_d_t,
-                    L_dashdash_b2_d_t, L_dashdash_ba2_d_t):
-    """1時間当たりの給湯機のガス消費量 (4)
-
-    Args:
-      hybrid_category(str): 電気ヒートポンプ・ガス瞬間式併用型給湯温水暖房機の区分
-      theta_ex_d_Ave_d(ndarray): 日平均外気温度 (℃)
-      L_dashdash_k_d_t(ndarray): 1時間当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/h)
-      L_dashdash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における対応熱補正給湯負荷 (MJ/hd)
-      L_dashdash_w_d_t(ndarray): 1時間当たりの洗面水栓における対応熱補正給湯負荷 (MJ/h)
-      L_dashdash_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における対応熱補正給湯負荷 (MJ/h)
-      L_dashdash_ba2_d_t(ndarray): 1時間当たりの浴槽追焚時における対応熱補正給湯負荷 (MJ/h)
-
-    Returns:
-      ndarray: 1時間当たりの給湯機のガス消費量 (MJ/h)
-
-    """
-    # 1日当たりの太陽熱補正給湯熱負荷
-    L_dashdash_k_d = get_L_dashdash_k_d(L_dashdash_k_d_t)
-    L_dashdash_s_d = get_L_dashdash_s_d(L_dashdash_s_d_t)
-    L_dashdash_w_d = get_L_dashdash_w_d(L_dashdash_w_d_t)
-    L_dashdash_b2_d = get_L_dashdash_b2_d(L_dashdash_b2_d_t)
-    L_dashdash_ba2_d = get_L_dashdash_ba2_d(L_dashdash_ba2_d_t)
-
-    # 1日当たりの給湯機のガス消費量 (4)
-    E_G_hs_d = calc_E_G_hs_d(hybrid_category, theta_ex_d_Ave_d, L_dashdash_k_d, L_dashdash_s_d, L_dashdash_w_d,
-                             L_dashdash_b2_d, L_dashdash_ba2_d)
-
-    # 1日当たりの太陽熱補正給湯熱負荷、給湯機のガス消費量の配列要素を1時間ごとに引き延ばす(合計値は24倍になることに注意)
-    E_G_hs_d = np.repeat(E_G_hs_d, 24)
-    L_dashdash_k_d = np.repeat(L_dashdash_k_d, 24)
-    L_dashdash_s_d = np.repeat(L_dashdash_s_d, 24)
-    L_dashdash_w_d = np.repeat(L_dashdash_w_d, 24)
-    L_dashdash_b2_d = np.repeat(L_dashdash_b2_d, 24)
-    L_dashdash_ba2_d = np.repeat(L_dashdash_ba2_d, 24)
-
-    E_G_hs_d_t = np.zeros(24 * 365)
-
-    # (4-1) 太陽熱補正給湯熱負荷が発生しない日 => 24時間で単純分割
-    f1 = (L_dashdash_k_d + L_dashdash_s_d + L_dashdash_w_d + L_dashdash_b2_d + L_dashdash_ba2_d == 0)
-    E_G_hs_d_t[f1] = E_G_hs_d[f1] / 24
-
-    # (4-2) 太陽熱補正給湯熱負荷が発生する日 => 負荷で按分
-    f2 = (L_dashdash_k_d + L_dashdash_s_d + L_dashdash_w_d + L_dashdash_b2_d + L_dashdash_ba2_d > 0)
-    E_G_hs_d_t[f2] = E_G_hs_d[f2] * (
-            L_dashdash_k_d_t[f2] + L_dashdash_s_d_t[f2] + L_dashdash_w_d_t[f2] + L_dashdash_b2_d_t[f2] +
-            L_dashdash_ba2_d_t[f2]) / (
-                             L_dashdash_k_d[f2] + L_dashdash_s_d[f2] + L_dashdash_w_d[f2] + L_dashdash_b2_d[f2] +
-                             L_dashdash_ba2_d[f2])
-    return E_G_hs_d_t
-
-
-def calc_E_G_hs_d(hybrid_category, theta_ex_d_Ave_d, L_dashdash_k_d, L_dashdash_s_d, L_dashdash_w_d, L_dashdash_b2_d,
-                  L_dashdash_ba2_d):
-    """1日当たりの給湯機のガス消費量 (5)
-
-    Args:
-      hybrid_category(str): 電気ヒートポンプ・ガス瞬間式併用型給湯温水暖房機の区分
-      theta_ex_d_Ave_d(ndarray): 日平均外気温度 (℃)
-      L_dashdash_k_d(ndarray): 1日当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/d)
-      L_dashdash_s_d(ndarray): 1日当たりの浴室シャワー水栓における対応熱補正給湯負荷 (MJ/d)
-      L_dashdash_w_d(ndarray): 1日当たりの洗面水栓における対応熱補正給湯負荷 (MJ/d)
-      L_dashdash_b2_d(ndarray): 1日当たりの浴槽自動湯はり時における対応熱補正給湯負荷 (MJ/d)
-      L_dashdash_ba2_d(ndarray): 1日当たりの浴槽追焚時における対応熱補正給湯負荷 (MJ/d)
-
-    Returns:
-      ndarray: 1日当たりの給湯機のガス消費量 (MJ/d)
-
-    """
-    # 係数d,e,f
-    d, e, f = get_coeff_eq3(hybrid_category)
-
-    # デフロスト係数
-    C_G_def_d = get_C_G_def_d(theta_ex_d_Ave_d)
-
-    # 浴槽追焚時における日平均給湯機効率
-    e_ba2 = get_e_ba2_d(theta_ex_d_Ave_d, L_dashdash_ba2_d)
-
-    # 1日当たりの給湯機のガス消費量 (3)
-    E_G_hs = (d * theta_ex_d_Ave_d + e * (
-            L_dashdash_k_d + L_dashdash_s_d + L_dashdash_w_d + L_dashdash_b2_d) + f) * C_G_def_d + (
-                         L_dashdash_ba2_d / e_ba2)
-    E_G_hs = np.clip(E_G_hs, 0, None)
-
-    return E_G_hs
-
-
-def get_coeff_eq3(hybrid_category):
-    """係数d,e,f
-
-    Args:
-      hybrid_category(str): 電気ヒートポンプ・ガス瞬間式併用型給湯温水暖房機の区分
-
-    Returns:
-      tuple: 式(3)における係数 d,e,f
-
-    """
-    if hybrid_category == '区分1':
-        return get_table_g_3()[0][0], get_table_g_3()[1][0], get_table_g_3()[2][0]
-    elif hybrid_category == '区分2':
-        return get_table_g_3()[0][1], get_table_g_3()[1][1], get_table_g_3()[2][1]
-    elif hybrid_category == '区分3':
-        return get_table_g_3()[0][2], get_table_g_3()[1][2], get_table_g_3()[2][2]
+    # 「太陽熱利用設備により供給される熱を利用する水栓等」を、表3のインデックスに変換
+    if supplied_target == '全ての水栓等':
+        supplied_target = 0
+    elif supplied_target == '浴室シャワー水栓':
+        supplied_target = 1
+    elif supplied_target == '浴槽湯張り':
+        supplied_target = 2
     else:
-        raise ValueError(hybrid_category)
+        raise ValueError(supplied_target)
 
-def get_table_g_3():
-    """表G.3 係数
+    r_sun_k = table_3[supplied_target, 0]
+    r_sun_s = table_3[supplied_target, 1]
+    r_sun_w = table_3[supplied_target, 2]
+    r_sun_b1 = table_3[supplied_target, 3]
+    r_sun_b2 = table_3[supplied_target, 4]
+    r_sun_ba1 = table_3[supplied_target, 5]
 
-    Args:
-
-    Returns:
-      list: 表G.3 係数
-
-    """
-    # 表G.3 係数
-    table_g_3 = [
-        (-0.52617, -0.05770, -0.52617),
-        (0.15061, 0.47525, 0.15061),
-        (15.18195, -6.34593, 15.18195)
-    ]
-    return table_g_3
+    return r_sun_k, r_sun_s, r_sun_w, r_sun_b1, r_sun_b2, r_sun_ba1
 
 
-def get_e_ba2_d(theta_ex_d_Ave_d, L_dashdash_ba2_d):
-    """浴槽追焚時における日平均給湯機効率 (6)
-
-    Args:
-      theta_ex_d_Ave_d(ndarray): 日平均外気温度 (℃)
-      L_dashdash_ba2_d(ndarray): 1日当たりの浴槽追焚時における対応熱補正給湯負荷 (MJ/d)
-
-    Returns:
-      ndarray: 浴槽追焚時における日平均給湯機効率 (-)
-
-    """
-    # 係数g,h,i
-    g, h, i = get_coeff_eq4()
-
-    e_ba2 = g * theta_ex_d_Ave_d + h * L_dashdash_ba2_d + i
-
-    # 効率が1.0を超えない範囲
-    e_ba2 = np.clip(e_ba2, None, 1)
-
-    return e_ba2
-
-
-def get_coeff_eq4():
-    """係数 g, h, i
+def get_table_3():
+    """表3 各用途における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合
 
     Args:
 
     Returns:
-      tuple: 式(4)における係数 g,h,i
-
+      ndarray: 各用途における節湯補正給湯熱負荷に対する太陽熱利用設備の分担割合
     """
-    # 表G.4 係数
-    table_g_4 = (0.0048, 0.0060, 0.7544)
-
-    return table_g_4
-
-
-def get_C_G_def_d(theta_ex_d_Ave_d):
-    """1日当たりのデフロスト運転によるガス消費量の補正係数 (7)
-
-    Args:
-      theta_ex_d_Ave_d(ndarray): 日平均外気温度 (℃)
-
-    Returns:
-      ndarray: 1日当たりのデフロスト運転によるガス消費量の補正係数 (-)
-
-    """
-    C_G_def_d = np.ones(365)
-
-    # theta_ex_d_Ave_d < 7 の場合
-    f = (theta_ex_d_Ave_d < 7)
-    C_G_def_d[f] = 1.0 + (7 - theta_ex_d_Ave_d[f]) * 0.0205
-
-    return C_G_def_d
+    return np.array([
+        [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0, 1.0, 1.0]
+    ])
 
 
 # ============================================================================
-# G.2.5 灯油消費量
+# G.5 液体集熱式太陽熱利用設備
 # ============================================================================
 
-def get_E_K_hs_d_t():
-    """1時間当たりの給湯機の灯油消費量
+# ============================================================================
+# G.5.2 浴槽湯張りの方法
+# ============================================================================
+
+def get_swh_bathtub_filling_method_d_t(hw_connection_type, L_sun_total_d_t):
+    """液体集熱式太陽熱利用設備 : 浴槽湯張りの方法
+
+    Args:
+      hw_connection_type(str): 給湯接続方式の種類 (-)
+      L_sun_total_d_t(ndarray): 1時間当たりの太陽熱利用給湯設備による補正集熱量の総量 (MJ/h)
+
+    Returns:
+      ndarray: 液体集熱式太陽熱利用設備 : 浴槽湯張りの方法
+    """
+    swh_bathtub_filling_method_d_t = np.full(24 * 365, None)
+
+    if hw_connection_type in ["接続ユニット方式", "三方弁方式", "給水予熱方式"]:
+        swh_bathtub_filling_method_d_t[:] = "給湯機で温度調整して浴槽湯張りを行う"
+    elif hw_connection_type == "浴槽落とし込み方式":
+        # 1時間当たりの太陽熱利用給湯設備による補正集熱量の総量がゼロである場合
+        f1 = L_sun_total_d_t == 0
+        swh_bathtub_filling_method_d_t[f1] = "給湯機で温度調整して浴槽湯張りを行う"
+
+        # 1時間当たりの太陽熱利用給湯設備による補正集熱量の総量がゼロを超える場合
+        f2 = L_sun_total_d_t > 0
+        swh_bathtub_filling_method_d_t[f2] = "給湯機を経由せずに浴槽に落とした中温水に対して浴槽水栓さし湯または浴槽追焚を行うことで浴槽湯張りを行う"
+    else:
+        raise ValueError(hw_connection_type)
+
+    return swh_bathtub_filling_method_d_t
+
+
+# ============================================================================
+# G.5.3 太陽熱利用設備により供給される熱を利用する水栓等
+# ============================================================================
+
+def get_swh_supplied_target(hw_connection_type, solar_water_tap, Theta_w_sun_d_t, Theta_sw_s, L_dash_b1_d_t, L_dash_b2_d_t, L_dash_ba1_d_t):
+    """液体集熱式太陽熱利用設備 : 太陽熱利用設備により供給される熱を利用する水栓等
+
+    Args:
+      hw_connection_type(str): 給湯接続方式の種類 (-)
+      solar_water_tap(str): 太陽熱用水栓 (-)
+      Theta_w_sun_d_t(ndarray): 太陽熱利用設備から供給される水の温度
+      Theta_sw_s(int): 浴室シャワー水栓における基準給湯温度
+      L_dash_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における節湯補正給湯熱負荷（MJ/h）
+      L_dash_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯時における節湯補正給湯熱負荷（MJ/h）
+
+    Returns:
+      str: 液体集熱式太陽熱利用設備 : 太陽熱利用設備により供給される熱を利用する水栓等
+    """
+    if hw_connection_type in ["接続ユニット方式", "三方弁方式", "給水予熱方式"]:
+        return "全ての水栓等"
+    elif hw_connection_type == "浴槽落とし込み方式":
+        if solar_water_tap == "シャワー・浴槽水栓":
+            # 1時間当たりの浴槽湯はり時における節湯補正給湯熱負荷の合計がゼロであり、かつ日付の時刻における太陽熱利用設備から供給される水の温度が浴室シャワー水栓における基準給湯温度以上である場合
+            if L_dash_b1_d_t + L_dash_b2_d_t + L_dash_ba1_d_t == 0 and Theta_w_sun_d_t >= Theta_sw_s:
+                return "浴室シャワー水栓"
+            # 1時間当たりの浴槽湯はり時における節湯補正給湯熱負荷の合計がゼロであり、かつ日付の時刻における太陽熱利用設備から供給される水の温度が浴室シャワー水栓における基準給湯温度以上である場合に該当しない場合
+            else:
+                return "浴槽湯張り"
+        elif solar_water_tap == "浴槽水栓":
+            return "浴槽湯張り"
+        else:
+            raise ValueError(solar_water_tap)
+    else:
+        raise ValueError(hw_connection_type)
+
+
+# ============================================================================
+# G.6 空気集熱式太陽熱利用設備
+# ============================================================================
+
+# ============================================================================
+# G.6.2 浴槽湯張りの方法
+# ============================================================================
+
+def get_open_swh_bathtub_filling_method_d_t():
+    """空気集熱式太陽熱利用設備 : 浴槽湯張りの方法
 
     Args:
 
     Returns:
-      ndarray: 1時間当たりの給湯機の灯油消費量
-
+      ndarray: 空気集熱式太陽熱利用設備 : 浴槽湯張りの方法
     """
-    # 1日当たりの給湯機の灯油消費量は0とする
-    return np.zeros(24 * 365)
+    return np.full(24 * 365, "給湯機で温度調整して浴槽湯張りを行う")
 
 
-def get_L_dashdash_k_d(L_dashdash_k_d_t):
-    """1日当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/d)
+# ============================================================================
+# G.6.3 太陽熱利用設備により供給される熱を利用する水栓等
+# ============================================================================
+
+def get_open_swh_supplied_target():
+    """空気集熱式太陽熱利用設備 : 太陽熱利用設備により供給される熱を利用する水栓等
 
     Args:
-      L_dashdash_k_d_t(ndarra): 1時間当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/h)
 
     Returns:
-      ndarray: 1日当たりの台所水栓における太陽熱補正給湯熱負荷 (MJ/d)
-
+      str: 空気集熱式太陽熱利用設備 : 太陽熱利用設備により供給される熱を利用する水栓等
     """
-    return np.sum(L_dashdash_k_d_t.reshape((365, 24)), axis=1)
-
-
-def get_L_dashdash_s_d(L_dashdash_s_d_t):
-    """1日当たりの浴室シャワー水栓における太陽熱補正給湯負荷 (MJ/d)
-
-    Args:
-      L_dashdash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における太陽熱補正給湯負荷 (MJ/h)
-
-    Returns:
-      ndarray: 1日当たりの浴室シャワー水栓における太陽熱補正給湯負荷 (MJ/d)
-
-    """
-    return np.sum(L_dashdash_s_d_t.reshape((365, 24)), axis=1)
-
-
-def get_L_dashdash_w_d(L_dashdash_w_d_t):
-    """1日当たりの洗面水栓における太陽熱補正給湯負荷 (MJ/d)
-
-    Args:
-      L_dashdash_w_d_t(ndarray): 1時間当たりの洗面水栓における太陽熱補正給湯負荷 (MJ/h)
-
-    Returns:
-      ndarray: 1日当たりの洗面水栓における太陽熱補正給湯負荷 (MJ/d)
-
-    """
-    return np.sum(L_dashdash_w_d_t.reshape((365, 24)), axis=1)
-
-
-def get_L_dashdash_b1_d(L_dashdash_b1_d_t):
-    """1日当たりの浴槽水栓湯はり時における太陽熱補正給湯負荷 (MJ/d)
-
-    Args:
-      L_dashdash_b1_d_t(ndarray): 1時間当たりの浴槽水栓湯はり時における太陽熱補正給湯負荷 (MJ/h)
-
-    Returns:
-      ndarray: 1日当たりの浴槽水栓湯はり時における太陽熱補正給湯負荷 (MJ/d)
-
-    """
-    return np.sum(L_dashdash_b1_d_t.reshape((365, 24)), axis=1)
-
-
-def get_L_dashdash_b2_d(L_dashdash_b2_d_t):
-    """1日当たりの浴槽自動湯はり時における太陽熱補正給湯負荷 (MJ/d)
-
-    Args:
-      L_dashdash_b2_d_t(ndarray): 1時間当たりの浴槽自動湯はり時における太陽熱補正給湯負荷 (MJ/h)
-
-    Returns:
-      ndarray: 1日当たりの浴槽自動湯はり時における太陽熱補正給湯負荷 (MJ/d)
-
-    """
-    return np.sum(L_dashdash_b2_d_t.reshape((365, 24)), axis=1)
-
-
-def get_L_dashdash_ba1_d(L_dashdash_ba1_d_t):
-    """1日当たりの浴槽水栓さし湯時における太陽熱補正給湯負荷 (MJ/d)
-
-    Args:
-      L_dashdash_ba1_d_t(ndarray): 1時間当たりの浴槽水栓さし湯時における太陽熱補正給湯負荷 (MJ/h)
-
-    Returns:
-      ndarray: 1日当たりの浴槽水栓さし湯時における太陽熱補正給湯負荷 (MJ/d)
-
-    """
-    return np.sum(L_dashdash_ba1_d_t.reshape((365, 24)), axis=1)
-
-
-def get_L_dashdash_ba2_d(L_dashdash_ba2_d_t):
-    """1日当たりの浴槽追焚時における太陽熱補正給湯負荷 (MJ/d)
-
-    Args:
-      L_dashdash_ba2_d_t(ndarray): 1時間当たりの浴槽追焚時における太陽熱補正給湯負荷 (MJ/h)
-
-    Returns:
-      ndarray: 1日当たりの浴槽追焚時における太陽熱補正給湯負荷 (MJ/d)
-
-    """
-    return np.sum(L_dashdash_ba2_d_t.reshape((365, 24)), axis=1)
+    return "全ての水栓等"

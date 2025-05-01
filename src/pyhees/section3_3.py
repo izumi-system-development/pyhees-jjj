@@ -664,7 +664,7 @@ Window---Window要素のノード名をkey、値をvalueとして持つ辞書
     |--'SashSpecForInnerWindow': 建具仕様(内窓)
     |       'WoodenOrResin'(木製建具又は樹脂製建具) または 'Mix'(木と金属の複合材料製建具又は樹脂と金属の複合材料製建具) または 
     |       'MetallicInsulated'(金属製熱遮断構造建具) または 'Metalic'(金属製建具) 
-    |--'GlassSpecForCategory': ガラス仕様（区分）
+    |--'GlassSpecForCategory': ガラス仕様の区分
     |       'Single'(単層) または '2Pair'(二層複層) または '3Pair'(三層以上の複層)
     |--'Attachment': 付属品部材
     |       'No'(なし) または 'Shutter'(シャッター) または 'Shoji'(障子) または 'WindbreakSpace'(風除室) または 'ExteriorBlind'(外付けブラインド)     

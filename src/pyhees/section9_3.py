@@ -9,7 +9,7 @@ import numpy as np
 from pyhees.section3_1_heatingday import get_heating_flag_d
 
 import pyhees.section3_1_e as algo
-import pyhees.section7_1_o as solar
+import pyhees.section7_1_g as solar
 
 from pyhees.section11_2 import calc_I_s_d_t, get_Theta_ex
 
