@@ -6,6 +6,15 @@ import numpy as np
 from math import sqrt
 from functools import lru_cache
 
+# JJJ_EXPERIMENT ADD
+from injector import Injector
+
+import jjjexperiment.constants as jjj_consts
+from jjjexperiment.common import *
+from jjjexperiment.options import *
+from jjjexperiment.logger import log_res
+from jjjexperiment.di_container import *
+from jjjexperiment.app_config import *
 
 # ============================================================================
 # E.2 床下温度
@@ -23,6 +32,7 @@ def get_ro_air():
     return 1.20
 
 
+# section4_2.get_c_p_air() と単位が異なるので注意
 def get_c_p_air():
     """空気の比熱 (kJ/(kg・K))
 
@@ -310,6 +320,7 @@ def calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR):
 
     # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積 (m2) (7)
     A_s_ufvnt_i = r_A_uf_i * A_HCZ_i * r_A_ufvnt
+    # 部屋面積 * 床面積比 * 有効率
 
     return A_s_ufvnt_i
 
@@ -357,10 +368,11 @@ def get_table_e_6():
 # E.5 地盤またはそれを覆う基礎
 # ============================================================================
 
+@jjj_mod
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
-               L_dash_H_R_d_t,
-               L_dash_CS_R_d_t):
+               L_dash_H_R_d_t_i,
+               L_dash_CS_R_d_t_i, calc_backwards: bool = False, di: Injector = None):
     """床下温度及び地盤またはそれを覆う基礎の表面温度 (℃) (1)(9)
 
     Args:
@@ -374,17 +386,23 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Theta_sa_d_t(ndarray): 床下空間または居室へ供給する空気の温度 (℃)
       Theta_ex_d_t(ndarray): 外気温度 (℃)
       V_sa_d_t_A(ndarray): 床下空間または居室へ供給する1時間当たりの空気の風量の合計
-      H_OR_C: type H_OR_C: str
-      L_dash_H_R_d_t(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
-      L_dash_CS_R_d_t(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
+      H_OR_C(str): ※利用されていない
+      L_dash_H_R_d_t_i(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
+      L_dash_CS_R_d_t_i(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
+      calc_backwards(bool): θuf_supply_d_t の逆算が必要か(その分時間かかる)
 
     Returns:
-      tuple: 床下温度、地盤またはそれを覆う基礎の表面温度 (℃)
+      Theta_uf_d_t: 日付dの時刻tにおける 床下温度 (℃)
+      Theta_g_surf_d_t: 日付dの時刻tにおける 地盤の表面温度 (℃)
+      Theta_supply_d_t: 床下空調新案にて床下中和を見込んだ吹き出し温度 (℃)
 
     """
+    # NOTE: 元コードからの利用もあるため、挙動を変えないように注意する
 
     # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
-    R_g = 0.15
+    #R_g = 0.15
+    #R_g = 0.15 + 2.63  #フェノバボード50mm
+    R_g = injector.get(AppConfig).R_g
 
     # 吸熱応答係数の初項
     Phi_A_0 = 0.025504994
@@ -409,6 +427,8 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     Theta_g_surf_d_t = np.zeros(24 * 365)
     Theta_dash_g_surf_A_m = np.zeros(M)
 
+    Theta_supply_d_t = np.zeros(24 * 365)
+
     # 初期値の設定
     Theta_uf_prev = 0.0
     Theta_g_surf_prev = 0.0
@@ -421,6 +441,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
 
     Theta_in_H = 20
     Theta_in_C = 27
+    # NOTE: 既存コードにあったものを、新床下空調時 目標 Theta_uf の実行可否の閾値に再利用しています
 
     # 指数項mにおける吸熱応答係数
     phi_1_A_m = np.array([get_phi_1_A_m(m) for m in range(1, M + 1)])
@@ -452,18 +473,23 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     if r_A_ufvnt is None:
         r_A_ufvnt = 0
 
-    # 当該住戸の暖冷房区画iの空気を供給する床下空間に接する床の面積(m2) (7)
-    A_s_ufvnt = [calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR) for i in range(1, 13)]
+    # 暖冷房区画iの 当該住戸の空気を供給する床下空間に接する床の面積(m2) (7)
+    A_s_ufvnt_i = np.array([
+        calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR)
+        for i in range(1, 13)
+    ])
 
     # 当該住戸の空気を供給する床下空間に接する床の面積の合計 (m2) (8)
     A_s_ufvnt_A = get_A_s_ufvnt_A(r_A_ufvnt, A_A, A_MR, A_OR)
+    # CHECK: 上の式、わざわざ sum() にしていないので異なるからか?
+    # assert np.isclose(A_s_ufvnt_A, sum(A_s_ufvnt_i))
 
     # 当該住戸の外気を導入する床下空間の基礎外周長さ (6)
     L_uf = get_L_uf(A_s_ufvnt_A)
 
     H_floor = 0.7
 
-    # 基礎の線熱貫流率 (W/mK) (5)
+    # 基礎の線熱貫流率Ψ (W/m*K) (5)
     phi = get_phi(region, Q)
 
     Theta_star = np.zeros(12)
@@ -479,37 +505,93 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         # 参照空気温度及び参照温度差係数 (2)(3)
         # TODO: ここをベクトル化する
         for i in range(1, 13):
-            if 0 < L_dash_H_R_d_t[i - 1][dt]:
+            if 0 < L_dash_H_R_d_t_i[i - 1][dt]:
                 Theta_star[i - 1] = Theta_in_H
                 H_star[i - 1] = 1
-            elif 0 < L_dash_CS_R_d_t[i - 1][dt]:
+            elif 0 < L_dash_CS_R_d_t_i[i - 1][dt]:
                 Theta_star[i - 1] = Theta_in_C
                 H_star[i - 1] = 1
-            elif L_dash_H_R_d_t[i - 1][dt] <= 0 and L_dash_CS_R_d_t[i - 1][dt] <= 0 and Theta_ex_d_t[dt] < Theta_in_H:
+            elif L_dash_H_R_d_t_i[i - 1][dt] <= 0 and L_dash_CS_R_d_t_i[i - 1][dt] <= 0 and Theta_ex_d_t[dt] < Theta_in_H:
                 Theta_star[i - 1] = Theta_in_H
                 H_star[i - 1] = 1
-            elif L_dash_H_R_d_t[i - 1][dt] <= 0 and L_dash_CS_R_d_t[i - 1][dt] <= 0 and Theta_in_H <= Theta_ex_d_t[
+            elif L_dash_H_R_d_t_i[i - 1][dt] <= 0 and L_dash_CS_R_d_t_i[i - 1][dt] <= 0 and Theta_in_H <= Theta_ex_d_t[
                 dt] <= Theta_in_C:
                 Theta_star[i - 1] = Theta_ex_d_t[dt]
                 H_star[i - 1] = H_floor
-            elif L_dash_H_R_d_t[i - 1][dt] <= 0 and L_dash_CS_R_d_t[i - 1][dt] <= 0 and Theta_in_C < Theta_ex_d_t[dt]:
+            elif L_dash_H_R_d_t_i[i - 1][dt] <= 0 and L_dash_CS_R_d_t_i[i - 1][dt] <= 0 and Theta_in_C < Theta_ex_d_t[dt]:
                 Theta_star[i - 1] = Theta_in_C
                 H_star[i - 1] = 1
             else:
-                raise ValueError((L_dash_CS_R_d_t[i - 1][dt], L_dash_CS_R_d_t[i - 1][dt]))
+                raise ValueError((L_dash_CS_R_d_t_i[i - 1][dt], L_dash_CS_R_d_t_i[i - 1][dt]))
 
-        # 当該住宅の床下温度 (1)
-        Theta_uf = (ro_air * c_p_air * V_sa_d_t_A[dt] * Theta_sa_d_t[dt] +
-                    (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] * Theta_star[i - 1] for i in
-                          range(1, 13)])
-                     + phi * L_uf * Theta_ex_d_t[dt]
-                     + (A_s_ufvnt_A / R_g)
-                     * ((sum(Theta_dash_g_surf_A_m) + Theta_g_avg) / (1.0 + Phi_A_0 / R_g))) * 3.6) \
-                   / (ro_air * c_p_air * V_sa_d_t_A[dt]
-                      + (sum([U_s * A_s_ufvnt[i - 1] * H_star[i - 1] for i in range(1, 13)])
-                         + phi * L_uf
-                         + (A_s_ufvnt_A / R_g)
-                         * (1.0 / (1.0 + Phi_A_0 / R_g))) * 3.6)
+        def calc_Theta_uf(theta_sa):
+          endi = 12  # NOTE: 熱貫流は1階床全体とする(=> 12でも内部的には(i=1,2,6,7,8,9))
+          # 当該住宅の床下温度 (1)
+          theta_uf_upper  \
+            = ro_air * c_p_air * V_sa_d_t_A[dt] * theta_sa  \
+              + (
+                  sum([U_s * A_s_ufvnt_i[i-1] * H_star[i-1] * Theta_star[i-1] for i in range(1, endi+1)])
+                  + phi * L_uf * Theta_ex_d_t[dt]
+                  + (A_s_ufvnt_A / R_g)
+                      * (sum(Theta_dash_g_surf_A_m) + Theta_g_avg)
+                      / (1.0 + Phi_A_0 / R_g)
+                ) * 3.6
+          theta_uf_lower  \
+            = ro_air * c_p_air * V_sa_d_t_A[dt]  \
+              + (
+                  sum([U_s * A_s_ufvnt_i[i-1] * H_star[i-1] for i in range(1, endi+1)])
+                  + phi * L_uf
+                  + (A_s_ufvnt_A / R_g) * (1.0 / (1.0 + Phi_A_0 / R_g))
+                ) * 3.6
+          theta_uf = theta_uf_upper / theta_uf_lower
+          return theta_uf
+
+        if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+          and calc_backwards == True:
+          # NOTE: 新床下空調ロジックでも θuf_supply 計算するときとそうでないときで複数使用している
+
+          # NOTE: 床下空調新ロジックでは、Theta_sa_d_t として Theta_uf_d_t の目標値が来ています
+          # Theta_supply_d_t の算出においては、床下を通すことによる温度低下を見込んだ値とします
+          expected_Theta_uf = Theta_sa_d_t[dt]
+
+          # TODO: 暖房時・冷房時の判断は要検討
+          # Lが0であっても床下を通すことで初めて負荷が生じるケースがあるため
+
+          # 暖房時の目標温度が低い
+          is_incomplete_Heating = (L_dash_H_R_d_t_i[0][dt]>0) and (expected_Theta_uf < Theta_in_H)
+          # 冷房時の目標温度が高い
+          is_incomplete_Cooling = (L_dash_CS_R_d_t_i[0][dt]>0) and (expected_Theta_uf > Theta_in_C)
+
+          # 二分探索を実行しない条件
+          if (is_incomplete_Cooling or is_incomplete_Heating):
+            Theta_supply_d_t[dt] = Theta_in_H if is_incomplete_Heating else Theta_in_C
+            Theta_uf = expected_Theta_uf
+          else:
+            # 目標床下温度となる給気温度を探索する(二分探索)
+            # 探索範囲(冷暖房 両対応なので上下) 実行時間は許容範囲
+            L_bnd = max(expected_Theta_uf - 50, 0)
+            U_bnd = expected_Theta_uf + 50
+            tolerance = 0.001  # まずはe-3を目標とする
+
+            while (U_bnd - L_bnd > tolerance):  # 終了条件
+              test_theta_sa = (U_bnd + L_bnd) / 2  # 中間値を検証対象とする
+              # 式自体は ELSE 文と同じものをコピペして使用する
+              Theta_uf = calc_Theta_uf(test_theta_sa)
+              if Theta_uf < expected_Theta_uf:
+                L_bnd = test_theta_sa
+              else:
+                U_bnd = test_theta_sa
+
+            Theta_supply_d_t[dt] = test_theta_sa
+          Theta_uf = expected_Theta_uf
+
+        else:
+          # CHECK: 先生のエクセルが同じになるか確認しました
+          # Theta_sa_d_t[0] = 29.4
+
+          # 当該住宅の床下温度 (1)
+          Theta_supply_d_t[dt] = Theta_sa_d_t[dt]
+          Theta_uf = calc_Theta_uf(Theta_sa_d_t[dt])
 
         # 地盤またはそれを覆う基礎の表面温度 (℃) (9)
         Theta_g_surf = (((Phi_A_0 / R_g) * Theta_uf + np.sum(Theta_dash_g_surf_A_m) + Theta_g_avg)
@@ -524,7 +606,21 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_uf_d_t[dt] = Theta_uf
         Theta_g_surf_d_t[dt] = Theta_g_surf
 
-    return Theta_uf_d_t, Theta_g_surf_d_t
+
+    if di is not None  \
+      and injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value:
+
+      # 床下空調新ロジック調査用 変数出力
+      hci = di.get(HaCaInputHolder)
+      df_holder = di.get(UfVarsDataFrame)
+      df_holder.update_df({
+          f"V_sa{hci.flg_char()}_d_t_A": V_sa_d_t_A,
+          f"Theta_ex{hci.flg_char()}_d_t": Theta_ex_d_t,
+          f"Theta_uf_d_t": Theta_uf_d_t,
+          f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
+        })
+
+    return Theta_uf_d_t, Theta_g_surf_d_t, Theta_supply_d_t
 
 
 def get_Theta_g_avg(Theta_ex_d_t):

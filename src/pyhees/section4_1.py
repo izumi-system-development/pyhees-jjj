@@ -12,6 +12,7 @@ import pyhees.section3_1 as ld
 from pyhees.section3_1_a import calc_etr_dash_t
 
 from pyhees.section4_1_a import calc_heating_mode, get_default_heating_spec, get_default_heatsource
+from pyhees.section4_1_Q import get_Q_T_CS_d_t_i, get_Q_T_CL_d_t_i, get_Q_UT_CS_d_t_i, get_Q_UT_CL_d_t_i
 
 import pyhees.section9_3 as ass
 
@@ -102,18 +103,19 @@ def calc_heating_load(region, sol_region, A_A, A_MR, A_OR, Q, mu_H, mu_C, NV_MR,
 
     """
     if region == 8:
-        return np.zeros((12, 24 * 365)), np.zeros((12, 24 * 365))
+        return np.zeros((12, 24 * 365)), np.zeros((12, 24 * 365)), np.zeros((12, 24 * 365))
 
     if mode_H == '住戸全体を連続的に暖房する方式' or \
             mode_H == '居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合に該当しない場合' or \
             mode_H == '設置しない':
         # 暖房区画i=1-5それぞれの暖房負荷
-        L_T_H_d_t_i, L_dash_H_R_d_t_i = calc_L_H_d_t(region, sol_region, A_A, A_MR, A_OR, mode_H, mode_C, spec_MR, spec_OR,
+        L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = calc_L_H_d_t(region, sol_region, A_A, A_MR, A_OR, mode_H, mode_C, spec_MR, spec_OR,
                                                      mode_MR, mode_OR, Q,
                                                      mu_H, mu_C, NV_MR, NV_OR, TS, r_A_ufvnt, HEX, SHC, underfloor_insulation)
-        return L_T_H_d_t_i, L_dash_H_R_d_t_i
+        # CHECK: 暖房負荷の計算で _CS_R をするのが正しいか要確認
+        return L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i
     elif mode_H is None:
-        return None, None
+        return None, None, None
     else:
         raise ValueError(mode_H)
 
@@ -987,12 +989,12 @@ def calc_L_H_d_t(region, sol_region, A_A, A_MR, A_OR, mode_H, mode_C, H_MR, H_OR
             'r_A_ufvnt_ass': SHC['r_A_ufvnt_ass'],
         })
 
-    L_T_H_d_t_i, L_dash_H_R_d_t_i = ld.calc_L_H_d_t_i(**args)
+    L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = ld.calc_L_H_d_t_i(**args)
 
     if normalize:
         L_T_H_d_t_i[L_T_H_d_t_i < 0] = 0
 
-    return L_T_H_d_t_i, L_dash_H_R_d_t_i
+    return L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i
 
 
 def get_mode_C_array(mode_C):
@@ -1784,6 +1786,7 @@ def calc_E_E_H_hs_A_d_t(A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, H_A, L_H_d_t_i, L
         V_hs_vent_d_t=V_hs_vent_d_t,
         C_df_H_d_t=C_df_H_d_t,
         q_hs_rtd_H=q_hs_rtd_H,
+        q_hs_rtd_C=q_hs_rtd_C,
         V_hs_dsgn_H=V_hs_dsgn_H,
         P_hs_mid_H=P_hs_mid_H,
         P_hs_rtd_H=P_hs_rtd_H,
@@ -1794,7 +1797,8 @@ def calc_E_E_H_hs_A_d_t(A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, H_A, L_H_d_t_i, L
         V_fan_rtd_H=V_fan_rtd_H,
         V_fan_mid_H=V_fan_mid_H,
         EquipmentSpec=EquipmentSpec,
-        region=region
+        region=region,
+        type=type,
     )
 
     return E_E_H_d_t
@@ -2757,7 +2761,8 @@ def calc_Q_UT_CL_OR_d_t(**args):
 # 7.2 冷房設備のエネルギー消費量
 # ===================================================
 
-def calc_E_E_C_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A=None, C_MR=None, C_OR=None, L_H_d_t=None,
+def calc_E_E_C_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, q_hs_C_d_t, type, input_C_af_H, input_C_af_C,
+                   C_A=None, C_MR=None, C_OR=None, L_H_d_t=None,
                    L_CS_d_t=None, L_CL_d_t=None):
     """冷房設備の消費電力量（kWh/h） (21a)を取得する
 
@@ -2776,12 +2781,16 @@ def calc_E_E_C_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A=None, C_MR
       L_H_d_t(ndarray, optional): 暖房区画の暖房負荷 (Default value = None)
       L_CS_d_t(ndarray, optional): 冷房区画の冷房顕熱負荷 (Default value = None)
       L_CL_d_t(ndarray, optional): 冷房区画の冷房潜熱負荷 (Default value = None)
+      q_hs_C_d_t: 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力（W）
+      type: 暖房設備機器の種類
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
 
     Returns:
       ndarray: 冷房設備の消費電力量（kWh/h）
 
     """
-    return calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t)
+    return calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t, type, q_hs_C_d_t, input_C_af_H, input_C_af_C)
 
 
 def calc_E_G_C_d_t(**args):
@@ -2827,7 +2836,7 @@ def calc_E_M_C_d_t(**args):
 # 7.3 冷房設備機器のエネルギー消費量
 # ===================================================
 
-def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t):
+def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t, type, q_hs_C_d_t, input_C_af_H, input_C_af_C):
     """冷房設備機器の消費電力量（kWh/h）(22a, 23a)を取得する
 
     Args:
@@ -2845,6 +2854,10 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
       L_H_d_t(ndarray): 暖房区画の暖房負荷
       L_CS_d_t(ndarray): 冷房区画の冷房顕熱負荷
       L_CL_d_t(ndarray): 冷房区画の冷房潜熱負荷
+      type: 暖房設備機器の種類
+      q_hs_C_d_t: 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力（W）
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
 
     Returns:
       ndarray: 冷房設備機器の消費電力量（kWh/h）
@@ -2918,7 +2931,7 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
         X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, _ = dc.calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H,
                                                                        q_hs_rtd_C, V_hs_dsgn_H, V_hs_dsgn_C, Q, VAV,
                                                                        general_ventilation, duct_insulation, region,
-                                                                       L_H_d_t, L_CS_d_t, L_CL_d_t)
+                                                                       L_H_d_t, L_CS_d_t, L_CL_d_t, type, input_C_af_H, input_C_af_C)
 
         E_E_C_d_t_i = dc_a.get_E_E_C_d_t(
             Theta_hs_out_d_t=Theta_hs_out_d_t,
@@ -2938,7 +2951,8 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
             V_fan_rtd_C=V_fan_rtd_C,
             V_fan_mid_C=V_fan_mid_C,
             EquipmentSpec=EquipmentSpec,
-            region=region
+            region=region,
+            type=type,
         )
 
         return E_E_C_d_t_i
