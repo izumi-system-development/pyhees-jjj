@@ -1,24 +1,35 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
-name="pyhees"
-authors = [
-    {name = "Pyhees Development Team"}
+[tool.poetry]
+name = "pyhees-jjj"
+version = "0.1.1"
+description = "Pyheesの検証用のフォークプロジェクトです"
+homepage = "https://github.com/izumi-system-development/pyhees-jjj"
+authors = ["Pyhees Development Team"]
+license = "file:LICENSE"
+readme = "src/jjjexperiment/README.md"
+packages = [
+    { include = "jjjexperiment", from = "src" },
+    { include = "pyhees", from = "src" },
 ]
-version="3.8.0"
-license = {file = "LICENSE"}
 
-dependencies = [
-    "numpy >= 1.24.3",
-    "pandas >= 2.0.1",
-    "scipy >= 1.10.1",
-]
+# 追加方法: poetry add numpy
+# 削除方法: poetry remove numpy
+[tool.poetry.dependencies]
+python = "~3.11"  # 3.11.x (= google colab ver.)
+numpy = "~2.0"  # 2.0.x (= google colab ver.)
+pandas = ">=2.0.1"
+scipy = ">=1.10.1"
+injector = "*"
+pydantic = "^2.10.6"
+pyyaml = "^6.0.2"
 
-[tool.setuptools]
-include-package-data = true
+# 追加方法: poetry add --group dev pytest
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["pyhees"]
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+python_files = ["test_*.py"]

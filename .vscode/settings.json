@@ -1,0 +1,13 @@
+{
+    "python.venvPath": "${workspaceFolder}/.venv",
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
+    "python.testing.pytestArgs": ["src/tests"],
+    "[yaml]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true
+    },
+    "IDX.aI.enableInlineCompletion": true,
+    "IDX.aI.enableCodebaseIndexing": true,
+    "kiroAgent.configureMCP": "Disabled"
+}

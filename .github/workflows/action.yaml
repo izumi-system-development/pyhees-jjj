@@ -1,0 +1,51 @@
+name: Run pytest
+
+on: [push]
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      # リポジトリをチェックアウト
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # NOTE: Poetry仮想環境を使用している時であってもバージョン指定する場合には必要
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: .devcontainer/post-create.sh
+
+      - name: Prevent Slow Causes
+        # テスト実行時にロガーが動いてしまわないようにする
+        run: .github/workflows/turn-off-logger.sh
+
+      # pytest -> JUnit xml形式で結果を出力
+      - name: Execute pytest
+        run: |
+          poetry run pytest src/tests --junit-xml results/pytest.xml
+        # CHECK: テストファイル毎に実行を分割するか検討
+        continue-on-error: false
+
+      # テスト結果の表示
+      - name: Upload Unit Test Results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unit Test Results Python
+          path: results/*.xml
+
+      - name: Download Artifacts
+        if: success() || failure()
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          junit_files: artifacts/**/*.xml
