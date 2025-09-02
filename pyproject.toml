@@ -18,7 +18,7 @@ packages = [
 # 追加方法: poetry add numpy
 # 削除方法: poetry remove numpy
 [tool.poetry.dependencies]
-python = "~3.11"  # 3.11.x (= google colab ver.)
+python = ">=3.12.11,<3.13"  # 3.12.11+ (= google colab ver.)
 numpy = "~2.0"  # 2.0.x (= google colab ver.)
 pandas = ">=2.0.1"
 scipy = ">=1.10.1"
