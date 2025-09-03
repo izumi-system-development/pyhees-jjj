@@ -1,0 +1,25 @@
+# 共通の入力ファイル
+
+# 直接値を入力するもののみ
+# 式から計算するものは含まないこと
+A_A: 120.08
+A_MR: 29.81
+A_OR: 51.34
+region: 6
+sol_region: null
+A_env: 307.51
+U_A: 0.87
+eta_A_C: 2.8
+eta_A_H: 4.3
+# 蓄熱
+TS: False
+r_A_ufvnt: null  # [%]
+hs_CAV: False
+change_underfloor_temperature: 1  # 床下空調なし
+R_g: 0.15
+H_A:
+  type: 1
+  input: 1
+C_A:
+  type: 1
+  input: 1

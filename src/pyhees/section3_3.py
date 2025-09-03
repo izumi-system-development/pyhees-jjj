@@ -291,11 +291,8 @@ Wall_simple---Wall要素のノード名をkey、値をvalueとして持つ辞書
 |       'FrameRigidFloor'(軸組構法（剛床工法）) または
 |       'FrameSameLevel'(軸組構法（床梁土台同面工法）) または
 |       'FrameWall'(軸組構法（外壁）) または
-|       'FrameCeiling'(軸組構法（天井）) または
-|       'FrameRoof'(軸組構法（屋根）) または
 |       'WallFloor'(枠組構法（床）) または
-|       'WallWall'(枠組構法（外壁）) または
-|       'WallRoof'(枠組構法（屋根）)
+|       'WallWall'(枠組構法（外壁）)
 |--'InsulationPlace': 断熱箇所
 |       'FloorJoistInterval'(根太間) または 'FloorBeamInterval'(大引間) または
 |       'FloorJoistBeamInterval'(根太間＋大引間) または 'PillarInterval'(柱・間柱間) または
@@ -667,7 +664,7 @@ Window---Window要素のノード名をkey、値をvalueとして持つ辞書
     |--'SashSpecForInnerWindow': 建具仕様(内窓)
     |       'WoodenOrResin'(木製建具又は樹脂製建具) または 'Mix'(木と金属の複合材料製建具又は樹脂と金属の複合材料製建具) または 
     |       'MetallicInsulated'(金属製熱遮断構造建具) または 'Metalic'(金属製建具) 
-    |--'GlassSpecForCategory': ガラス仕様（区分）
+    |--'GlassSpecForCategory': ガラス仕様の区分
     |       'Single'(単層) または '2Pair'(二層複層) または '3Pair'(三層以上の複層)
     |--'Attachment': 付属品部材
     |       'No'(なし) または 'Shutter'(シャッター) または 'Shoji'(障子) または 'WindbreakSpace'(風除室) または 'ExteriorBlind'(外付けブラインド)     

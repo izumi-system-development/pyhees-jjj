@@ -5,7 +5,7 @@
 # ============================================================================
 
 import numpy as np
-import pyhees.section7_1_o as solar
+import pyhees.section7_1_g as solar
 import pyhees.section9_2_a as lss1
 import pyhees.section9_2_b as lss2
 import pyhees.section9_2_c as lss3

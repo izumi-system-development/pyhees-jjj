@@ -12,19 +12,25 @@ from pyhees.section4_1_Q import get_Q_T_H_d_t_i
 # 5. 最大暖房出力
 # ============================================================================
 
-def get_Q_max_H_d_t(A_f):
+def get_Q_max_H_d_t(A_f, low_power_mode):
     """最大暖房出力
 
     Args:
-      A_f(float): 敷設面積
+        A_f (float): 敷設面積 (m2)
+        low_power_mode (bool): True: 低出力モードで評価する | False: 低出力モードで評価しない
 
     Returns:
-      ndarray: 最大暖房出力
+        ndarray: 最大暖房出力 (MJ/h)
 
     """
+    # 単位面積当たりの上面最大放熱能力
     q_max_H = 162.0
-    return np.ones(24 * 365) * q_max_H * A_f * 3600 * 10 ** (-6)  # (1)
 
+    # 低出力モードを評価する場合は、49.5 W/m2とする。
+    if low_power_mode:
+      q_max_H = 49.5
+
+    return np.ones(24 * 365) * q_max_H * A_f * 3600 * 10 ** (-6)  # (1)
 
 # ============================================================================
 # 6. 暖房エネルギー消費量
@@ -34,20 +40,21 @@ def get_Q_max_H_d_t(A_f):
 # 6.1 消費電力量
 # ============================================================================
 
-def calc_E_E_H_d_t(A_f, r_up, L_H_d_t):
+def calc_E_E_H_d_t(A_f, r_up, L_H_d_t, low_power_mode):
     """消費電力量
 
     Args:
-      A_f(float): 敷設面積
-      r_up(float): 温水床暖房の上面放熱率
-      L_H_d_t(ndarray): 暖冷房区画の１時間当たりの暖房負荷
+        A_f (float): 敷設面積 (m2)
+        r_up (float): 温水床暖房の上面放熱率 (-)
+        L_H_d_t (ndarray): 暖冷房区画の１時間当たりの暖房負荷 (MJ/h)
+        low_power_mode (bool): True: 低出力モードで評価する | False: 低出力モードで評価しない
 
     Returns:
-      ndarray: 消費電力量
+        ndarray: 消費電力量 (kWh)
 
     """
     # 最大暖房出力
-    Q_max_H_d_t = get_Q_max_H_d_t(A_f)
+    Q_max_H_d_t = get_Q_max_H_d_t(A_f, low_power_mode)
 
     # 処理暖房負荷
     Q_T_H_d_t = get_Q_T_H_d_t_i(Q_max_H_d_t, L_H_d_t)
@@ -58,20 +65,21 @@ def calc_E_E_H_d_t(A_f, r_up, L_H_d_t):
     return E_E_H_d_t
 
 
-def calc_Q_UT_H_d_t(A_f, r_up, L_H_d_t):
+def calc_Q_UT_H_d_t(A_f, L_H_d_t, low_power_mode):
     """未処理暖房負荷
 
     Args:
-      A_f(float): 敷設面積
-      r_up(float): 温水床暖房の上面放熱率
-      L_H_d_t(ndarray): 暖冷房区画の１時間当たりの暖房負荷
+        A_f (float): 敷設面積 (m2)
+        L_H_d_t (ndarray): 暖冷房区画の１時間当たりの暖房負荷 (MJ/h)
+        low_power_mode (bool): True: 低出力モードで評価する | False: 低出力モードで評価しない
+
 
     Returns:
-      ndarray: 未処理暖房負荷
+        ndarray: 未処理暖房負荷 (MJ/h)
 
     """
     # 最大暖房出力
-    Q_max_H_d_t = get_Q_max_H_d_t(A_f)
+    Q_max_H_d_t = get_Q_max_H_d_t(A_f, low_power_mode)
 
     # 処理暖房負荷
     Q_T_H_d_t = get_Q_T_H_d_t_i(Q_max_H_d_t, L_H_d_t)
@@ -128,26 +136,3 @@ def get_E_M_H_d_t():
 
     """
     return np.zeros(24 * 365)
-
-
-if __name__ == '__main__':
-    # ダミー負荷
-    L_H_d_t = np.ones(24 * 365) * 12
-
-    # 設定値
-    A_f = 15.0
-    r_up = 0.75
-
-    # FF暖房
-    E_E_H_d_t = calc_E_E_H_d_t(
-        A_f=A_f,
-        r_up=r_up,
-        L_H_d_t=L_H_d_t
-    )
-    E_G_H_d_t = get_E_G_H_d_t()
-    E_K_H_d_t = get_E_K_H_d_t()
-    E_M_H_d_t = get_E_M_H_d_t()
-    print('E_E_H = {} '.format(np.sum(E_E_H_d_t)))
-    print('E_G_H = {} '.format(np.sum(E_G_H_d_t)))
-    print('E_K_H = {} '.format(np.sum(E_K_H_d_t)))
-    print('E_M_H = {} '.format(np.sum(E_M_H_d_t)))

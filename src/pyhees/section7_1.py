@@ -1,6 +1,6 @@
 # ============================================================================
 # 第七章 給湯設備
-# 第一節 給湯設備
+# 第一節 全般
 # Ver.18（エネルギー消費性能計算プログラム（住宅版）Ver.02.05～）
 # ============================================================================
 
@@ -9,18 +9,18 @@ import numpy as np
 from functools import lru_cache
 
 import pyhees.section7_1_b as default
-import pyhees.section7_1_c as gas
-import pyhees.section7_1_d as oil
-import pyhees.section7_1_e as eheatpump
-import pyhees.section7_1_f as eheater
-import pyhees.section7_1_g as hybrid_gas
-import pyhees.section7_1_g_3 as hybrid_gas_3
-import pyhees.section7_1_h as gas_hybrid_with_tank
-import pyhees.section7_1_n as gas_hybrid_tankless
-import pyhees.section7_1_i as whybrid
-import pyhees.section7_1_j as watersaving
-import pyhees.section7_1_m as schedule
-import pyhees.section7_1_o as solar
+import pyhees.section7_1_c as watersaving
+import pyhees.section7_1_f as schedule
+import pyhees.section7_1_g as solar
+import pyhees.section7_2 as gas
+import pyhees.section7_3 as oil
+import pyhees.section7_4 as eheatpump
+import pyhees.section7_5 as eheater
+import pyhees.section7_6_a as hybrid_gas
+import pyhees.section7_6_a_3 as hybrid_gas_3
+import pyhees.section7_6_b as gas_hybrid_with_tank
+import pyhees.section7_6_c as gas_hybrid_tankless
+import pyhees.section7_6_d as whybrid
 
 import pyhees.section9_2 as lss
 from pyhees.section9_2_d import is_installed_hw_type
@@ -95,17 +95,12 @@ def calc_hotwater_load(n_p, region, sol_region, has_bath, bath_function, pipe_di
 
     # 外部環境
     climate = load_climate(region)
-    Theta_ex_d_t = get_Theta_ex(climate)
-
-    # ----- 14. 夜間平均外気温度 -----
-
-    # 夜間平均外気温度 (℃) (15)
-    Theta_ex_Nave_d = get_Theta_ex_Nave_d(Theta_ex_d_t)
+    theta_ex_d_t = get_Theta_ex(climate)
 
     # ----- 13. 日平均外気温度 -----
 
     # 日平均外気温度 (℃) (14)
-    theta_ex_d_Ave_d = get_theta_ex_d_Ave_d(Theta_ex_d_t)
+    theta_ex_d_Ave_d = get_theta_ex_d_Ave_d(theta_ex_d_t)
 
     # ----- 12. 日平均給水温度 -----
 
@@ -302,13 +297,13 @@ def calc_hotwater_load(n_p, region, sol_region, has_bath, bath_function, pipe_di
         'W_dash_b2_d_t': W_dash_b2_d_t,
         'W_dash_ba1_d_t': W_dash_ba1_d_t,
         'theta_ex_d_Ave_d': theta_ex_d_Ave_d,
-        'Theta_ex_Nave_d': Theta_ex_Nave_d,
+        'theta_ex_d_t': theta_ex_d_t,
         'bathtub_filling_method_d_t': bathtub_filling_method_d_t
     }
 
 
 # ============================================================================
-# 19. 太陽熱利用設備から供給される水の温度
+# 18. 太陽熱利用設備から供給される水の温度
 # ============================================================================
 
 
@@ -440,6 +435,10 @@ def get_L_sun_d_t(hw_connection_type, solar_device, solar_water_tap, Theta_sw_s,
         raise ValueError(solar_device)
 
 
+# ============================================================================
+# 5.1 消費電力量
+# ============================================================================
+
 def calc_E_E_W_d_t(n_p, L_HWH, heating_flag_d, region, sol_region, HW, SHC):
     """1時間当たりの給湯設備の消費電力量 (1)
 
@@ -545,10 +544,12 @@ def calc_E_E_W_d_t(n_p, L_HWH, heating_flag_d, region, sol_region, HW, SHC):
         W_dash_b2_d_t=hotwater_load['W_dash_b2_d_t'],
         W_dash_ba1_d_t=hotwater_load['W_dash_ba1_d_t'],
         theta_ex_d_Ave_d=hotwater_load['theta_ex_d_Ave_d'],
-        Theta_ex_Nave_d=hotwater_load['Theta_ex_Nave_d'],
+        theta_ex_d_t=hotwater_load['theta_ex_d_t'],
         L_HWH=L_HWH,
         CO2HP=HW['CO2HP'] if 'CO2HP' in HW else None,
         daytime_heating=HW['daytime_heating'] if 'daytime_heating' in HW else False,
+        R_E_day_in=HW['R_E_day'] if 'R_E_day' in HW else None,
+        daytime_heating_control_in=HW['daytime_heating_control'] if 'daytime_heating_control' in HW else None
     )
 
     # 太陽利用設備の補機の消費電力量
@@ -720,7 +721,6 @@ def calc_E_G_W_d_t(n_p, L_HWH, heating_flag_d, A_A, region, sol_region, HW, SHC)
         W_dash_b2_d_t=hotwater_load['W_dash_b2_d_t'],
         W_dash_ba1_d_t=hotwater_load['W_dash_ba1_d_t'],
         Theta_ex_Ave=hotwater_load['theta_ex_d_Ave_d'],
-        Theta_ex_Nave=hotwater_load['Theta_ex_Nave_d'],
         L_HWH=L_HWH,
         hybrid_param=HW.get('hybrid_param'),
         bathtub_filling_method_d_t=hotwater_load['bathtub_filling_method_d_t']
@@ -855,12 +855,12 @@ def get_E_M_W_d_t():
 # ============================================================================
 
 
-def calc_E_E_hs_d_t(hw_type, bath_function, package_id, hybrid_param, hybrid_category, e_rtd, e_dash_rtd, Theta_ex_Nave_d, W_dash_k_d_t, W_dash_s_d_t,
+def calc_E_E_hs_d_t(hw_type, bath_function, package_id, hybrid_param, hybrid_category, e_rtd, e_dash_rtd, theta_ex_d_t, W_dash_k_d_t, W_dash_s_d_t,
                     W_dash_w_d_t,
                     W_dash_b1_d_t,
                     W_dash_b2_d_t, W_dash_ba1_d_t, theta_ex_d_Ave_d, L_dashdash_k_d_t, L_dashdash_s_d_t, L_dashdash_w_d_t,
                     L_dashdash_b1_d_t,
-                    L_dashdash_b2_d_t, L_dashdash_ba1_d_t, L_dashdash_ba2_d_t, L_HWH, CO2HP, daytime_heating):
+                    L_dashdash_b2_d_t, L_dashdash_ba1_d_t, L_dashdash_ba2_d_t, L_HWH, CO2HP, daytime_heating, R_E_day_in, daytime_heating_control_in):
     """1時間当たりの給湯機の消費電力量 (kWh/h)
 
     Args:
@@ -871,7 +871,7 @@ def calc_E_E_hs_d_t(hw_type, bath_function, package_id, hybrid_param, hybrid_cat
       hybrid_param(dic): ハイブリッドパラメーター
       e_rtd(float): 当該給湯機の効率
       e_dash_rtd(float): エネルギーの使用の合理化に関する法律」に基づく「特定機器の性能の向上に関する製造事業者等の 判断の基準等」（ガス温水機器）に定義される「エネルギー消費効率」
-      Theta_ex_Nave_d(ndarray): 夜間平均外気温 (℃)
+      theta_ex_d_t(ndarray, optional): 日付dの時刻tにおける外気温度 (℃) (Default value = None)
       W_dash_k_d_t(ndarray): 1時間当たりの台所水栓における節湯補正給湯量 (L/d)
       W_dash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における節湯補正給湯量 (L/d)
       W_dash_w_d_t(ndarray): 1時間当たりの洗面水栓における節湯補正給湯量 (L/d)
@@ -889,6 +889,8 @@ def calc_E_E_hs_d_t(hw_type, bath_function, package_id, hybrid_param, hybrid_cat
       L_HWH(ndarray): 1日当たりの温水暖房の熱負荷 (MJ/d)
       CO2HP(dict): CO2HPのパラメーター
       daytime_heating(bool): 昼間沸上げを評価するかのフラグ
+      R_E_day_in(float): 昼間消費電力量比率（入力値） (%)
+      daytime_heating_control_in(str): 昼間沸き上げ時間帯の制御（入力値）
 
     Returns:
       ndarray: 1時間当たりの給湯機の消費電力量 (MJ/h)
@@ -921,9 +923,11 @@ def calc_E_E_hs_d_t(hw_type, bath_function, package_id, hybrid_param, hybrid_cat
             L_dashdash_ba1_d_t=L_dashdash_ba1_d_t,
             L_dashdash_ba2_d_t=L_dashdash_ba2_d_t,
             daytime_heating=daytime_heating,
+            R_E_day_in=R_E_day_in,
+            daytime_heating_control_in=daytime_heating_control_in,
             e_rtd=e_rtd,
             theta_ex_d_Ave_d=theta_ex_d_Ave_d,
-            theta_ex_Nave_d=Theta_ex_Nave_d,
+            theta_ex_d_t=theta_ex_d_t,
             CO2HP=CO2HP
         )
     elif hw_type == '電気ヒーター給湯機' or hw_type == '電気ヒーター給湯温水暖房機':
@@ -1001,7 +1005,7 @@ def calc_E_E_hs_d_t(hw_type, bath_function, package_id, hybrid_param, hybrid_cat
         raise ValueError(hw_type)
 
 
-def calc_E_G_hs_d(hw_type, hybrid_category, e_rtd, e_dash_rtd, bath_function, bathtub_filling_method_d_t, package_id, Theta_ex_Nave, W_dash_k_d_t, W_dash_s_d_t,
+def calc_E_G_hs_d(hw_type, hybrid_category, e_rtd, e_dash_rtd, bath_function, bathtub_filling_method_d_t, package_id, W_dash_k_d_t, W_dash_s_d_t,
                  W_dash_w_d_t, W_dash_b1_d_t, W_dash_b2_d_t, W_dash_ba1_d_t, Theta_ex_Ave, L_dashdash_k_d_t,
                  L_dashdash_s_d_t, L_dashdash_w_d_t,
                  L_dashdash_b1_d_t, L_dashdash_b2_d_t, L_dashdash_ba1_d_t, L_dashdash_ba2_d_t, L_HWH, hybrid_param):
@@ -1013,7 +1017,6 @@ def calc_E_G_hs_d(hw_type, hybrid_category, e_rtd, e_dash_rtd, bath_function, ba
       e_rtd(float): 当該給湯機の効率
       e_dash_rtd(float): エネルギーの使用の合理化に関する法律」に基づく「特定機器の性能の向上に関する製造事業者等の 判断の基準等」（ガス温水機器）に定義される「エネルギー消費効率」
       bath_function(str): ふろ機能の種類
-      Theta_ex_Nave(ndarray): 夜間平均外気温 (℃)
       W_dash_k_d_t(ndarray): 1時間当たりの台所水栓における節湯補正給湯量 (L/h)
       W_dash_s_d_t(ndarray): 1時間当たりの浴室シャワー水栓における節湯補正給湯量 (L/h)
       W_dash_w_d_t(ndarray): 1時間当たりの洗面水栓における節湯補正給湯量 (L/h)
@@ -1871,7 +1874,7 @@ def calc_W_k_p_d_t(p, schedule_hw):
       ndarray: 1時間当たりの居住人数がp人における台所水栓における基準給湯量 (L/h)
     """
     # 読み取るべき表の選択
-    table = schedule.get_table_m_for_p(p)
+    table = schedule.get_table_for_p(p)
 
     # 作業用
     W_k_p_d_t = np.zeros(24 * 365)
@@ -1899,7 +1902,7 @@ def calc_W_s_p_d_t(p, schedule_hw, has_bath):
       ndarray: 1時間当たりの居住人数がp人における洗面シャワー水栓における基準給湯量 (L/h)
     """
     # 読み取るべき表の選択
-    table = schedule.get_table_m_for_p(p)
+    table = schedule.get_table_for_p(p)
 
     # 作業用
     W_s_p_d_t = np.zeros(24 * 365)
@@ -1929,7 +1932,7 @@ def calc_W_w_p_d_t(p, schedule_hw):
       ndarray: 1日当たりの居住人数がp人における洗面水栓における基準給湯量 (L/d)
     """
     # 読み取るべき表の選択
-    table = schedule.get_table_m_for_p(p)
+    table = schedule.get_table_for_p(p)
 
     # 作業用
     W_w_p_d_t = np.zeros(24 * 365)
@@ -2028,7 +2031,7 @@ def calc_W_b_p_d_t(p, schedule_hw, has_bath):
       ndarray: 1時間あたりの居住人数がp人における浴槽湯はり時における基準給湯量 (L/h)
     """
     # 読み取るべき表の選択
-    table = schedule.get_table_m_for_p(p)
+    table = schedule.get_table_for_p(p)
 
     # 作業用
     W_b_p_d_t = np.zeros(24 * 365)
@@ -2059,7 +2062,7 @@ def calc_n_b_p_d_t(p, schedule_hw, has_bath):
       ndarray: 1時間あたりの居住人数がp人における入浴人数(人/h)
     """
     # 読み取るべき表の選択
-    table = schedule.get_table_m_for_p(p)
+    table = schedule.get_table_for_p(p)
 
     # 作業用
     n_b_p_d_t = np.zeros(24 * 365)
@@ -2329,40 +2332,7 @@ def get_theta_ex_d_Ave_d(Theta_ex_d_t):
 
 
 # ============================================================================
-# 14. 夜間平均外気温度
-# ============================================================================
-
-def get_Theta_ex_Nave_d(Theta_ex_d_t):
-    """夜間平均外気温度 (℃) (15)
-
-    Args:
-      Theta_ex_d_t(ndarray): 外気温度 (℃)
-
-    Returns:
-      ndarray: 夜間平均外気温度 (℃)
-    """
-    # 1時間後ろに配列をずらす(そして、12月31日23時を1月1日0時に移動させる)
-    tmp = np.roll(Theta_ex_d_t, 1)
-
-    # ** 1時間ずらしたので、前日23時から当日7時までの代わりに、当日0時から8時までの平均を計算すればよい **
-
-    # 8760時間の一次配列を365*24の二次配列へ再配置させる
-    tmp = tmp.reshape(365, 24)
-
-    # 8時～23時を0にする
-    tmp[:, 8:] = 0
-
-    # 配列の2次元目を合算して2次元目を消す
-    tmp = np.sum(tmp, axis=1)
-
-    # 8で割ることで平均化する
-    Theta_ex_Nave_d = tmp / 8
-
-    return Theta_ex_Nave_d
-
-
-# ============================================================================
-# 15. 温水温度の熱負荷
+# 14. 温水温度の熱負荷
 # ============================================================================
 
 def get_L_HWH_d(L_HWH_d_t):
@@ -2401,7 +2371,7 @@ def calc_Q_W_dmd_excl_ba2_d_t(L_dash_k_d_t, L_dash_s_d_t, L_dash_w_d_t, L_dash_b
 
 
 # ============================================================================
-# 20. 浴槽湯張りの方法
+# 19. 浴槽湯張りの方法
 # ============================================================================
 
 def get_bathtub_filling_method_d_t(hw_connection_type, hw_type, solar_device, L_sun_total_d_t):

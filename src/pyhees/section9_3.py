@@ -9,7 +9,7 @@ import numpy as np
 from pyhees.section3_1_heatingday import get_heating_flag_d
 
 import pyhees.section3_1_e as algo
-import pyhees.section7_1_o as solar
+import pyhees.section7_1_g as solar
 
 from pyhees.section11_2 import calc_I_s_d_t, get_Theta_ex
 
@@ -84,9 +84,9 @@ def calc_delta_L_dash_H_ass_d_t_i(i, supply_target, L_dash_H_R_d_t_i, L_dash_CS_
 
     # 当該住戸の暖冷房区画iの外気を導入する床下空間に接する床の面積
     if supply_target == '床下':
-        A_s_ufvnt_i = algo.calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR)
+        A_s_ufvnt = algo.calc_A_s_ufvnt_i(i, r_A_ufvnt, A_A, A_MR, A_OR)
     else:
-        A_s_ufvnt_i = None
+        A_s_ufvnt = None
 
     # 暖冷房負荷計算時に想定した床の熱貫流率 (W/m2K)
     U_s_vert = algo.get_U_s_vert(region, Q)
@@ -105,7 +105,7 @@ def calc_delta_L_dash_H_ass_d_t_i(i, supply_target, L_dash_H_R_d_t_i, L_dash_CS_
 
     # 床下温度及び地盤またはそれを覆う基礎の表面温度 (℃)
     if supply_target == '床下':
-        Theta_uf_d_t, Theta_g_surf_d_t = algo.calc_Theta(
+        Theta_uf_d_t, Theta_g_surf_d_t, *others = algo.calc_Theta(
             region=region,
             A_A=A_A,
             A_MR=A_MR,
@@ -119,8 +119,8 @@ def calc_delta_L_dash_H_ass_d_t_i(i, supply_target, L_dash_H_R_d_t_i, L_dash_CS_
             # 温度・負荷
             Theta_sa_d_t=Theta_sa_d_t,
             Theta_ex_d_t=Theta_ex_d_t,
-            L_dash_H_R_d_t=L_dash_H_R_d_t_i,
-            L_dash_CS_R_d_t=L_dash_CS_R_d_t_i
+            L_dash_H_R_d_t_i=L_dash_H_R_d_t_i,
+            L_dash_CS_R_d_t_i=L_dash_CS_R_d_t_i
         )
     else:
         Theta_uf_d_t, Theta_g_surf_d_t = None, None
@@ -135,7 +135,7 @@ def calc_delta_L_dash_H_ass_d_t_i(i, supply_target, L_dash_H_R_d_t_i, L_dash_CS_
     delta_L_dash_H_ass_d_t_i = get_delta_L_dash_H_ass_d_t_i(
         # 床下の設定
         supply_target=supply_target,
-        A_s_ufvnt_i=A_s_ufvnt_i,
+        A_s_ufvnt_i=A_s_ufvnt,
         U_s_vert=U_s_vert,
         V_sa_d_t_i=V_sa_d_t_i,
         r_sa_d_t=r_sa_d_t,

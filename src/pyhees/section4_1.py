@@ -12,6 +12,7 @@ import pyhees.section3_1 as ld
 from pyhees.section3_1_a import calc_etr_dash_t
 
 from pyhees.section4_1_a import calc_heating_mode, get_default_heating_spec, get_default_heatsource
+from pyhees.section4_1_Q import get_Q_T_CS_d_t_i, get_Q_T_CL_d_t_i, get_Q_UT_CS_d_t_i, get_Q_UT_CL_d_t_i
 
 import pyhees.section9_3 as ass
 
@@ -55,6 +56,12 @@ import pyhees.section4_7_l as rad_floor
 import pyhees.section4_8 as racfh
 import pyhees.section4_8_a as racfh_spec
 
+# ペレットストーブ
+import pyhees.section4_10 as ps
+
+# その他
+import pyhees.section11_1 as other
+
 
 ###################################################
 # 6. 暖房設備の一次エネルギー消費量及び処理負荷と未処理負荷
@@ -96,18 +103,19 @@ def calc_heating_load(region, sol_region, A_A, A_MR, A_OR, Q, mu_H, mu_C, NV_MR,
 
     """
     if region == 8:
-        return np.zeros((12, 24 * 365)), np.zeros((12, 24 * 365))
+        return np.zeros((12, 24 * 365)), np.zeros((12, 24 * 365)), np.zeros((12, 24 * 365))
 
     if mode_H == '住戸全体を連続的に暖房する方式' or \
             mode_H == '居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合に該当しない場合' or \
             mode_H == '設置しない':
         # 暖房区画i=1-5それぞれの暖房負荷
-        L_T_H_d_t_i, L_dash_H_R_d_t_i = calc_L_H_d_t(region, sol_region, A_A, A_MR, A_OR, mode_H, mode_C, spec_MR, spec_OR,
+        L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = calc_L_H_d_t(region, sol_region, A_A, A_MR, A_OR, mode_H, mode_C, spec_MR, spec_OR,
                                                      mode_MR, mode_OR, Q,
                                                      mu_H, mu_C, NV_MR, NV_OR, TS, r_A_ufvnt, HEX, SHC, underfloor_insulation)
-        return L_T_H_d_t_i, L_dash_H_R_d_t_i
+        # CHECK: 暖房負荷の計算で _CS_R をするのが正しいか要確認
+        return L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i
     elif mode_H is None:
-        return None, None
+        return None, None, None
     else:
         raise ValueError(mode_H)
 
@@ -167,7 +175,7 @@ def calc_Q_UT_H_A_d_t(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_rtd_C
 #     return np.sum([get_Q_T_H_d_t_i(i) for i in range(2, 6)], axis=0)
 
 
-def calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG, L_T_H_d_t):
+def calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, Q, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG, L_T_H_d_t):
     """主たる居室に設置された暖房設備の未処理暖房負荷 (2b)
 
     Args:
@@ -175,6 +183,7 @@ def calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
       A_A(float): 床面積の合計 (m2)
       A_MR(float): 主たる居室の床面積 (m2)
       A_OR(float): その他の居室の床面積 (m2)
+      Q(float): 当該住戸の熱損失係数 (W/m2K)
       spec_MR(dict): 主たる居室の暖房機器の仕様
       spec_OR(dict): その他の居室の暖房機器の仕様
       spec_HS(dict): 温水暖房機の仕様
@@ -188,14 +197,17 @@ def calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
       ndarray: 住戸全体を連続的に暖房する方式における1時間当たりの主たる居室の暖房設備の未処理暖房負荷(MJ/h)
 
     """
-    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
-        # 主たる居室で温水床暖房とエアコンを併用する場合か否か
-        racfh_combed = spec_MR['type'] == '温水床暖房（併用運転に対応）'
+    # 温水暖房機の種類
+    hs_type = spec_HS['type']
 
-        # 送水温度の決定
-        Theta_SW_hs_op = hwh.get_Theta_SW_hs_op(spec_HS['type'], HW, CG, racfh_combed)
+    # 低出力モード
+    hs_low_power_mode = spec_HS.get('low_power_mode')
+    
+    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
+        
+        Theta_SW_hs_op = hwh.get_Theta_SW_hs_op(hs_type, hs_low_power_mode, HW, CG)
         rad_list = hwh.get_rad_list(spec_MR, spec_OR)
-        p_hs_d_t = hwh.calc_p_hs_d_t(Theta_SW_hs_op, rad_list, L_T_H_d_t, A_A, A_MR, A_OR, region, mode_MR, mode_OR)
+        p_hs_d_t = hwh.calc_p_hs_d_t(Theta_SW_hs_op, rad_list, L_T_H_d_t, A_A, A_MR, A_OR, region, mode_MR, mode_OR, hs_type, hs_low_power_mode, HW, CG)
         Theta_SW_d_t = hwh.get_Theta_SW_d_t(Theta_SW_hs_op, p_hs_d_t)
 
         if spec_MR['type'] == '温水暖房用パネルラジエーター':
@@ -207,13 +219,15 @@ def calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
             q_max_rad = rad_panel.calc_q_max_rad(region, mode_MR, A_HCZ, R_type)
             # パネルラジエーターの最大暖房出力
             Q_max_H_rad = rad_panel.get_Q_max_H_rad(Theta_SW_d_t, q_max_rad)
-        elif spec_MR['type'] in ['温水暖房用床暖房', '温水床暖房（併用運転に対応）']:
+        elif spec_MR['type'] == '温水暖房用床暖房':
             # 床面積
             A_HCZ = calc_A_HCZ_i(1, A_A, A_MR, A_OR)
             r_Af = spec_MR.get('r_Af')
             A_f = rad_floor.get_A_f(A_HCZ, r_Af)
+            
+            r_WS_rad_max = hwh.calc_r_WS_rad_max(hs_type, hs_low_power_mode, HW, CG)
             # 温水床暖房の単位面積当たりの上面最大放熱能力
-            Q_max_H_rad = rad_floor.get_Q_max_H_rad(Theta_SW_d_t, A_f, racfh_combed)
+            Q_max_H_rad = rad_floor.get_Q_max_H_rad(Theta_SW_d_t, A_f, r_WS_rad_max)
         elif spec_MR['type'] == '温水暖房用ファンコンベクター':
             # 床面積
             A_HCZ = calc_A_HCZ_i(1, A_A, A_MR, A_OR)
@@ -233,10 +247,10 @@ def calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
 
         return Q_UT_H_d_t_i
     else:
-        return calc_Q_UT_H_d_t(1, spec_MR, A_A, A_MR, A_OR, region, mode_MR, L_T_H_d_t[0])
+        return calc_Q_UT_H_d_t(1, spec_MR, A_A, A_MR, A_OR, Q, region, mode_MR, L_T_H_d_t[0], hs_type, hs_low_power_mode, HW, CG)
 
 
-def calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG, L_T_H_d_t):
+def calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, Q, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG, L_T_H_d_t):
     """その他の居室に設置された暖房設備の未処理暖房負荷 (3b)
 
     Args:
@@ -244,6 +258,7 @@ def calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
       A_A(float): 床面積の合計 (m2)
       A_MR(float): 主たる居室の床面積 (m2)
       A_OR(float): その他の居室の床面積 (m2)
+      Q(float): 当該住戸の熱損失係数 (W/m2K)
       spec_MR(dict): 主たる居室の暖房機器の仕様
       spec_OR(dict): その他の居室の暖房機器の仕様
       spec_HS(dict): 温水暖房機の仕様
@@ -261,15 +276,17 @@ def calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
     if A_OR == 0:
         return np.zeros(24 * 365)
     else:
-        if spec_OR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
-            # 主たる居室で温水床暖房とエアコンを併用する場合か否か
-            racfh_combed = spec_MR['type'] == '温水床暖房（併用運転に対応）'
+        # 温水暖房機の種類
+        hs_type = spec_HS['type']
 
-            # 送水温度の決定
-            Theta_SW_hs_op = hwh.get_Theta_SW_hs_op(spec_HS['type'], HW, CG, racfh_combed)
+        # 低出力モード
+        hs_low_power_mode = spec_HS.get('low_power_mode')
+
+        if spec_OR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
+            Theta_SW_hs_op = hwh.get_Theta_SW_hs_op(hs_type, hs_low_power_mode, HW, CG)
             rad_list = hwh.get_rad_list(spec_MR, spec_OR)
             p_hs_d_t = hwh.calc_p_hs_d_t(Theta_SW_hs_op, rad_list, L_T_H_d_t, A_A, A_MR, A_OR, region, mode_MR,
-                                         mode_OR)
+                                         mode_OR, hs_type, hs_low_power_mode, HW, CG)
             Theta_SW_d_t = hwh.get_Theta_SW_d_t(Theta_SW_hs_op, p_hs_d_t)
 
             # 未処理負荷
@@ -290,8 +307,10 @@ def calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
                     A_HCZ = calc_A_HCZ_i(i, A_A, A_MR, A_OR)
                     r_Af = spec_OR.get('r_Af')
                     A_f = rad_floor.get_A_f(A_HCZ, r_Af)
+                    # 放熱器の最大温水供給運転率
+                    r_WS_rad_max = hwh.calc_r_WS_rad_max(hs_type, hs_low_power_mode, HW, CG)
                     # 温水床暖房の単位面積当たりの上面最大放熱能力
-                    Q_max_H_rad = rad_floor.get_Q_max_H_rad(Theta_SW_d_t, A_f)
+                    Q_max_H_rad = rad_floor.get_Q_max_H_rad(Theta_SW_d_t, A_f, r_WS_rad_max)
                 elif spec_OR['type'] == '温水暖房用ファンコンベクター':
                     # 床面積
                     A_HCZ = calc_A_HCZ_i(i, A_A, A_MR, A_OR)
@@ -312,11 +331,11 @@ def calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_
             return np.sum(Q_UT_H_d_t_i, axis=0)
         else:
             return np.sum(
-                [calc_Q_UT_H_d_t(i, spec_OR, A_A, A_MR, A_OR, region, mode_OR, L_T_H_d_t[i - 1]) for i in
+                [calc_Q_UT_H_d_t(i, spec_OR, A_A, A_MR, A_OR, Q, region, mode_OR, L_T_H_d_t[i - 1], hs_type, hs_low_power_mode, HW, CG) for i in
                  range(2, 6)], axis=0)
 
 
-def calc_Q_UT_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
+def calc_Q_UT_H_d_t(i, device, A_A, A_MR, A_OR, Q, region, mode, L_H_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
     """未処理負荷を計算する
 
     Args:
@@ -325,9 +344,12 @@ def calc_Q_UT_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
       A_A(float): 床面積の合計 (m2)
       A_MR(float): 主たる居室の床面積 (m2)
       A_OR(float): その他の居室の床面積 (m2)
+      Q(float): 当該住戸の熱損失係数 (W/m2K)
       region(int): 省エネルギー地域区分
       mode(str): 運転方法 (連続運転|間歇運転)
       L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷(MJ/h)
+      HW(dict): 給湯機の仕様
+      CG(dict): コージェネレーションの機器
 
     Returns:
       ndarray:: 1時間当たりの暖房設備機器等の未処理暖房負荷(MJ/h)
@@ -387,17 +409,16 @@ def calc_Q_UT_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
 
         # 仕様の取得
         r_Af = device.get('r_Af')
-        r_up = device['r_up']
         A_f = eheater_spec.get_A_f(A_HCZ, r_Af)
-
+        low_power_mode = device['low_power_mode']
         # 未処理負荷の計算
         Q_UT_H_d_t = eheater.calc_Q_UT_H_d_t(
             A_f=A_f,
-            r_up=r_up,
-            L_H_d_t=L_H_d_t
+            L_H_d_t=L_H_d_t,
+            low_power_mode=low_power_mode
         )
 
-    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         raise ValueError(device['type'])
 
     elif device['type'] == 'ルームエアコンディショナー付温水床暖房機':
@@ -406,7 +427,12 @@ def calc_Q_UT_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
         r_Af = device.get('r_Af')
 
         # 未処理負荷の計算
-        Q_UT_H_d_t = racfh.calc_Q_UT_H_d_t(region, A_HCZ, r_Af, L_H_d_t)
+        Q_UT_H_d_t = racfh.calc_Q_UT_H_d_t(region, A_HCZ, r_Af, L_H_d_t, hs_type, hs_low_power_mode, HW, CG)
+
+    elif device['type'] == 'ペレットストーブ':
+        q_max_H = device['q_max_H']
+        # 未処理負荷の計算
+        Q_UT_H_d_t = ps.calc_Q_UT_H_d_t(L_H_d_t, q_max_H)
 
     else:
         raise ValueError(device['type'])
@@ -625,7 +651,7 @@ def calc_E_E_H_hs_MR_d_t(region, A_A, A_MR, A_OR, mode_MR, mode_OR, spec_MR, spe
       ndarray: 居室のみを暖房する方式における主たる居室の暖房設備機器の消費電力量（kWh/h）
 
     """
-    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         return hwh.calc_E_E_H_d_t(
             H_HS=spec_HS,
             H_MR=spec_MR,
@@ -643,7 +669,12 @@ def calc_E_E_H_hs_MR_d_t(region, A_A, A_MR, A_OR, mode_MR, mode_OR, spec_MR, spe
             CG=CG
         )
     else:
-        return calc_E_E_H_d_t(1, spec_MR, A_A, A_MR, A_OR, region, mode_MR, L_T_H_d_t_i[0])
+        # 温水暖房機の種類
+        hs_type = spec_HS['type']
+        # 低出力モード
+        hs_low_power_mode = spec_HS.get('low_power_mode')
+        
+        return calc_E_E_H_d_t(1, spec_MR, A_A, A_MR, A_OR, region, mode_MR, L_T_H_d_t_i[0], hs_type, hs_low_power_mode, HW, CG)
 
 
 def get_E_E_H_hs_OR_d_t(region, A_A, A_MR, A_OR, mode_MR, mode_OR, spec_MR, spec_OR, spec_HS, L_T_H_d_t_i, L_CS_x_t_i, L_CL_x_t_i, HW=None, CG=None):
@@ -673,7 +704,7 @@ def get_E_E_H_hs_OR_d_t(region, A_A, A_MR, A_OR, mode_MR, mode_OR, spec_MR, spec
     if spec_OR is None:
         return np.zeros(24 * 365)
     else:
-        if spec_OR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+        if spec_OR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
             return hwh.calc_E_E_H_d_t(
                 H_HS=spec_HS,
                 H_MR=spec_MR,
@@ -691,8 +722,10 @@ def get_E_E_H_hs_OR_d_t(region, A_A, A_MR, A_OR, mode_MR, mode_OR, spec_MR, spec
                 CG=CG)
         else:
             # 暖房区画i=2～5の電力消費量を計算して合算する
+            hs_type = spec_HS['type']
+            hs_low_power_mode = spec_HS.get('low_power_mode')
             return np.sum(
-                [calc_E_E_H_d_t(i, spec_OR, A_A, A_MR, A_OR, region, mode_OR, L_T_H_d_t_i[i - 1]) for i in
+                [calc_E_E_H_d_t(i, spec_OR, A_A, A_MR, A_OR, region, mode_OR, L_T_H_d_t_i[i - 1], hs_type, hs_low_power_mode, HW, CG) for i in
                  [3, 4, 5]], axis=0)
 
 
@@ -729,7 +762,7 @@ def get_virtual_heatsource(region, H_HS):
         return H_HS
 
 
-def calc_E_E_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
+def calc_E_E_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
     """暖房区画1つと1つの暖房設備機器によって消費される電力消費量
 
     Args:
@@ -790,12 +823,14 @@ def calc_E_E_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
         r_Af = device.get('r_Af')
         r_up = device['r_up']
         A_f = eheater_spec.get_A_f(A_HCZ, r_Af)
+        low_power_mode = device['low_power_mode']
 
         # 消費電力量の計算
         E_E_H_d_t = eheater.calc_E_E_H_d_t(
             A_f=A_f,
             r_up=r_up,
-            L_H_d_t=L_H_d_t
+            L_H_d_t=L_H_d_t,
+            low_power_mode=low_power_mode
         )
 
     elif device['type'] == '電気蓄熱暖房器':
@@ -814,7 +849,7 @@ def calc_E_E_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
             L_H_d_t=L_H_d_t
         )
 
-    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         # 温水暖房は第7節で取り扱うためここでは処理しない
         raise UserWarning(device['type'])
 
@@ -834,8 +869,19 @@ def calc_E_E_H_d_t(i, device, A_A, A_MR, A_OR, region, mode, L_H_d_t):
             r_Af=r_Af,
             r_up=r_up,
             pipe_insulation=pipe_insulation,
-            L_H_d_t=L_H_d_t
+            L_H_d_t=L_H_d_t,
+            hs_type=hs_type,
+            hs_low_power_mode=hs_low_power_mode,
+            HW=HW,
+            CG=CG
         )
+
+    elif device ['type'] == 'ペレットストーブ':
+        # 仕様の取得
+        E_E_ign_d_t = device.get('E_E_ign_d_t')
+        P_cmb = device.get('P_cmb')
+        # 消費電力量の計算
+        E_E_H_d_t = ps.calc_E_E_H_d_t(L_H_d_t, E_E_ign_d_t, P_cmb)
 
     else:
         raise ValueError(device['type'])
@@ -943,12 +989,12 @@ def calc_L_H_d_t(region, sol_region, A_A, A_MR, A_OR, mode_H, mode_C, H_MR, H_OR
             'r_A_ufvnt_ass': SHC['r_A_ufvnt_ass'],
         })
 
-    L_T_H_d_t_i, L_dash_H_R_d_t_i = ld.calc_L_H_d_t_i(**args)
+    L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i = ld.calc_L_H_d_t_i(**args)
 
     if normalize:
         L_T_H_d_t_i[L_T_H_d_t_i < 0] = 0
 
-    return L_T_H_d_t_i, L_dash_H_R_d_t_i
+    return L_T_H_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i
 
 
 def get_mode_C_array(mode_C):
@@ -1002,7 +1048,7 @@ def get_floorheating_i(H_MR, H_OR):
     floorheating = np.zeros(12)
 
     if H_MR is not None:
-        if H_MR['type'] in ['電気ヒーター床暖房', '温水暖房用床暖房', 'ルームエアコンディショナー付温水床暖房機', '温水床暖房（併用運転に対応）']:
+        if H_MR['type'] in ['電気ヒーター床暖房', '温水暖房用床暖房', 'ルームエアコンディショナー付温水床暖房機']:
             floorheating[0] = True
 
     if H_OR is not None:
@@ -1027,7 +1073,7 @@ def get_R_l_i(H_MR, H_OR):
     R_l_i = np.zeros(12)
 
     if H_MR is not None:
-        if H_MR['type'] in ['電気ヒーター床暖房', '温水暖房用床暖房', 'ルームエアコンディショナー付温水床暖房機', '温水床暖房（併用運転に対応）']:
+        if H_MR['type'] in ['電気ヒーター床暖房', '温水暖房用床暖房', 'ルームエアコンディショナー付温水床暖房機']:
             if 'r_dash_Af' not in H_MR:
                 R_l_i[0] = H_MR.get('r_Af')
             else:
@@ -1144,7 +1190,7 @@ def calc_E_G_H_hs_MR_d_t(region, A_A, A_MR, A_OR, mode_MR, mode_OR, spec_MR, spe
       ndarray: 居室のみを暖房する方式における主たる居室に設置された暖房設備機器のガス消費量（MJ/h）
 
     """
-    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         return hwh.calc_E_G_H_d_t(
             H_HS=spec_HS,
             H_MR=spec_MR,
@@ -1257,13 +1303,17 @@ def calc_E_G_H_d_t(i, device, A_A, A_MR, A_OR, L_H_d_t):
         # ガス消費量の計算
         E_G_H_d_t = eheater.get_E_G_H_d_t()
 
-    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         # 温水暖房は第7節で取り扱うためここでは処理しない
         raise UserWarning(device['type'])
 
     elif device['type'] == 'ルームエアコンディショナー付温水床暖房機':
         # ガス消費量の計算
         E_G_H_d_t = racfh.get_E_G_d_t()
+
+    elif device['type'] == 'ペレットストーブ':
+        # ガス消費量の計算
+        E_G_H_d_t = ps.get_E_G_H_d_t()
 
     else:
         raise ValueError(device['type'])
@@ -1364,7 +1414,7 @@ def calc_E_K_H_hs_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mod
       ndarray: 居室のみを暖房する方式における主たる居室に設置された暖房設備機器のガス消費量(MJ/h)
 
     """
-    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         return hwh.calc_E_K_H_d_t(
             H_HS=spec_HS,
             H_MR=spec_MR,
@@ -1503,13 +1553,16 @@ def calc_E_K_d_t(i, device, A_A, A_MR, A_OR, L_H_d_t):
         # 灯油の消費量の計算
         E_K_d_t = eheater.get_E_K_H_d_t()
 
-    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         # 温水暖房は第7節で取り扱うためここでは処理しない
         raise UserWarning(device['type'])
 
     elif device['type'] == 'ルームエアコンディショナー付温水床暖房機':
         # 灯油の消費量の計算
         E_K_d_t = racfh.get_E_K_d_t()
+  
+    elif device['type'] == 'ペレットストーブ':
+        E_K_d_t = ps.get_E_K_H_d_t()
 
     else:
         raise ValueError(device['type'])
@@ -1519,9 +1572,61 @@ def calc_E_K_d_t(i, device, A_A, A_MR, A_OR, L_H_d_t):
 
     return E_K_d_t
 
+def calc_E_WF_H_d_t(region, A_A, A_MR, A_OR, H_A, H_MR, H_OR, Q, L_T_d_t):
+    """日付dの時刻tにおける1時間当たりの暖房設備の木質燃料消費量（MJ/h）(7d)を算出する
+
+    Args:
+        region(int): 省エネルギー地域区分
+        A_A(float): 床面積の合計 (m2)
+        A_MR(float): 主たる居室の床面積 (m2)
+        A_OR(float): その他の居室の床面積 (m2)
+        H_A(dict): 暖房方式
+        H_MR(dict): 主たる居室の暖房機器の仕様
+        H_OR(dict): その他の居室の暖房機器の仕様
+        Q(float): 当該住戸の熱損失係数 (W/m2K)
+        L_T_d_t (ndarray): 暖冷房区画݅の１時間当たりの暖房負荷(MJ/h)
+
+    Returns:
+        ndarray: 日付dの時刻tにおける1時間当たりの暖房設備の木質燃料消費量（MJ/h）を算出する
+    """
+    return calc_E_WF_H_hs_d_t(region, A_A, A_MR, A_OR, H_A, H_MR, H_OR, Q, L_T_d_t)
+  
+def calc_E_WF_H_hs_d_t(region, A_A, A_MR, A_OR, H_A, H_MR, H_OR, Q, L_T_d_t):
+    """日付dの時刻tにおける1時間当たりの暖房設備機器等の木質燃料消費量（MJ/h）を算出する
+
+    Args:
+        region(int): 省エネルギー地域区分
+        A_A(float): 床面積の合計 (m2)
+        A_MR(float): 主たる居室の床面積 (m2)
+        A_OR(float): その他の居室の床面積 (m2)
+        H_A(dict): 暖房方式
+        H_MR(dict): 主たる居室の暖房機器の仕様
+        H_OR(dict): その他の居室の暖房機器の仕様
+        Q(float): 当該住戸の熱損失係数 (W/m2K)
+        L_T_d_t (ndarray): 暖冷房区画݅の１時間当たりの暖房負荷(MJ/h)
+
+    Returns:
+        ndarray: 日付dの時刻tにおける1時間当たりの暖房設備機器等の木質燃料消費量（MJ/h）
+    """
+    if H_A is not None:
+      # 住戸全体を連続的に暖房する方式の場合(8d)
+      return get_E_WF_H_hs_A_d_t()
+    elif (H_MR is not None or H_OR is not None) and L_T_d_t is not None:
+      if (is_hotwaterheatingonly(H_MR, H_OR)):
+        # 居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合(9d)
+        return get_E_WF_H_hs_MROR_d_t()
+      else:
+        # 居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合に該当しない場合(10d)
+        E_WF_H_hs_MR_d_t = calc_E_WF_H_hs_MR_d_t(region, A_A, A_MR, A_OR, H_MR, Q, L_T_d_t)
+        E_WF_H_hs_OR_d_t = calc_E_WF_H_hs_OR_d_t(region, A_A, A_MR, A_OR, H_OR, Q, L_T_d_t)
+        return E_WF_H_hs_MR_d_t + E_WF_H_hs_OR_d_t
+    else:
+      return np.zeros(24 * 365)
+  
+
 
 def calc_E_M_H_d_t(region, A_A, A_MR, A_OR, H_A, spec_MR, spec_OR, spec_HS, L_T_H_d_t_i):
-    """暖房設備のその他の燃料による一次エネルギー消費量（MJ/h）(7d)を取得する
+    """暖房設備のその他の燃料による一次エネルギー消費量（MJ/h）(7e)を取得する
 
     Args:
       region(int): 省エネルギー地域区分
@@ -1560,17 +1665,17 @@ def calc_E_M_hs_d_t(region, A_A, A_MR, A_OR, H_A, spec_MR, spec_OR, spec_HS, L_H
 
     """
     if H_A is not None:
-        # (7d)
+        # (8e)
         return calc_E_M_H_hs_A_d_t()
     else:
 
         if is_hotwaterheatingonly(spec_MR, spec_OR):
             # 居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合
-            # (8d)
+            # (9e)
             return calc_E_M_H_hs_MROR_d_t(region, spec_HS)
         else:
             # 居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合に該当しない場合
-            # (9d)
+            # (10e)
             return calc_E_M_H_hs_MR_d_t(A_A, A_MR, A_OR, spec_MR, spec_HS, L_H_d_t) + \
                    calc_E_M_H_hs_OR_d_t(A_A, A_MR, A_OR, spec_OR, spec_HS, L_H_d_t)
 
@@ -1628,7 +1733,7 @@ def calc_E_E_H_hs_A_d_t(A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, H_A, L_H_d_t_i, L
         V_fan_mid_H = dc_spec. get_V_fan_mid_H(q_hs_mid_H)
         P_fan_rtd_H = dc_spec.get_P_fan_rtd_H(V_fan_rtd_H)
         P_fan_mid_H = dc_spec.get_P_fan_mid_H(V_fan_mid_H)
-        P_hs_mid_H = np.NAN
+        P_hs_mid_H = np.nan
     elif H_A['EquipmentSpec'] == '定格能力試験の値を入力する':
         EquipmentSpec = '定格能力試験の値を入力する'
         q_hs_rtd_H = H_A['q_hs_rtd_H']
@@ -1639,7 +1744,7 @@ def calc_E_E_H_hs_A_d_t(A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, H_A, L_H_d_t_i, L
         q_hs_min_H = dc_spec.get_q_hs_min_H(q_hs_rtd_H)
         V_fan_mid_H = dc_spec. get_V_fan_mid_H(q_hs_mid_H)
         P_fan_mid_H = dc_spec.get_P_fan_mid_H(V_fan_mid_H)
-        P_hs_mid_H = np.NAN
+        P_hs_mid_H = np.nan
     elif H_A['EquipmentSpec'] == '定格能力試験と中間能力試験の値を入力する':
         EquipmentSpec = '定格能力試験と中間能力試験の値を入力する'
         q_hs_rtd_H = H_A['q_hs_rtd_H']
@@ -1681,6 +1786,7 @@ def calc_E_E_H_hs_A_d_t(A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, H_A, L_H_d_t_i, L
         V_hs_vent_d_t=V_hs_vent_d_t,
         C_df_H_d_t=C_df_H_d_t,
         q_hs_rtd_H=q_hs_rtd_H,
+        q_hs_rtd_C=q_hs_rtd_C,
         V_hs_dsgn_H=V_hs_dsgn_H,
         P_hs_mid_H=P_hs_mid_H,
         P_hs_rtd_H=P_hs_rtd_H,
@@ -1691,7 +1797,8 @@ def calc_E_E_H_hs_A_d_t(A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, H_A, L_H_d_t_i, L
         V_fan_rtd_H=V_fan_rtd_H,
         V_fan_mid_H=V_fan_mid_H,
         EquipmentSpec=EquipmentSpec,
-        region=region
+        region=region,
+        type=type,
     )
 
     return E_E_H_d_t
@@ -1721,6 +1828,13 @@ def calc_E_K_H_hs_A_d_t(**args):
     """
     return dc.get_E_K_H_d_t()
 
+def get_E_WF_H_hs_A_d_t():
+    """日付dの時刻tにおける1時間当たりの暖房設備機器等の木質燃料消費量（MJ/h）
+
+    Returns:
+        ndarray:日付dの時刻tにおける1時間当たりの暖房設備機器等の木質燃料消費量（MJ/h）
+    """
+    return np.zeros(24 * 365)
 
 def calc_E_M_H_hs_A_d_t():
     """暖房設備のその他の燃料による一次エネルギー消費量（MJ/h）(7d)を取得する
@@ -1812,6 +1926,13 @@ def calc_E_K_H_hs_MROR_d_t(spec_HS, spec_MR, spec_OR, HW, CG, A_A, A_MR, A_OR, r
     """
     return hwh.calc_E_K_H_d_t(spec_HS, spec_MR, spec_OR, A_A, A_MR, A_OR, region, mode_MR, mode_OR, L_T_H_d_t_i, HW, CG)
 
+def get_E_WF_H_hs_MROR_d_t():
+    """居室のみを暖房する方式における日付dの時刻tにおける1時間当たりの主たる居室及びその他の居室に設置された暖房設備機器の木質燃料消費量（MJ/h）
+
+    Returns:
+        ndarray: 居室のみを暖房する方式における日付dの時刻tにおける1時間当たりの主たる居室及びその他の居室に設置された暖房設備機器の木質燃料消費量（MJ/h）
+    """
+    return np.zeros(24 * 365)
 
 def calc_E_M_H_hs_MROR_d_t(region, H_HS):
     """居室のみを暖房する方式における主たる居室及びその他の居室に設置された暖房設備機器のその他の燃料による一次エネルギー消費量（MJ/h）
@@ -1834,8 +1955,99 @@ def calc_E_M_H_hs_MROR_d_t(region, H_HS):
 # 6.3.3 居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合に該当しない場合
 # ---------------------------------------------------
 
+def calc_E_WF_H_hs_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, Q, L_H_d_t):
+    """居室のみを暖房する方式における日付dの時刻tにおける1時間当たりの主たる居室に設置された暖房設備機器の木質燃料消費量（MJ/h）(11d)
+
+    Args:
+        region (int): 省エネルギー地域区分
+        A_A(float): 床面積の合計 (m2)
+        A_MR(float): 主たる居室の床面積 (m2)
+        A_OR(float): その他の居室の床面積 (m2)
+        spec_MR(dict): 主たる居室の仕様
+        Q(float): 当該住戸の熱損失係数 (W/m2K)
+        L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷(MJ/h)
+        
+    Return:
+        ndarray: 居室のみを暖房する方式における日付dの時刻tにおける1時間当たりの主たる居室に設置された暖房設備機器の木質燃料消費量
+    """
+    # 主たる居室に温水床暖房、パネルラジエーター又はファンコンベクターが設置された場合
+    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
+        return np.zeros(24 * 365)
+
+    # 主たる居室に設置された暖房設備機器がペレットストーブの場合
+    elif spec_MR['type'] in ['ペレットストーブ']:
+        return calc_E_WF_H_hs_d_t_i(1, region, spec_MR, A_A, A_MR, A_OR, Q, L_H_d_t[0])
+
+    # 主たる居室に設置された暖房設備機器がペレットストーブではない場合
+    else:
+        return np.zeros(24 * 365)
+
+def calc_E_WF_H_hs_OR_d_t(region, A_A, A_MR, A_OR, spec_OR, Q, L_H_d_t):
+    """居室のみを暖房する方式における日付dの時刻tにおける1時間当たりのその他の居室に設置された暖房設備機器の木質燃料消費量（MJ/h）(12d)
+
+    Args:
+        region (int): 省エネルギー地域区分
+        A_A(float): 床面積の合計 (m2)
+        A_MR(float): 主たる居室の床面積 (m2)
+        A_OR(float): その他の居室の床面積 (m2)
+        spec_OR (_type_): その他居室の仕様
+        Q(float): 当該住戸の熱損失係数 (W/m2K)
+        L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷(MJ/h)
+    
+    Return:
+        ndarray:  居室のみを暖房する方式における日付dの時刻tにおける1時間当たりのその他の居室に設置された暖房設備機器の木質燃料消費量
+    """
+    # その他の居室がない場合
+    if spec_OR is None:
+        return np.zeros(24 * 365)
+
+    else:
+        # その他の居室に温水床暖房、パネルラジエーター又はファンコンベクターが設置された場合
+        if spec_OR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
+            return np.zeros(24 * 365)
+
+        # その他の居室に設置された暖房設備機器がペレットストーブの場合
+        elif spec_OR['type'] in ['ペレットストーブ']:
+            return np.sum(
+                [calc_E_WF_H_hs_d_t_i(i, region, spec_OR, A_A, A_MR, A_OR, Q, L_H_d_t[i - 1]) for
+                i in
+                range(2, 6)], axis=0)
+
+        # その他の居室に設置された暖房設備機器がペレットストーブではない場合
+        else:
+            return np.zeros(24 * 365)
+
+def calc_E_WF_H_hs_d_t_i(i, region, device, A_A, A_MR, A_OR, Q, L_H_d_t):
+    """日付dの時刻tにおける1時間当たりの暖冷房区画iに設置された暖房設備機器の木質燃料消費量（MJ/h）を算出する
+
+    Args:
+        i(int): 暖冷房区画の番号
+        region (int): 省エネルギー地域区分
+        device(dict): 暖房機器の仕様
+        A_A(float): 床面積の合計 (m2)
+        A_MR(float): 主たる居室の床面積 (m2)
+        A_OR(float): その他の居室の床面積 (m2)
+        Q (_type_): _description_
+        L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷(MJ/h)
+
+    Returns:
+        ndarray: 日付dの時刻tにおける1時間当たりの暖冷房区画iに設置された暖房設備機器の木質燃料消費量（MJ/h）
+    """
+    # 仕様の取得
+    e_rtd_H = device['e_rtd_H']
+    q_max_H = device['q_max_H']
+
+    if device['type'] == 'ペレットストーブ':
+        E_WF_H_hs_d_t_i = ps.calc_E_WF_H_d_t(L_H_d_t, q_max_H, e_rtd_H)
+
+    else:
+        raise ValueError(device['type'])
+        
+    return E_WF_H_hs_d_t_i
+
+
 def calc_E_M_H_hs_MR_d_t(A_A, A_MR, A_OR, spec_MR, spec_HS, L_H_d_t):
-    """居室のみを暖房する方式における主たる居室に設置された暖房設備機器のその他の燃料による一次エネルギー消費量（MJ/h）
+    """居室のみを暖房する方式における主たる居室に設置された暖房設備機器のその他の燃料による一次エネルギー消費量（MJ/h）(11e)
 
     Args:
       A_A(float): 床面積の合計 (m2)
@@ -1849,14 +2061,14 @@ def calc_E_M_H_hs_MR_d_t(A_A, A_MR, A_OR, spec_MR, spec_HS, L_H_d_t):
       ndarray: 居室のみを暖房する方式における主たる居室に設置された暖房設備機器のその他の燃料による一次エネルギー消費量（MJ/h）
 
     """
-    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    if spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         return hwh.calc_E_M_H_d_t(spec_HS)
     else:
         return calc_E_M_d_t(1, spec_MR, A_A, A_MR, A_OR, L_H_d_t[0])
 
 
 def calc_E_M_H_hs_OR_d_t(A_A, A_MR, A_OR, spec_OR, spec_HS, L_H_d_t):
-    """居室のみを暖房する方式におけるその他の居室に設置された暖房設備機器のその他の燃料による一次エネルギー消費量（MJ/h）
+    """居室のみを暖房する方式におけるその他の居室に設置された暖房設備機器のその他の燃料による一次エネルギー消費量（MJ/h）(12e)
 
     Args:
       A_A(float): 床面積の合計 (m2)
@@ -1919,13 +2131,16 @@ def calc_E_M_d_t(i, device, A_A, A_MR, A_OR, L_H_d_t):
         # その他の一次エネルギー消費量の計算
         E_M_d_t = eheater.get_E_M_H_d_t()
 
-    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']:
+    elif device['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         # 温水暖房は第7節で取り扱うためここでは処理しない
         raise UserWarning(device['type'])
 
     elif device['type'] == 'ルームエアコンディショナー付温水床暖房機':
         # その他の一次エネルギー消費量の計算
         E_M_d_t = racfh.get_E_M_d_t()
+
+    elif device['type'] == 'ペレットストーブ':
+        E_M_d_t = ps.get_E_M_H_d_t()
 
     else:
         raise ValueError(device['type'])
@@ -1978,7 +2193,7 @@ def calc_E_UT_H_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, mode_H, H_A, 
     elif mode_H == '居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合に該当しない場合' or \
             mode_H == '設置しない':
         # 居室暖房
-        return calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
+        return calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, Q, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
                                          L_T_H_d_t, L_CS_d_t, L_CL_d_t)
     elif mode_H is None:
         return np.zeros(24*365)
@@ -2095,7 +2310,7 @@ def get_alpha_UT_H_A(region):
 # 6.4.2 居室のみを暖房する方式
 # ---------------------------------------------------
 
-def calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG, L_T_H_d_t, L_CS_d_t, L_CL_d_t):
+def calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, Q, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG, L_T_H_d_t, L_CS_d_t, L_CL_d_t):
     """暖房設備の未処理暖房負荷の設計一次エネルギー消費量相当値（MJ/h）(13)を取得する
 
     Args:
@@ -2103,6 +2318,7 @@ def calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS
       A_A(float): 床面積の合計 (m2)
       A_MR(float): 主たる居室の床面積 (m2)
       A_OR(float): その他の居室の床面積 (m2)
+      Q(float): 当該住戸の熱損失係数 (W/m2K)
       spec_MR(dict): 主たる居室の暖房機器の仕様
       spec_OR(dict): その他の居室の暖房機器の仕様
       spec_HS(dict): 温水暖房機の仕様
@@ -2126,9 +2342,9 @@ def calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS
         alpha_UT_H_OR = get_alpha_UT_H_OR(region, mode_OR)
 
         # 未処理暖房負荷
-        Q_UT_H_MR_d_t = calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
+        Q_UT_H_MR_d_t = calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, Q, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
                                            L_T_H_d_t)
-        Q_UT_H_OR_d_t = calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
+        Q_UT_H_OR_d_t = calc_Q_UT_H_OR_d_t(region, A_A, A_MR, A_OR, Q, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
                                            L_T_H_d_t)
 
         # 未処理暖房負荷に未処理暖房負荷の設計一次エネルギー消費量相当値に換算するための係数を掛けて合算
@@ -2138,7 +2354,7 @@ def calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS
         alpha_UT_H_MR = get_alpha_UT_H_MR(region, mode_MR)
 
         # 未処理暖房負荷
-        Q_UT_H_MR_d_t = calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
+        Q_UT_H_MR_d_t = calc_Q_UT_H_MR_d_t(region, A_A, A_MR, A_OR, Q, spec_MR, spec_OR, spec_HS, mode_MR, mode_OR, HW, CG,
                                            L_T_H_d_t)
 
         # 未処理暖房負荷に未処理暖房負荷の設計一次エネルギー消費量相当値に換算するための係数を掛ける
@@ -2146,7 +2362,7 @@ def calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS
 
     # -- 熱源機の未処理 --
 
-    has_howaterheating = spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）']
+    has_howaterheating = spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']
     if spec_OR is not None:
         has_howaterheating = has_howaterheating or spec_OR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']
 
@@ -2162,10 +2378,10 @@ def calc_E_UT_H_d_t__modeMROR(region, A_A, A_MR, A_OR, spec_MR, spec_OR, spec_HS
 
     if spec_OR is None:
         return Q_UT_hs * alpha_UT_H_MR + Q_UT_rad
-    elif spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）'] \
+    elif spec_MR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター'] \
             and spec_OR['type'] not in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         return Q_UT_hs * alpha_UT_H_MR + Q_UT_rad
-    elif spec_MR['type'] not in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター', '温水床暖房（併用運転に対応）'] \
+    elif spec_MR['type'] not in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター'] \
             and spec_OR['type'] in ['温水暖房用パネルラジエーター', '温水暖房用床暖房', '温水暖房用ファンコンベクター']:
         return Q_UT_hs * alpha_UT_H_OR + Q_UT_rad
     else:
@@ -2545,7 +2761,8 @@ def calc_Q_UT_CL_OR_d_t(**args):
 # 7.2 冷房設備のエネルギー消費量
 # ===================================================
 
-def calc_E_E_C_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A=None, C_MR=None, C_OR=None, L_H_d_t=None,
+def calc_E_E_C_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, q_hs_C_d_t, type, input_C_af_H, input_C_af_C,
+                   C_A=None, C_MR=None, C_OR=None, L_H_d_t=None,
                    L_CS_d_t=None, L_CL_d_t=None):
     """冷房設備の消費電力量（kWh/h） (21a)を取得する
 
@@ -2564,12 +2781,16 @@ def calc_E_E_C_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A=None, C_MR
       L_H_d_t(ndarray, optional): 暖房区画の暖房負荷 (Default value = None)
       L_CS_d_t(ndarray, optional): 冷房区画の冷房顕熱負荷 (Default value = None)
       L_CL_d_t(ndarray, optional): 冷房区画の冷房潜熱負荷 (Default value = None)
+      q_hs_C_d_t: 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力（W）
+      type: 暖房設備機器の種類
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
 
     Returns:
       ndarray: 冷房設備の消費電力量（kWh/h）
 
     """
-    return calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t)
+    return calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t, type, q_hs_C_d_t, input_C_af_H, input_C_af_C)
 
 
 def calc_E_G_C_d_t(**args):
@@ -2615,7 +2836,7 @@ def calc_E_M_C_d_t(**args):
 # 7.3 冷房設備機器のエネルギー消費量
 # ===================================================
 
-def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t):
+def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, C_OR, L_H_d_t, L_CS_d_t, L_CL_d_t, type, q_hs_C_d_t, input_C_af_H, input_C_af_C):
     """冷房設備機器の消費電力量（kWh/h）(22a, 23a)を取得する
 
     Args:
@@ -2633,6 +2854,10 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
       L_H_d_t(ndarray): 暖房区画の暖房負荷
       L_CS_d_t(ndarray): 冷房区画の冷房顕熱負荷
       L_CL_d_t(ndarray): 冷房区画の冷房潜熱負荷
+      type: 暖房設備機器の種類
+      q_hs_C_d_t: 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力（W）
+      input_C_af_H(dict): 室内機吹き出し風量に関する暖房出力補正係数に関する入力
+      input_C_af_C(dict): 室内機吹き出し風量に関する冷房出力補正係数に関する入力
 
     Returns:
       ndarray: 冷房設備機器の消費電力量（kWh/h）
@@ -2663,7 +2888,7 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
             V_fan_mid_C = dc_spec.get_V_fan_mid_C(q_hs_mid_C)
             P_fan_rtd_C = dc_spec.get_P_fan_rtd_C(V_fan_rtd_C)
             P_fan_mid_C = dc_spec.get_P_fan_mid_C(V_fan_mid_C)
-            P_hs_mid_C = np.NAN
+            P_hs_mid_C = np.nan
         elif C_A['EquipmentSpec'] == '定格能力試験の値を入力する':
             EquipmentSpec = '定格能力試験の値を入力する'
             q_hs_rtd_C = C_A['q_hs_rtd_C']
@@ -2674,7 +2899,7 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
             q_hs_min_C = dc_spec.get_q_hs_min_C(q_hs_rtd_C)
             V_fan_mid_C = dc_spec.get_V_fan_mid_C(q_hs_mid_C)
             P_fan_mid_C = dc_spec.get_P_fan_mid_C(V_fan_mid_C)
-            P_hs_mid_C = np.NAN
+            P_hs_mid_C = np.nan
         elif C_A['EquipmentSpec'] == '定格能力試験と中間能力試験の値を入力する':
             EquipmentSpec = '定格能力試験と中間能力試験の値を入力する'
             q_hs_rtd_C = C_A['q_hs_rtd_C']
@@ -2706,7 +2931,7 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
         X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, _ = dc.calc_Q_UT_A(A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H,
                                                                        q_hs_rtd_C, V_hs_dsgn_H, V_hs_dsgn_C, Q, VAV,
                                                                        general_ventilation, duct_insulation, region,
-                                                                       L_H_d_t, L_CS_d_t, L_CL_d_t)
+                                                                       L_H_d_t, L_CS_d_t, L_CL_d_t, type, input_C_af_H, input_C_af_C)
 
         E_E_C_d_t_i = dc_a.get_E_E_C_d_t(
             Theta_hs_out_d_t=Theta_hs_out_d_t,
@@ -2726,7 +2951,8 @@ def calc_E_E_C_hs_d_t(region, A_A, A_MR, A_OR, r_env, mu_H, mu_C, Q, C_A, C_MR, 
             V_fan_rtd_C=V_fan_rtd_C,
             V_fan_mid_C=V_fan_mid_C,
             EquipmentSpec=EquipmentSpec,
-            region=region
+            region=region,
+            type=type,
         )
 
         return E_E_C_d_t_i

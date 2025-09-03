@@ -14,13 +14,14 @@ import pyhees.section4_3 as rac
 import pyhees.section4_3_a as rac_spec
 
 # 温水床暖房
+import pyhees.section4_7 as hwh
 import pyhees.section4_7_l as hwfloor
 
 # R410A におけるヒートポンプサイクルの理論効率の計算方法
 from pyhees.section4_8_a import calc_e_ref_H_th
 
 # 地域の区分と外気条件
-from pyhees.section11_1 import load_outdoor, load_climate, get_Theta_ex, get_X_ex, calc_h_ex
+from pyhees.section11_1 import load_climate, get_Theta_ex, get_X_ex, calc_h_ex
 
 
 # ============================================================================
@@ -28,7 +29,7 @@ from pyhees.section11_1 import load_outdoor, load_climate, get_Theta_ex, get_X_e
 # ============================================================================
 
 # 最大暖房出力 (1)
-def calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af):
+def calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW=None, CG=None):
     """最大暖房出力 (1)
 
     Args:
@@ -36,13 +37,17 @@ def calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af):
       Theta_SW_d_t(ndarray): 往き温水温度 (℃)
       A_HCZ(float): ルームエアコンディショナー付温水床暖房を設置する暖冷房区画の面積 (m2)
       r_Af(flloat): 当該住戸における温水床暖房の敷設率 (-)
+      hs_type (str): 温水暖房用熱源機の種類
+      hs_low_power_mode (bool or None): 熱源機の低出力モードの有無,低出力モードがない場合はNone
+      HW(dict, optional): 給湯機の仕様 (Default value = None)
+      CG(dict, optional): コージェネレーションの機器 (Default value = None)
 
     Returns:
       ndarray: 最大暖房出力 (MJ/h)
 
     """
     # 温水床暖房の最大暖房出力 (MJ/h)
-    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af)
+    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW, CG)
 
     # ルームエアコンディショナーの最大暖房出力 (MJ/h)
     Q_max_H_RAC_d_t = calc_Q_max_H_RAC_d_t(region, A_HCZ)
@@ -54,24 +59,31 @@ def calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af):
 
 
 # 温水床暖房の最大暖房出力
-def calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af):
+def calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW=None, CG=None):
     """温水床暖房の最大暖房出力
 
     Args:
-      Theta_SW_d_t(ndarray): 往き温水温度 (℃)
-      A_HCZ(float): ルームエアコンディショナー付温水床暖房を設置する暖冷房区画の面積 (m2)
-      r_Af(float): 当該住戸における温水床暖房の敷設率 (-)
-
+        Theta_SW_d_t(ndarray): 往き温水温度 (℃)
+        A_HCZ(float): ルームエアコンディショナー付温水床暖房を設置する暖冷房区画の面積 (m2)
+        r_Af(float): 当該住戸における温水床暖房の敷設率 (-)
+        hs_type (str): 温水暖房用熱源機の種類
+        hs_low_power_mode (bool or None): 熱源機の低出力モードの有無,低出力モードがない場合はNone
+        HW(dict, optional): 給湯機の仕様 (Default value = None)
+        CG(dict, optional): コージェネレーションの機器 (Default value = None)
     Returns:
-      ndarray: 温水床暖房の最大暖房出力 (MJ/h)
+        ndarray: 温水床暖房の最大暖房出力 (MJ/h)
 
     """
+
     
     # 温水床暖房の敷設面積 (m2)
     A_f = hwfloor.get_A_f(A_HCZ, r_Af)
+    
+    # 最大暖房出力となる時の運転率
+    r_WS_rad_max = hwh.calc_r_WS_rad_max(hs_type, hs_low_power_mode, HW, CG)
 
     # 温水床暖房の最大暖房出力 (MJ/h)
-    Q_max_H_floor_d_t = hwfloor.get_Q_max_H_rad(Theta_SW_d_t, A_f)
+    Q_max_H_floor_d_t = hwfloor.get_Q_max_H_rad(Theta_SW_d_t, A_f, r_WS_rad_max)
 
     return Q_max_H_floor_d_t
 
@@ -127,7 +139,7 @@ def calc_Q_max_H_RAC_d_t(region, A_HCZ):
 # ============================================================================
 
 # 1時間当たりの消費電力量 (2)
-def calc_E_E_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, L_H_d_t):
+def calc_E_E_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, L_H_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
     """1時間当たりの消費電力量 (2)
 
     Args:
@@ -139,6 +151,10 @@ def calc_E_E_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, L_H_d_t
       r_up(float): 当該住戸の温水床暖房の上面放熱率
       pipe_insulation(bool): 配管断熱の有無
       L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷
+      hs_type (str): 温水暖房用熱源機の種類
+      hs_low_power_mode (bool or None): 熱源機の低出力モードの有無,低出力モードがない場合はNone
+      HW(dict, optional): 給湯機の仕様 (Default value = None)
+      CG(dict, optional): コージェネレーションの機器 (Default value = None)
 
     Returns:
       ndarray: 1時間当たりの消費電力量
@@ -148,18 +164,18 @@ def calc_E_E_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, L_H_d_t
     Theta_SW_d_t = get_Theta_SW_d_t()
 
     # 最大暖房出力
-    Q_max_H_d_t = calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af)
+    Q_max_H_d_t = calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW, CG)
 
     # 処理暖房負荷
     Q_T_H_d_t = get_Q_T_H_d_t_i(Q_max_H_d_t, L_H_d_t)
 
     # 1時間当たりの熱源機の消費電力量
-    E_E_hs_d_t = calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Theta_SW_d_t, Q_T_H_d_t)
+    E_E_hs_d_t = calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Theta_SW_d_t, Q_T_H_d_t, hs_type, hs_low_power_mode, HW, CG)
 
     return E_E_hs_d_t
 
 
-def calc_Q_UT_H_d_t(region, A_HCZ, r_Af, L_H_d_t):
+def calc_Q_UT_H_d_t(region, A_HCZ, r_Af, L_H_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
     """未処理暖房負荷
 
     Args:
@@ -167,6 +183,10 @@ def calc_Q_UT_H_d_t(region, A_HCZ, r_Af, L_H_d_t):
       A_HCZ(float): ルームエアコンディショナー付温水床暖房を設置する暖冷房区画の面積 (m2)
       r_Af(float): 当該住戸における温水床暖房の敷設率 (-)
       L_H_d_t(ndarray): 暖冷房区画݅の１時間当たりの暖房負荷
+      hs_type (str): 温水暖房用熱源機の種類
+      hs_low_power_mode (bool or None): 熱源機の低出力モードの有無,低出力モードがない場合はNone
+      HW(dict, optional): 給湯機の仕様 (Default value = None)
+      CG(dict, optional): コージェネレーションの機器 (Default value = None)
 
     Returns:
       ndarray: 未処理暖房負荷
@@ -176,7 +196,7 @@ def calc_Q_UT_H_d_t(region, A_HCZ, r_Af, L_H_d_t):
     Theta_SW_d_t = get_Theta_SW_d_t()
 
     # 最大暖房出力
-    Q_max_H_d_t = calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af)
+    Q_max_H_d_t = calc_Q_max_H_d_t(region, Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW, CG)
 
     # 処理暖房負荷
     Q_T_H_d_t = get_Q_T_H_d_t_i(Q_max_H_d_t, L_H_d_t)
@@ -247,7 +267,7 @@ def get_E_M_d_t():
 # ============================================================================
 
 # 1時間当たりの熱源機の消費電力量 (3)
-def calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Theta_SW_d_t, Q_T_H_d_t):
+def calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Theta_SW_d_t, Q_T_H_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
     """熱源機の消費電力量
 
     Args:
@@ -260,6 +280,10 @@ def calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Thet
       pipe_insulation(bool): 配管断熱の有無
       Theta_SW_d_t(ndarray): 往き温水温度(℃)
       Q_T_H_d_t(ndarray): 1時間当たりの処理暖房負荷 (MJ/h)
+      hs_type (str): 温水暖房用熱源機の種類
+      hs_low_power_mode (bool or None): 熱源機の低出力モードの有無,低出力モードがない場合はNone
+      HW (dict, optional): 給湯機の仕様
+      CG(dict): コージェネレーションの機器
 
     Returns:
       ndarray: 1時間当たりの熱源機の消費電力量 [kWh/h]
@@ -276,14 +300,14 @@ def calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Thet
     h_ex_d_t = calc_h_ex(X_ex, Theta_ex_d_t)
 
     # 温水床暖房の最大暖房出力
-    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af)
+    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW, CG)
 
     # 温水床暖房の処理暖房負荷 (22)
     Q_T_H_FH_d_t = get_Q_T_H_FH_d_t(Q_T_H_d_t, Q_max_H_floor_d_t)
 
     # 1時間当たりの熱源機の温水床暖房の熱需要 (18)
     Q_dmd_H_hs_FH_d_t = calc_Q_dmd_H_hs_FH_d_t(i, A_A_act, r_up, pipe_insulation, Theta_SW_d_t, Theta_ex_d_t, Q_max_H_floor_d_t,
-                                              Q_T_H_d_t)
+                                              Q_T_H_d_t, hs_type, hs_low_power_mode, HW, CG)
 
     # 熱源機の最大暖房能力 (16)
     R_type = '主たる居室' if i == 1 else 'その他の居室'
@@ -296,7 +320,7 @@ def calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Thet
     Q_dmd_H_hs_d_t = get_Q_dmd_H_hs_d_t(Q_dmd_H_hs_FH_d_t, Q_dmd_H_hs_RAC_d_t)
 
     # 1時間当たりの圧縮機の消費電力量 (4)
-    E_comp_hs_d_t = calc_E_comp_hs_d_t(region, A_HCZ, r_Af, Theta_SW_d_t, q_max_H_hs, Q_dmd_H_hs_d_t, Q_T_H_d_t)
+    E_comp_hs_d_t = calc_E_comp_hs_d_t(region, A_HCZ, r_Af, Theta_SW_d_t, q_max_H_hs, Q_dmd_H_hs_d_t, Q_T_H_d_t,  hs_type, hs_low_power_mode, HW, CG)
 
     # 熱源機の最大暖房出力 (15)
     Q_max_H_hs_d_t = get_Q_max_H_hs_d_t(Theta_ex_d_t, Theta_SW_d_t, q_max_H_hs, h_ex_d_t)
@@ -308,7 +332,7 @@ def calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Thet
     q_out_H_hs_d_t = get_q_out_H_hs_d_t(Q_out_H_hs_d_t)
 
     # 温水床暖房の最大暖房出力
-    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af)
+    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW, CG)
 
     # 温水床暖房の処理暖房負荷 (22)
     Q_T_H_FH_d_t = get_Q_T_H_FH_d_t(Q_T_H_d_t, Q_max_H_floor_d_t)
@@ -336,7 +360,7 @@ def calc_E_E_hs_d_t(region, A_A_act, i, A_HCZ, r_Af, r_up, pipe_insulation, Thet
 # ============================================================================
 
 # 1時間当たりの圧縮機の消費電力量 (4)
-def calc_E_comp_hs_d_t(region, A_HCZ, r_Af, Theta_SW_d_t, q_max_H_hs, Q_dmd_H_hs_d_t, Q_T_H_d_t):
+def calc_E_comp_hs_d_t(region, A_HCZ, r_Af, Theta_SW_d_t, q_max_H_hs, Q_dmd_H_hs_d_t, Q_T_H_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
     """[summary]
 
     Args:
@@ -347,6 +371,10 @@ def calc_E_comp_hs_d_t(region, A_HCZ, r_Af, Theta_SW_d_t, q_max_H_hs, Q_dmd_H_hs
       q_max_H_hs(float): 熱源機の最大暖房能力 (W/m2)
       Q_dmd_H_hs_d_t(ndarray): 1時間当たりの熱源機の熱需要 (MJ/h)
       Q_T_H_d_t(ndarray): 1時間当たりの処理暖房負荷 (MJ/h)
+      hs_type (str): 温水暖房用熱源機の種類
+      hs_low_power_mode (bool or None): 熱源機の低出力モードの有無,低出力モードがない場合はNone
+      HW (dict, optional): 給湯機の仕様
+      CG(dict): コージェネレーションの機器
 
     Returns:
       ndarray: 1時間当たりの圧縮機の消費電力量
@@ -368,7 +396,7 @@ def calc_E_comp_hs_d_t(region, A_HCZ, r_Af, Theta_SW_d_t, q_max_H_hs, Q_dmd_H_hs
     q_out_H_hs_d_t = get_q_out_H_hs_d_t(Q_out_H_hs_d_t)
 
     # 温水床暖房の最大暖房出力
-    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af)
+    Q_max_H_floor_d_t = calc_Q_max_H_floor_d_t(Theta_SW_d_t, A_HCZ, r_Af, hs_type, hs_low_power_mode, HW, CG)
 
     # 温水床暖房の処理暖房負荷 (22)
     Q_T_H_FH_d_t = get_Q_T_H_FH_d_t(Q_T_H_d_t, Q_max_H_floor_d_t)
@@ -799,7 +827,7 @@ def get_Q_dmd_H_hs_d_t(Q_dmd_H_hs_FH_d_t, Q_dmd_H_hs_RAC_d_t):
 
 # 1時間当たりの熱源機の温水床暖房部の熱需要 (18)
 def calc_Q_dmd_H_hs_FH_d_t(i, A_A_act, r_up, has_pipe, Theta_SW_d_t, Theta_ex_d_t, Q_max_H_floor_d_t,
-                          Q_T_H_d_t):
+                          Q_T_H_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
     """1時間当たりの熱源機の温水床暖房部の熱需要 (18)
 
     Args:
@@ -811,6 +839,8 @@ def calc_Q_dmd_H_hs_FH_d_t(i, A_A_act, r_up, has_pipe, Theta_SW_d_t, Theta_ex_d_
       Theta_ex_d_t(ndarray): 外気温度(℃)
       Q_max_H_floor_d_t(ndarray): 1時間当たりの温水床暖房の最大暖房出力 (MJ/h)
       Q_T_H_d_t(ndarray): 1時間当たりの処理暖房負荷 (MJ/h)
+      HW (dict, optional): 給湯機の仕様
+      CG(dict): コージェネレーションの機器
 
     Returns:
       ndarray: 1時間当たりの熱源機の温水床暖房部の熱需要 (MJ/h)
@@ -825,7 +855,7 @@ def calc_Q_dmd_H_hs_FH_d_t(i, A_A_act, r_up, has_pipe, Theta_SW_d_t, Theta_ex_d_
     Q_T_H_FH_d_t = get_Q_T_H_FH_d_t(Q_T_H_d_t, Q_max_H_floor_d_t)
 
     # 温水床暖房の温水供給運転率
-    r_WS_rad_d_t = calc_r_WS_rad_d_t(Q_T_H_FH_d_t, Q_max_H_floor_d_t)
+    r_WS_rad_d_t = calc_r_WS_rad_d_t(Q_T_H_FH_d_t, Q_max_H_floor_d_t, hs_type, hs_low_power_mode, HW, CG)
 
     # 1時間当たりの配管の放熱損失 (19)
     Q_loss_pp_d_t = calc_Q_loss_pp_d_t(Theta_SW_d_t, Theta_ex_d_t, L_pp_ex, L_pp_in, has_pipe, r_WS_rad_d_t)
@@ -1000,20 +1030,28 @@ def get_K_loss_pp(has_pipe):
 
 
 # 温水床暖房の温水供給運転率
-def calc_r_WS_rad_d_t(Q_T_H_FH_d_t, Q_max_H_floor_d_t):
-    """温水床暖房の温水供給運転率
+def calc_r_WS_rad_d_t(Q_T_H_FH_d_t, Q_max_H_floor_d_t, hs_type, hs_low_power_mode, HW=None, CG=None):
+    """温水床暖房の温水供給運転率を計算する
 
     Args:
-      Q_T_H_FH_d_t(ndarray): 温水床暖房の処理暖房負荷 [MJ/h]
-      Q_max_H_floor_d_t(ndarray): 温水床暖房の最大暖房出力
+        Q_T_H_FH_d_t (ndarray): 温水床暖房の処理暖房負荷 (MJ/h)
+        Q_max_H_floor_d_t (ndarray): 温水床暖房の最大暖房出力 (MJ/h)
+        hs_type (str): 温水暖房用熱源機の種類
+        hs_low_power_mode (bool or None): 熱源機の低出力モードの有無,低出力モードがない場合はNone
+        W(dict, optional): 給湯機の仕様 (Default value = None)
+        CG(dict, optional): コージェネレーションの機器 (Default value = None)
 
     Returns:
-      ndarray: 温水床暖房の温水供給運転率
-
+        ndarray: 温水床暖房の温水供給運転率
     """
+    
+    # 放熱器の最大温水供給運転率
+    r_WS_rad_max = hwh.calc_r_WS_rad_max(hs_type, hs_low_power_mode, HW, CG)
+    
     return hwfloor.get_r_WS_rad(
         Q_T_H_rad=Q_T_H_FH_d_t,
-        Q_max_H_rad=Q_max_H_floor_d_t
+        Q_max_H_rad=Q_max_H_floor_d_t,
+        r_WS_rad_max=r_WS_rad_max
     )
 
 
