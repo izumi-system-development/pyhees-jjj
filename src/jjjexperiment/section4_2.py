@@ -328,7 +328,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 L_d_t_flr1st = 1 * r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)
             case (None, _):
                 # 一階冷房負荷
-                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i, axis=0)            #250501 顕熱のみ 井口
+                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i, axis=0)  # 井口_250501 顕熱のみ
             case (_, _):
                 raise Exception('暖房・冷房の定格能力が指定されていません。')
 
