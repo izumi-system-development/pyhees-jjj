@@ -328,7 +328,7 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 L_d_t_flr1st = 1 * r_A_s_ufac * np.sum(L_H_d_t_i, axis=0)
             case (None, _):
                 # 一階冷房負荷
-                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i + L_CL_d_t_i, axis=0)
+                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(L_CS_d_t_i, axis=0)  # 井口_250501 顕熱のみ
             case (_, _):
                 raise Exception('暖房・冷房の定格能力が指定されていません。')
 
@@ -414,6 +414,22 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
         A_prt_A = np.sum(A_prt_i)
         HCM = np.array(jjj_ipt.ClimateEntity(region).get_HCM_d_t())
 
+        #デバッグ用 250501 IGUCHI
+        print("Theta_in_d_t[4848]", Theta_in_d_t[4848])
+        print("Q", Q)
+        print("A_NR", A_NR)
+        print("V_vent_l_NR_d_t[4848]", V_vent_l_NR_d_t[4848])
+        print("V_dash_supply_A[4848]", V_dash_supply_d_t_A[4848])
+        print("A_NR", A_NR)
+        print("V_vent_l_NR_d_t[4848]", V_vent_l_NR_d_t[4848])
+        print("V_dash_supply_A[4848]", V_dash_supply_d_t_A[4848])
+        print("U_prt", U_prt)
+        print("A_prt_A", A_prt_A)
+        print("L_H_NR_A[4848]", L_H_NR_d_t_A[4848])
+        print("L_CS_NR_A[4848]", L_CS_NR_d_t_A[4848])
+        print("Theta_uf_d_t[4848]", Theta_uf_d_t[4848])
+        print("HCM[4848]", HCM[4848])
+
         Theta_star_NR_d_t = np.vectorize(jjj_ufac.get_Theta_star_NR)
         Theta_star_NR_d_t  \
             = Theta_star_NR_d_t(
@@ -426,10 +442,11 @@ def calc_Q_UT_A(case_name, A_A, A_MR, A_OR, r_env, mu_H, mu_C, q_hs_rtd_H, q_hs_
                 A_prt_A = A_prt_A,
                 L_H_NR_A = L_H_NR_d_t_A,  # (8760,)
                 L_CS_NR_A = L_CS_NR_d_t_A,  # (8760,)
-                Theta_NR = 20,  # この時点では仮置きの値を使用
+                Theta_NR = Theta_in_d_t,              # この時点では仮置きの値を使用⇒夏期は27℃とする必要がある　250501 井口
                 Theta_uf = Theta_uf_d_t,  # (8760,)
                 HCM = HCM  # (8760,)
             )
+        print("Theta_star_NR_d_t[4848]", Theta_star_NR_d_t[4848])
     else:
         Theta_star_NR_d_t  \
             = dc.get_Theta_star_NR_d_t(
