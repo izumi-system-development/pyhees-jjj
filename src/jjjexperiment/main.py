@@ -9,6 +9,7 @@ from pyhees.section4_1 import calc_heating_load, calc_cooling_load, get_virtual_
 from pyhees.section4_1_a import calc_heating_mode
 
 # ダクト式セントラル空調機
+import pyhees.section4_2_a as dc_a
 import pyhees.section4_2_b as dc_spec
 
 # 床下
@@ -33,6 +34,9 @@ from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE
 from jjjexperiment.result import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
 from jjjexperiment.options import *
+
+# [F25-01] 最低風量の直接入力
+import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
 def calc(input_data: dict, test_mode=False):
     case_name   = input_data['case_name']
@@ -245,24 +249,33 @@ def calc(input_data: dict, test_mode=False):
     """定格暖房能力運転時の送風機の消費電力(W)"""
     _logger.info(f"P_rac_fan_rtd_H [W]: {P_rac_fan_rtd_H}")
 
+    # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
+    q_hs_H_d_t = \
+        dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
+
+    match injector.get(AppConfig).input_V_hs_min_H:
+        case 最低風量直接入力.入力しない.value:
+            # 既存式
+            print(最低風量直接入力.入力しない)
+            E_E_fan_H_d_t = \
+                dc_a.get_E_E_fan_H_d_t(H_A['type']
+                    # 切替 [ﾙｰﾑｴｱｺﾝﾌｧﾝ(P_rac_fan)/循環ﾌｧﾝ(P_fan)]
+                    , P_rac_fan_rtd_H if H_A['type'] == PROCESS_TYPE_2 else H_A['P_fan_rtd_H']
+                    , V_hs_vent_d_t
+                    , V_hs_supply_d_t
+                    , V_hs_dsgn_H
+                    , q_hs_H_d_t  # [W]
+                    , H_A['f_SFP_H'])
+        case 最低風量直接入力.入力する.value:
+            # [F25-01] 最低風量の直接入力
+            print(最低風量直接入力.入力する)
+            E_E_fan_H_d_t = \
+                jjj_V_min_input.get_E_E_fan_d_t(P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, q_hs_H_d_t)
+        case _:
+            raise ValueError
+
     E_E_H_d_t: np.ndarray
     """日付dの時刻tにおける1時間当たりの暖房時の消費電力量(kWh/h)"""
-
-    E_E_fan_H_d_t, q_hs_H_d_t \
-        = jjj_dc_a.calc_E_E_fan_H_d_t(
-            type = H_A['type'],
-            region = region,
-            case_name = case_name,
-            Theta_hs_out_d_t = Theta_hs_out_d_t,
-            Theta_hs_in_d_t = Theta_hs_in_d_t,
-            V_hs_supply_d_t = V_hs_supply_d_t,
-            V_hs_vent_d_t = V_hs_vent_d_t,
-            V_hs_dsgn_H = V_hs_dsgn_H,
-            C_df_H_d_t = C_df_H_d_t,
-            P_rac_fan_rtd_H = P_rac_fan_rtd_H,
-            P_fan_rtd_H = H_A['P_fan_rtd_H'],
-            f_SFP_H = H_A['f_SFP_H']
-            )
 
     if H_A['type'] == PROCESS_TYPE_1 or H_A['type'] == PROCESS_TYPE_3:
         E_E_H_d_t \
@@ -388,25 +401,44 @@ def calc(input_data: dict, test_mode=False):
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
 
+    # (4) 日付dの時刻tにおける1時間当たりの熱源機の平均冷房能力(-)
+    q_hs_CS_d_t, q_hs_CL_d_t = dc_a.get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
+
+    if (C_A['type'] == PROCESS_TYPE_1 or C_A['type'] == PROCESS_TYPE_3):
+        # (4) 潜熱/顕熱を使用せずに全熱負荷を再計算する
+        q_hs_C_d_t = dc_a.get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
+    else:
+        # 潜熱/顕熱を使用する
+        q_hs_C_d_t = q_hs_CS_d_t + q_hs_CL_d_t
+
+    match injector.get(AppConfig).input_V_hs_min_C:
+        case 最低風量直接入力.入力しない.value:
+            # 既存式
+            print(最低風量直接入力.入力しない)
+            E_E_fan_C_d_t = \
+                dc_a.get_E_E_fan_C_d_t(C_A['type']
+                    # 切替 [ﾙｰﾑｴｱｺﾝﾌｧﾝ(P_rac_fan)/循環ﾌｧﾝ(P_fan)]
+                    , P_rac_fan_rtd_C if C_A['type'] == PROCESS_TYPE_2 else C_A['P_fan_rtd_C']
+                    , V_hs_vent_d_t
+                    , V_hs_supply_d_t
+                    , V_hs_dsgn_C
+                    , q_hs_C_d_t  # [W]
+                    , C_A['f_SFP_C'])
+        case 最低風量直接入力.入力する.value:
+            # [F25-01] 最低風量の直接入力
+            print(最低風量直接入力.入力する)
+            E_E_fan_C_d_t = \
+                jjj_V_min_input.get_E_E_fan_d_t(
+                    P_rac_fan_rtd_C,
+                    V_hs_vent_d_t,
+                    V_hs_supply_d_t,
+                    V_hs_dsgn_C,
+                    q_hs_C_d_t)
+        case _:
+            raise ValueError
+
     E_E_C_d_t: np.ndarray
     """日付dの時刻tにおける1時間当たりの冷房時の消費電力量(kWh/h)"""
-
-    E_E_fan_C_d_t, q_hs_CS_d_t, q_hs_CL_d_t \
-        = jjj_dc_a.calc_E_E_fan_C_d_t(
-            type = C_A['type'],
-            region = region,
-            case_name = case_name,
-            Theta_hs_out_d_t = Theta_hs_out_d_t,
-            Theta_hs_in_d_t = Theta_hs_in_d_t,
-            V_hs_supply_d_t = V_hs_supply_d_t,
-            V_hs_vent_d_t = V_hs_vent_d_t,
-            V_hs_dsgn_C = V_hs_dsgn_C,
-            X_hs_out_d_t = X_hs_out_d_t,
-            X_hs_in_d_t = X_hs_in_d_t,
-            P_rac_fan_rtd_C = P_rac_fan_rtd_C,
-            P_fan_rtd_C = C_A['P_fan_rtd_C'],
-            f_SFP_C = C_A['f_SFP_C']
-        )
 
     if C_A['type'] == PROCESS_TYPE_1 or C_A['type'] == PROCESS_TYPE_3:
         E_E_C_d_t = jjj_dc_a.calc_E_E_C_d_t_type1_and_type3(

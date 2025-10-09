@@ -16,6 +16,7 @@ from jjjexperiment.options import *
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 from jjjexperiment.app_config import *
 
+# TODO: 不必要なレイヤーだと判断しており除去中...
 @log_res(['E_E_fan_H_d_t', 'q_hs_H_d_t'])
 def calc_E_E_fan_H_d_t(
         type, region, case_name,
@@ -54,6 +55,7 @@ def calc_E_E_fan_H_d_t(
 
     return E_E_fan_H_d_t, q_hs_H_d_t
 
+# TODO: 不必要なレイヤーだと判断しており除去中...
 @log_res(['E_E_fan_C_d_t', 'q_hs_CS_d_t', 'q_hs_CL_d_t'])
 def calc_E_E_fan_C_d_t(
         type, region, case_name,

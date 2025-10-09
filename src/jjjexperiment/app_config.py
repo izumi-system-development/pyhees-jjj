@@ -3,6 +3,9 @@ from injector import Injector, singleton
 # JJJ
 from jjjexperiment.options import *
 
+# NOTE: singleton パターンを強調したクライアントコードでは
+# 取得したインスタンスを使いまわすのではなく逐一 get() します.
+
 @singleton  # injector.get() したインスタンスの操作を共有するため
 class AppConfig:
     def __init__(self):
