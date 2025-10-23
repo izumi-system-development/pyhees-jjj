@@ -34,6 +34,8 @@ from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE
 from jjjexperiment.result import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
 from jjjexperiment.options import *
+from jjjexperiment.common import *
+import jjjexperiment.inputs as jjj_ipt
 
 # [F25-01] 最低風量の直接入力
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
@@ -251,27 +253,93 @@ def calc(input_data: dict, test_mode=False):
     # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
     q_hs_H_d_t = \
         dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, region)
+    # NOTE: 消費電力量計算に広く使用されており、広いスコープで定義してよいことを確認済
 
-    match injector.get(AppConfig).input_V_hs_min_H:
-        case 最低風量直接入力.入力しない.value:
-            # 既存式
-            print(最低風量直接入力.入力しない)
-            E_E_fan_H_d_t = \
-                dc_a.get_E_E_fan_H_d_t(H_A['type']
-                    # 切替 [ﾙｰﾑｴｱｺﾝﾌｧﾝ(P_rac_fan)/循環ﾌｧﾝ(P_fan)]
-                    , P_rac_fan_rtd_H if H_A['type'] == PROCESS_TYPE_2 else H_A['P_fan_rtd_H']
-                    , V_hs_vent_d_t
-                    , V_hs_supply_d_t
-                    , V_hs_dsgn_H
-                    , q_hs_H_d_t  # [W]
-                    , H_A['f_SFP_H'])
-        case 最低風量直接入力.入力する.value:
-            # [F25-01] 最低風量の直接入力
-            print(最低風量直接入力.入力する)
-            E_E_fan_H_d_t = \
-                jjj_V_min_input.get_E_E_fan_d_t(P_rac_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, q_hs_H_d_t)
-        case _:
-            raise ValueError
+    climate = jjj_ipt.ClimateEntity(region)
+    HCM = climate.get_HCM_d_t()
+
+    E_E_fan_H_d_t: Array8760
+    # NOTE: 潜熱評価モデルはベース式が異なるため 最低風量・最低電力 直接入力ロジック反映から除外する
+    if H_A['type'] == PROCESS_TYPE_3:
+        print(PROCESS_TYPE_3)
+
+        import jjjexperiment.latent_load.section4_2_a as jjj_latent_dc_a
+        E_E_fan_H_d_t = jjj_latent_dc_a.get_E_E_fan_H_d_t(V_hs_vent_d_t, q_hs_H_d_t, H_A['f_SFP_H'])
+
+    elif H_A['type'] in [PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_4]:
+        print(H_A['type'])
+
+        # [F25-01] 最低風量・最低電力 直接入力
+        match injector.get(AppConfig).H.input_V_hs_min:
+            case 最低風量直接入力.入力しない:
+                print(最低風量直接入力.入力しない)
+
+                # 従来式
+                E_E_fan_H_d_t = \
+                    dc_a.get_E_E_fan_H_d_t(
+                        # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
+                        P_rac_fan_rtd_H if H_A['type'] == PROCESS_TYPE_2 else H_A['P_fan_rtd_H']
+                        , V_hs_vent_d_t  # 上書きナシ
+                        , V_hs_supply_d_t
+                        , V_hs_dsgn_H
+                        , q_hs_H_d_t  # W
+                        , H_A['f_SFP_H'])  # NOTE: 従来式は標準値固定だがカスタム値を反映
+
+            case 最低風量直接入力.入力する:
+                print(最低風量直接入力.入力する)
+
+                # V_hs_vent_d_t の上書き
+                assert V_hs_vent_d_t.shape == Array8760.shape
+
+                V_hs_min_H = injector.get(AppConfig).H.V_hs_min
+                match injector.get(AppConfig).H.general_ventilation:
+                    case True:
+                        # 全般換気あり
+                        V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_H, V_hs_vent_d_t)
+                    case False:
+                        # 全般換気なし
+                        H = np.array([hcm == HCM.暖房期 for hcm in HCM])
+                        V_hs_vent_d_t[H] = V_hs_min_H
+                    case _:
+                        raise ValueError
+
+                match injector.get(AppConfig).H.input_E_E_fan_min:
+                    case 最低電力直接入力.入力しない.value:
+                        print(最低電力直接入力.入力しない)
+
+                        # 従来式
+                        E_E_fan_H_d_t = \
+                            dc_a.get_E_E_fan_H_d_t(
+                                # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
+                                P_rac_fan_rtd_H if H_A['type'] == PROCESS_TYPE_2 else H_A['P_fan_rtd_H']
+                                , V_hs_vent_d_t  # 上書きアリ
+                                , V_hs_supply_d_t
+                                , V_hs_dsgn_H
+                                , q_hs_H_d_t  # W
+                                , H_A['f_SFP_H'])  # NOTE: 従来式は標準値固定だがカスタム値を反映
+
+                    case 最低電力直接入力.入力する.value:
+                        print(最低電力直接入力.入力する)
+
+                        E_E_fan_min_H = injector.get(AppConfig).H.E_E_fan_min
+                        E_E_fan_logic = injector.get(AppConfig).H.E_E_fan_logic
+
+                        import jjjexperiment.ac_min_volume_input.section4_2_a as jjj_V_min_input
+                        E_E_fan_H_d_t = np.vectorize(jjj_V_min_input.get_E_E_fan)
+                        E_E_fan_H_d_t = E_E_fan_H_d_t(E_E_fan_logic,
+                                # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
+                                P_rac_fan_rtd_H if H_A['type'] == PROCESS_TYPE_2 else H_A['P_fan_rtd_H']
+                                , V_hs_vent_d_t  # 上書きアリ
+                                , V_hs_supply_d_t
+                                , V_hs_dsgn_H
+                                , q_hs_H_d_t
+                                , E_E_fan_min_H)
+                    case _:
+                        raise ValueError
+            case _:
+                raise ValueError
+    else:
+        raise ValueError
 
     E_E_H_d_t: np.ndarray
     """日付dの時刻tにおける1時間当たり 暖房時の消費電力量 [kWh/h]"""
@@ -409,31 +477,86 @@ def calc(input_data: dict, test_mode=False):
         # 潜熱/顕熱を使用する
         q_hs_C_d_t = q_hs_CS_d_t + q_hs_CL_d_t
 
-    match injector.get(AppConfig).input_V_hs_min_C:
-        case 最低風量直接入力.入力しない.value:
-            # 既存式
-            print(最低風量直接入力.入力しない)
-            E_E_fan_C_d_t = \
-                dc_a.get_E_E_fan_C_d_t(C_A['type']
-                    # 切替 [ﾙｰﾑｴｱｺﾝﾌｧﾝ(P_rac_fan)/循環ﾌｧﾝ(P_fan)]
-                    , P_rac_fan_rtd_C if C_A['type'] == PROCESS_TYPE_2 else C_A['P_fan_rtd_C']
-                    , V_hs_vent_d_t
-                    , V_hs_supply_d_t
-                    , V_hs_dsgn_C
-                    , q_hs_C_d_t  # [W]
-                    , C_A['f_SFP_C'])
-        case 最低風量直接入力.入力する.value:
-            # [F25-01] 最低風量の直接入力
-            print(最低風量直接入力.入力する)
-            E_E_fan_C_d_t = \
-                jjj_V_min_input.get_E_E_fan_d_t(
-                    P_rac_fan_rtd_C,
-                    V_hs_vent_d_t,
-                    V_hs_supply_d_t,
-                    V_hs_dsgn_C,
-                    q_hs_C_d_t)
-        case _:
-            raise ValueError
+    if C_A['type'] == PROCESS_TYPE_3:
+        print(PROCESS_TYPE_3)
+
+        import jjjexperiment.latent_load.section4_2_a as jjj_latent_dc_a
+        E_E_fan_C_d_t = jjj_latent_dc_a.get_E_E_fan_C_d_t(V_hs_vent_d_t, q_hs_C_d_t, C_A['f_SFP_C'])
+
+    elif C_A['type'] in [PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_4]:
+        print(C_A['type'])
+
+        # [F25-01] 最低風量・最低電力 直接入力
+        match injector.get(AppConfig).C.input_V_hs_min:
+            case 最低風量直接入力.入力しない:
+                print(最低風量直接入力.入力しない)
+
+                # 従来式
+                E_E_fan_C_d_t = \
+                    dc_a.get_E_E_fan_C_d_t(
+                        # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
+                        P_rac_fan_rtd_C if C_A['type'] == PROCESS_TYPE_2 else C_A['P_fan_rtd_C']
+                        , V_hs_vent_d_t  # 上書きナシ
+                        , V_hs_supply_d_t
+                        , V_hs_dsgn_C
+                        , q_hs_C_d_t  # W
+                        , C_A['f_SFP_C'])  # NOTE: 従来式は標準値固定だがカスタム値を反映
+
+            case 最低風量直接入力.入力する:
+                print(最低風量直接入力.入力する)
+
+                # V_hs_vent_d_t の上書き
+                assert V_hs_vent_d_t.shape == Array8760.shape
+
+                V_hs_min_C = injector.get(AppConfig).C.V_hs_min
+                match injector.get(AppConfig).C.general_ventilation:
+                    case True:
+                        # 全般換気あり
+                        V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_C, V_hs_vent_d_t)
+                    case False:
+                        # 全般換気なし
+                        C = np.array([hcm == HCM.冷房期 for hcm in HCM])
+                        V_hs_vent_d_t[C] = V_hs_min_C
+                    case _:
+                        raise ValueError
+
+                match injector.get(AppConfig).C.input_E_E_fan_min:
+                    case 最低電力直接入力.入力しない.value:
+                        print(最低電力直接入力.入力しない)
+
+                        # 従来式
+                        E_E_fan_C_d_t = \
+                            dc_a.get_E_E_fan_C_d_t(
+                                # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
+                                P_rac_fan_rtd_C if C_A['type'] == PROCESS_TYPE_2 else C_A['P_fan_rtd_C']
+                                , V_hs_vent_d_t  # 上書きアリ
+                                , V_hs_supply_d_t
+                                , V_hs_dsgn_C
+                                , q_hs_C_d_t  # W
+                                , C_A['f_SFP_C'])  # NOTE: 従来式は標準値固定だがカスタム値を反映
+
+                    case 最低電力直接入力.入力する.value:
+                        print(最低電力直接入力.入力する)
+
+                        E_E_fan_min_C = injector.get(AppConfig).C.E_E_fan_min
+                        E_E_fan_logic = injector.get(AppConfig).C.E_E_fan_logic
+
+                        import jjjexperiment.ac_min_volume_input.section4_2_a as jjj_V_min_input
+                        E_E_fan_C_d_t = np.vectorize(jjj_V_min_input.get_E_E_fan)
+                        E_E_fan_C_d_t = E_E_fan_C_d_t(E_E_fan_logic,
+                                # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
+                                P_rac_fan_rtd_C if C_A['type'] == PROCESS_TYPE_2 else C_A['P_fan_rtd_C']
+                                , V_hs_vent_d_t  # 上書きアリ
+                                , V_hs_supply_d_t
+                                , V_hs_dsgn_C
+                                , q_hs_C_d_t  # W
+                                , E_E_fan_min_C)
+                    case _:
+                        raise ValueError
+            case _:
+                raise ValueError
+    else:
+        raise ValueError
 
     E_E_C_d_t: np.ndarray
     """日付dの時刻tにおける1時間当たりの冷房時の消費電力量(kWh/h)"""
