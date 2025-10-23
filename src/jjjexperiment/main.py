@@ -228,9 +228,8 @@ def calc(input_data: dict, test_mode=False):
             H_A['duct_insulation'], region, L_H_d_t_i, L_CS_d_t_i, L_CL_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i,
             H_A['type'], input_C_af_H, input_C_af_C,
             r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, YUCACO_r_A_ufvnt, climateFile)
-
-    _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
+    _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
 
     if H_A['type'] == PROCESS_TYPE_4:
         spec, cdtn, T_real, RH_real = jjjexperiment.input.get_rac_catalog_spec(input_data, TH_FC=True)
@@ -275,7 +274,7 @@ def calc(input_data: dict, test_mode=False):
             raise ValueError
 
     E_E_H_d_t: np.ndarray
-    """日付dの時刻tにおける1時間当たりの暖房時の消費電力量(kWh/h)"""
+    """日付dの時刻tにおける1時間当たり 暖房時の消費電力量 [kWh/h]"""
 
     if H_A['type'] == PROCESS_TYPE_1 or H_A['type'] == PROCESS_TYPE_3:
         E_E_H_d_t \
@@ -345,7 +344,7 @@ def calc(input_data: dict, test_mode=False):
     _logger.NDdebug("E_UT_H_d_t", E_UT_H_d_t)
 
     df_output2 = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
-    df_output2['Q_UT_H_d_A_t [MJ/h']        = Q_UT_H_A_d_t
+    df_output2['Q_UT_H_d_A_t [MJ/h]']        = Q_UT_H_A_d_t
     df_output2['Theta_hs_H_out_d_t [℃]']    = Theta_hs_out_d_t
     df_output2['Theta_hs_H_in_d_t [℃]']     = Theta_hs_in_d_t
     df_output2['Theta_ex_d_t [℃]']          = Theta_ex_d_t
@@ -397,9 +396,8 @@ def calc(input_data: dict, test_mode=False):
             C_A['duct_insulation'], region, L_H_d_t_i, L_CS_d_t_i, L_CL_d_t_i, L_dash_H_R_d_t_i, L_dash_CS_R_d_t_i,
             C_A['type'], input_C_af_H, input_C_af_C,
             r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, YUCACO_r_A_ufvnt, climateFile)
-
-    _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
+    _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
 
     # (4) 日付dの時刻tにおける1時間当たりの熱源機の平均冷房能力(-)
     q_hs_CS_d_t, q_hs_CL_d_t = dc_a.get_q_hs_C_d_t_2(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
@@ -498,7 +496,7 @@ def calc(input_data: dict, test_mode=False):
 
     ##### 計算結果のまとめ
 
-    f_prim: float       = get_f_prim()                              #電気の量 1kWh を熱量に換算する係数(kJ/kWh)
+    f_prim: float       = get_f_prim()                              # 電気の量 1kWh を熱量に換算する係数(kJ/kWh)
     # CHECK: E_C_UT_d_t, E_H_UT_d_t 変数名表現の統一
     E_H_d_t: np.ndarray = E_E_H_d_t * f_prim / 1000 + E_UT_H_d_t    #1 時間当たりの暖房設備の設計一次エネルギー消費量(MJ/h)
     E_C_d_t: np.ndarray = E_E_C_d_t * f_prim / 1000 + E_C_UT_d_t    #1 時間当たりの冷房設備の設計一次エネルギー消費量(MJ/h)
