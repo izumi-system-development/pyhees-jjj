@@ -34,18 +34,21 @@ def get_V_hs_min(
     match(q_hs_rtd_H, q_hs_rtd_C):
         case(None, None):
             raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
+
         case(_, None):  # 暖房時
             # CHECK: フラグの個別化
-            if app_config.input_V_hs_min_H == 最低風量直接入力.入力する.value:
-                V_hs_min = app_config.V_hs_min_H
+            if app_config.H.input_V_hs_min == 最低風量直接入力.入力する.value:
+                V_hs_min = app_config.H.V_hs_min
             else:
                 V_hs_min = dc.get_V_hs_min(V_vent_g_i)  # 従来式
+
         case(None, _):  # 冷房時
             # CHECK: フラグの個別化
-            if app_config.input_V_hs_min_C == 最低風量直接入力.入力する.value:
-                V_hs_min = app_config.V_hs_min_C
+            if app_config.C.input_V_hs_min == 最低風量直接入力.入力する.value:
+                V_hs_min = app_config.C.V_hs_min
             else:
                 V_hs_min = dc.get_V_hs_min(V_vent_g_i)  # 従来式
+
         case(_, _):
             raise Exception('q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提としています')
     return V_hs_min
