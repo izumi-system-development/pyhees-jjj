@@ -1,14 +1,11 @@
 from dataclasses import dataclass
 from injector import Injector, singleton
-
 # JJJ
 from jjjexperiment.inputs.options import *
 
 @dataclass
 class SeasonalSettings:
     """季節ごとの設定値"""
-    general_ventilation: bool = True
-    """全般換気の有無"""
 
     # [F25-01] 最低風量・最低電力 直接入力
     input_V_hs_min: 最低風量直接入力 = 最低風量直接入力.入力しない
@@ -21,14 +18,6 @@ class SeasonalSettings:
     """熱源機ファン最低電力の直接入力値 [W]"""
     E_E_fan_logic: ファン消費電力算定方法 = ファン消費電力算定方法.直線近似法
     """最低電力入力時 ファン消費電力算定方法"""
-
-    @classmethod
-    def heating_defaults(cls):
-        return cls()
-
-    @classmethod
-    def cooling_defaults(cls):
-        return cls()
 
     def update_from_input(self, input: dict):
         """inputオブジェクトから設定値を更新する"""
@@ -64,22 +53,8 @@ class SeasonalSettings:
 class AppConfig:
     def __init__(self):
         """規定値で初期化"""
-        self.H = SeasonalSettings().heating_defaults()
-        self.C = SeasonalSettings().cooling_defaults()
-
-        # 床下空調新ロジック(F24-05)
-        self.new_ufac_flg: int = 床下空調ロジック.変更しない.value
-        """床下空調ロジック"""
-
-    # 床下空調新ロジック(F24-05)
-    R_g: float = None
-    """地盤またはそれを覆う基礎の表面熱伝達抵抗 [(m2・K)/W]"""
-    Theta_g_avg: float = None
-    """地盤内の不易層の温度 [℃]"""
-    U_s_vert: float = None
-    """床板(床チャンバー上面)の熱貫流率 [W/(m2・K)]"""
-    phi: float = None
-    """基礎(床チャンバー側面)の線熱貫流率 [W/(m・K)]"""
+        self.H = SeasonalSettings()
+        self.C = SeasonalSettings()
 
     # 大きくなったら関連するアップデートを分割定義する
     def update(self, input: dict) -> None:
@@ -88,19 +63,6 @@ class AppConfig:
             self.H.update_from_input(input['H_A'])
         if 'C_A' in input:
             self.C.update_from_input(input['C_A'])
-
-        self.R_g = float(input['R_g'])
-
-        # 床下空調新ロジック(F24-05)
-        if 'change_underfloor_temperature' in input:
-            self.new_ufac_flg = int(input['change_underfloor_temperature'])
-            if self.new_ufac_flg == 床下空調ロジック.変更する.value:
-                if 'input_ufac_consts' in input:
-                    self.is_valid_ufac_input = 2 == int(input['input_ufac_consts'])
-                    if self.is_valid_ufac_input:
-                        self.Theta_g_avg = float(input['Theta_g_avg'])
-                        self.U_s_vert = float(input['U_s_vert'])
-                        self.phi = float(input['phi'])
 
 injector = Injector()
 # NOTE: グローバルDIコンテナはベストではないが充分実用的なパターン
