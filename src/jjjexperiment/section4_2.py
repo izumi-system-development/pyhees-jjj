@@ -1027,6 +1027,11 @@ def calc_Q_UT_A(
         # (41)　暖冷房区画𝑖の吹き出し温度
         Theta_supply_d_t_i = dc.get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
                                                        V_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i, house.region)
+        _logger.NDdebug("Theta_supply_d_t_1", Theta_supply_d_t_i[0])
+        _logger.NDdebug("Theta_supply_d_t_2", Theta_supply_d_t_i[1])
+        _logger.NDdebug("Theta_supply_d_t_3", Theta_supply_d_t_i[2])
+        _logger.NDdebug("Theta_supply_d_t_4", Theta_supply_d_t_i[3])
+        _logger.NDdebug("Theta_supply_d_t_5", Theta_supply_d_t_i[4])
 
         # 実行条件: 床下新空調ロジックのみ
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
@@ -1084,6 +1089,12 @@ def calc_Q_UT_A(
                         raise ValueError
 
                 Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
+
+        _logger.NDdebug("Theta_supply_d_t_1", Theta_supply_d_t_i[0])
+        _logger.NDdebug("Theta_supply_d_t_2", Theta_supply_d_t_i[1])
+        _logger.NDdebug("Theta_supply_d_t_3", Theta_supply_d_t_i[2])
+        _logger.NDdebug("Theta_supply_d_t_4", Theta_supply_d_t_i[3])
+        _logger.NDdebug("Theta_supply_d_t_5", Theta_supply_d_t_i[4])
 
         # (46) 暖冷房区画𝑖の実際の居室の室温
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
