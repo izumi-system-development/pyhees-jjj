@@ -27,6 +27,7 @@ pydantic = "^2.10.6"
 pyyaml = "^6.0.2"
 
 # 追加方法: poetry add --group dev pytest
+sympy = "^1.14.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "*"
 
