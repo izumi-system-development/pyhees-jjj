@@ -10,6 +10,7 @@ from test_utils.utils import *
 
 from jjjexperiment.inputs.di_container import *
 from injector import Injector
+from jjjexperiment.underfloor_ac.inputs.common import UfVarsDataFrame
 
 # NOTE: DIコンテナライブラリ Injector 導入の目的:
 # 現時点では、出力用データフレームの操作のみ、行っているが、

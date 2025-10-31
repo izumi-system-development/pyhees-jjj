@@ -51,22 +51,6 @@ import jjjexperiment.ac_min_volume_input.inputs.cooling as v_min_cooling_input
 # 分かる人が読めば、binder > provider > module の設定レベルの違いを解説していてよい
 # https://zenn.dev/ktnyt/articles/cc5056ce81e9d3
 
-# TODO: ufac_new の inputs/common へ移動する
-class UfVarsDataFrame:
-    '''床下空調 新ロジックの調査用 出力変数'''
-    @inject
-    def __init__(self):
-        # d_t 長のデータフレーム
-        self._df_d_t = pd.DataFrame()
-
-    def update_df(self, data: dict):
-        # 横連結時は ignore_index しないこと
-        self._df_d_t = pd.concat([self._df_d_t, pd.DataFrame(data)], axis=1)
-
-    def export_to_csv(self, filename: str, encoding: str = 'cp932'):
-        '''csv書き出し'''
-        self._df_d_t.to_csv(filename, index=False, encoding=encoding)
-
 # DI用の型エイリアス
 TestMode = NewType('TestMode', bool)
 CaseName = NewType('CaseName', str)
@@ -207,8 +191,8 @@ class JJJExperimentModule(Module):
         return ufac_input.UnderfloorAc.from_dict(self._input if self._input is not None else {})
     @singleton
     @provider
-    def provide_uf_vars_data_frame(self) -> UfVarsDataFrame:
-        return UfVarsDataFrame()
+    def provide_uf_vars_data_frame(self) -> ufac_input.UfVarsDataFrame:
+        return ufac_input.UfVarsDataFrame()
 
     # F25-01 最小風量・最低電力 直接入力
     @singleton
@@ -221,18 +205,3 @@ class JJJExperimentModule(Module):
     def provide_v_min_cooling_input(self) -> v_min_cooling_input.InputMinVolumeInput:
         return v_min_cooling_input.InputMinVolumeInput \
             .from_dict(self._input['C_A'] if self._input is not None and 'C_A' in self._input else {})
-
-# NOTE: DIコンテナからの取得物への操作
-
-# 関数の定義にinjectデコレータを使用し、DataFrameHolderインスタンスを受け取る
-@inject
-def some_function(data_frame_holder: UfVarsDataFrame):
-    # 関数内で何らかの処理を行い、途中結果をデータフレームに追加
-    intermediate_result = {'x': [1, 2, 3], 'y': [4, 5, 6]}  # 何らかの中間結果
-    data_frame_holder.update_df(intermediate_result)
-
-# ネストした関数の例
-@inject
-def another_function(data_frame_holder: UfVarsDataFrame):
-    # 内部関数も同様にデータフレームを更新
-    some_function(data_frame_holder)

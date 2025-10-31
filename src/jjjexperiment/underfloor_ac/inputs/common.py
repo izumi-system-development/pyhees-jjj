@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+import pandas as pd
 from typing import Optional
+from dataclasses import dataclass
 # JJJ
 from jjjexperiment.inputs.options import *
 
@@ -32,3 +33,17 @@ class UnderfloorAc:
                     kwargs['U_s_vert'] = float(data['U_s_vert'])
                     kwargs['phi'] = float(data['phi'])
         return cls(**kwargs)
+
+class UfVarsDataFrame:
+    '''床下空調 新ロジックの調査用 出力変数'''
+    def __init__(self):
+        # d_t 長のデータフレーム
+        self._df_d_t = pd.DataFrame()
+
+    def update_df(self, data: dict):
+        # 横連結時は ignore_index しないこと
+        self._df_d_t = pd.concat([self._df_d_t, pd.DataFrame(data)], axis=1)
+
+    def export_to_csv(self, filename: str, encoding: str = 'cp932'):
+        '''csv書き出し'''
+        self._df_d_t.to_csv(filename, index=False, encoding=encoding)

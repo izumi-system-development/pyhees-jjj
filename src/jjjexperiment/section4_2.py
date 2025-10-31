@@ -39,7 +39,7 @@ import jjjexperiment.underfloor_ac as jjj_ufac
 
 # DIコンテナー
 from injector import inject
-from jjjexperiment.inputs.di_container import ClimateFile, CaseName, UfVarsDataFrame
+from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 # from jjjexperiment.inputs.app_config import *
 
 @dataclass
@@ -77,7 +77,7 @@ def calc_Q_UT_A(
         heat_CRAC: jjj_ipt.heating.CRACSpecification,
         cool_CRAC: jjj_ipt.cooling.CRACSpecification,
         new_ufac: jjj_ufac.inputs.common.UnderfloorAc,
-        new_ufac_df: UfVarsDataFrame,
+        new_ufac_df: jjj_ufac.inputs.common.UfVarsDataFrame,
         v_min_heat_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         v_min_cool_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         V_hs_dsgn_H: VHS_DSGN_H,
