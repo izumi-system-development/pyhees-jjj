@@ -18,9 +18,9 @@ dist/
 .env
 .venv/
 
-# GitHub Speckit Agents
-# NOTE: 利用エージェントは各自が利用するものを各自で追加する
-.amazonq/
+# 利用エージェントは指定しない
+# NOTE: GitHub Speckit が生成するカスタムプロンプトを共有しない
+.amazonq/prompts/
 
 # Poetry
 # NOTE: poetry.lock は除外しない(依存バージョンを固定しており開発者間で共有すべきものです)
