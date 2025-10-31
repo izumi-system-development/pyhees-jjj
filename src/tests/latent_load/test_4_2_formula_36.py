@@ -5,7 +5,7 @@ import math
 import pyhees.section4_2 as dc
 
 # JJJ
-import jjjexperiment.input as input
+import jjjexperiment.inputs.input as input
 import jjjexperiment.constants as jjj_consts
 # JJJ-Test
 from test_utils.utils import INPUT_SAMPLE_TYPE3_PATH

@@ -3,10 +3,10 @@ import numpy as np
 import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
 # JJJ
-from jjjexperiment.app_config import *
-from jjjexperiment.di_container import *
+from jjjexperiment.inputs.app_config import *
+from jjjexperiment.inputs.di_container import *
 from jjjexperiment.common import *
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 
 def get_r_A_uf_i() -> Array12x1:

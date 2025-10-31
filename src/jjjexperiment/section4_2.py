@@ -24,7 +24,7 @@ import pyhees.section4_2_a as dc_a
 from jjjexperiment.common import *
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 from jjjexperiment.helper import *
 
 import jjjexperiment.constants as jjj_consts
@@ -35,8 +35,8 @@ import jjjexperiment.underfloor_ac as jjj_ufac
 
 # DIコンテナー
 from injector import Injector
-from jjjexperiment.di_container import *
-from jjjexperiment.app_config import *
+from jjjexperiment.inputs.di_container import *
+from jjjexperiment.inputs.app_config import *
 
 # NOTE: section4_2 の同名の関数の改変版
 @jjj_cloning

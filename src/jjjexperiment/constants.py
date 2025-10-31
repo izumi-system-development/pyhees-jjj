@@ -1,4 +1,4 @@
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 def version_info() -> str:
   """ 最終編集日をバージョン管理に使用します
@@ -236,8 +236,9 @@ def set_constants(input: dict):
   if 'carry_over_heat' in input:
     global carry_over_heat
     carry_over_heat = int(input['carry_over_heat'])
-  # 床下空調新ロジック > AppConfigへ移動
-  # R_g > AppConfigへ移動
+  if 'R_g' in input:
+    global R_g
+    R_g = float(input['R_g'])
 
   #以下、潜熱評価モデル追加対応
   if 'H_A' in input:

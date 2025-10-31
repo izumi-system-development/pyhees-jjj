@@ -1,14 +1,11 @@
 from dataclasses import dataclass
 from injector import Injector, singleton
-
 # JJJ
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 @dataclass
 class SeasonalSettings:
     """季節ごとの設定値"""
-    general_ventilation: bool = True
-    """全般換気の有無"""
 
     # [F25-01] 最低風量・最低電力 直接入力
     input_V_hs_min: 最低風量直接入力 = 最低風量直接入力.入力しない
@@ -21,14 +18,6 @@ class SeasonalSettings:
     """熱源機ファン最低電力の直接入力値 [W]"""
     E_E_fan_logic: ファン消費電力算定方法 = ファン消費電力算定方法.直線近似法
     """最低電力入力時 ファン消費電力算定方法"""
-
-    @classmethod
-    def heating_defaults(cls):
-        return cls()
-
-    @classmethod
-    def cooling_defaults(cls):
-        return cls()
 
     def update_from_input(self, input: dict):
         """inputオブジェクトから設定値を更新する"""
@@ -64,8 +53,8 @@ class SeasonalSettings:
 class AppConfig:
     def __init__(self):
         """規定値で初期化"""
-        self.H = SeasonalSettings().heating_defaults()
-        self.C = SeasonalSettings().cooling_defaults()
+        self.H = SeasonalSettings()
+        self.C = SeasonalSettings()
 
         # 床下空調新ロジック(F24-05)
         self.new_ufac_flg: int = 床下空調ロジック.変更しない.value

@@ -11,9 +11,9 @@ from jjjexperiment.denchu_1 import Spec
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
-import jjjexperiment.denchu_2 as denchu_2
-from jjjexperiment.options import *
-from jjjexperiment.app_config import *
+import jjjexperiment.denchu.denchu_2 as denchu_2
+from jjjexperiment.inputs.options import *
+from jjjexperiment.inputs.app_config import *
 
 @log_res(['E_E_H_d_t(type:1,3)'])
 def calc_E_E_H_d_t_type1_and_type3(

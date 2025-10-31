@@ -25,15 +25,15 @@ import jjjexperiment.section4_2_a as jjj_dc_a
 
 # 電中研モデルロジック
 import jjjexperiment.denchu_1
-import jjjexperiment.denchu_2
+import jjjexperiment.denchu.denchu_2
 
-import jjjexperiment.input
+import jjjexperiment.inputs.input
 import jjjexperiment.constants as jjj_consts
-from jjjexperiment.app_config import *
+from jjjexperiment.inputs.app_config import *
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.result import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 from jjjexperiment.common import *
 import jjjexperiment.inputs as jjj_ipt
 
@@ -51,11 +51,11 @@ def calc(input_data: dict, test_mode=False):
     injector.get(AppConfig).update(input_data)
 
     jjj_consts.set_constants(input_data)
-    type, tatekata, A_A, A_MR, A_OR, region, sol_region = jjjexperiment.input.get_basic(input_data)
-    ENV, NV_MR, NV_OR, TS, r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, hs_CAV = jjjexperiment.input.get_env(input_data)
-    mode_H, H_A, H_MR, H_OR, H_HS = jjjexperiment.input.get_heating(input_data, region, A_A)
-    mode_C, C_A, C_MR, C_OR = jjjexperiment.input.get_cooling(input_data, region, A_A)
-    q_rtd_C, q_rtd_H, q_max_C, q_max_H, e_rtd_C, e_rtd_H, dualcompressor_C, dualcompressor_H, input_C_af_C, input_C_af_H = jjjexperiment.input.get_CRAC_spec(input_data)
+    type, tatekata, A_A, A_MR, A_OR, region, sol_region = jjjexperiment.inputs.input.get_basic(input_data)
+    ENV, NV_MR, NV_OR, TS, r_A_ufvnt, underfloor_insulation, underfloor_air_conditioning_air_supply, hs_CAV = jjjexperiment.inputs.input.get_env(input_data)
+    mode_H, H_A, H_MR, H_OR, H_HS = jjjexperiment.inputs.input.get_heating(input_data, region, A_A)
+    mode_C, C_A, C_MR, C_OR = jjjexperiment.inputs.input.get_cooling(input_data, region, A_A)
+    q_rtd_C, q_rtd_H, q_max_C, q_max_H, e_rtd_C, e_rtd_H, dualcompressor_C, dualcompressor_H, input_C_af_C, input_C_af_H = jjjexperiment.inputs.input.get_CRAC_spec(input_data)
 
     print("q_rtd_C, q_rtd_H, q_max_C, q_max_H, e_rtd_C, e_rtd_H")
     print(q_rtd_C, q_rtd_H, q_max_C, q_max_H, e_rtd_C, e_rtd_H)
@@ -68,10 +68,10 @@ def calc(input_data: dict, test_mode=False):
     _logger.info(f"e_rtd_H [-]: {e_rtd_H}")
 
     # 熱交換型換気の取得
-    HEX = jjjexperiment.input.get_heatexchangeventilation(input_data)
+    HEX = jjjexperiment.inputs.input.get_heatexchangeventilation(input_data)
 
     # 太陽熱利用の取得
-    SHC = jjjexperiment.input.get_solarheat()
+    SHC = jjjexperiment.inputs.input.get_solarheat()
 
     # 床面積の合計に対する外皮の部位の面積の合計の比
     r_env = calc_r_env(
@@ -234,10 +234,10 @@ def calc(input_data: dict, test_mode=False):
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
 
     if H_A['type'] == PROCESS_TYPE_4:
-        spec, cdtn, T_real, RH_real = jjjexperiment.input.get_rac_catalog_spec(input_data, TH_FC=True)
+        spec, cdtn, T_real, RH_real = jjjexperiment.inputs.input.get_rac_catalog_spec(input_data, TH_FC=True)
         R2, R1, R0, P_rac_fan_rtd_H = jjjexperiment.denchu_1.calc_R_and_Pc_H(spec, cdtn)
         P_rac_fan_rtd_H = 1000 * P_rac_fan_rtd_H  # kW -> W
-        simu_R_H = jjjexperiment.denchu_2.simu_R(R2, R1, R0)
+        simu_R_H = jjjexperiment.denchu.denchu_2.simu_R(R2, R1, R0)
 
         """ 電柱研モデルのモデリング定数の確認のためのCSV出力 """
         df_denchu_consts = jjjexperiment.denchu_1 \
@@ -440,10 +440,10 @@ def calc(input_data: dict, test_mode=False):
     """ 暖房時の送風機の設計風量[m3/h] """
 
     if C_A['type'] == PROCESS_TYPE_4:
-        spec, cdtn, T_real, RH_real = jjjexperiment.input.get_rac_catalog_spec(input_data, TH_FC=False)
+        spec, cdtn, T_real, RH_real = jjjexperiment.inputs.input.get_rac_catalog_spec(input_data, TH_FC=False)
         R2, R1, R0, P_rac_fan_rtd_C = jjjexperiment.denchu_1.calc_R_and_Pc_C(spec, cdtn)
         P_rac_fan_rtd_C = 1000 * P_rac_fan_rtd_C  # kW -> W
-        simu_R_C = jjjexperiment.denchu_2.simu_R(R2, R1, R0)
+        simu_R_C = jjjexperiment.denchu.denchu_2.simu_R(R2, R1, R0)
 
         """ 電柱研モデルのモデリング定数の確認のためのCSV出力 """
         df_denchu_consts = jjjexperiment.denchu_1 \

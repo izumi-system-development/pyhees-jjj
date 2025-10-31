@@ -6,10 +6,10 @@ from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE
 import jjjexperiment.constants as jjj_consts
 
 from jjjexperiment.denchu_1 import Spec, Condition, absolute_humid
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 # TODO: 将来的に input.py は解体 inputs/**_entity.py へ移行する
-from jjjexperiment.app_config import *
+from jjjexperiment.inputs.app_config import *
 
 def get_basic(input: dict):
     """ 基本情報の設定
@@ -51,10 +51,10 @@ def get_env(input: dict):
         'eta_A_C': float(input['eta_A_C'])
     }
 
-    # 自然風の利用 主たる居室
     NV_MR = 0
-    # 自然風の利用 その他居室
+    """主たる居室における通風の利用における相当換気回数"""
     NV_OR = 0
+    """その他の居室における通風の利用における相当換気回数"""
 
     # 蓄熱
     TS = False
@@ -192,7 +192,6 @@ def get_heating(input: dict, region: int, A_A: float):
         H_A['P_hs_mid_H'] = float(input['H_A']['P_hs_mid_H'])
         H_A['P_fan_mid_H'] = float(input['H_A']['P_fan_mid_H'])
     elif int(input['H_A']['input']) == 4:
-        # WARNING: このケースは存在しますか?
         H_A['EquipmentSpec'] = '最小・定格・最大出力時のメーカー公表値を入力する'
         H_A['q_rac_min_H']   = float(input['H_A']['q_rac_min_H'])
         H_A['q_rac_rtd_H']   = float(input['H_A']['q_rac_rtd_H'])
@@ -298,7 +297,6 @@ def get_cooling(input: dict, region: int, A_A: float):
         C_A['P_fan_mid_C'] = float(input['C_A']['P_fan_mid_C'])
         C_A['q_hs_min_C'] = dc_spec.get_q_hs_min_C(C_A['q_hs_rtd_C'])
     elif int(input['C_A']['input']) == 4:
-        # WARNING: このケースは存在しますか?
         C_A['EquipmentSpec'] = '最小・定格・最大出力時のメーカー公表値を入力する'
         C_A['q_rac_min_C']   = float(input['C_A']['q_rac_min_C'])
         C_A['q_rac_rtd_C']   = float(input['C_A']['q_rac_rtd_C'])

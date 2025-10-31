@@ -3,8 +3,8 @@ import numpy as np
 import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.common import *
-from jjjexperiment.options import *
-from jjjexperiment.app_config import *
+from jjjexperiment.inputs.options import *
+from jjjexperiment.inputs.app_config import *
 
 def get_V_hs_min_H(V_vent_g_i: Array5) -> float:
     return get_V_hs_min(1, None, V_vent_g_i)

@@ -7,8 +7,8 @@ import pyhees.section3_2 as gihi
 import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
 # JJJ
-from jjjexperiment.app_config import *
-from jjjexperiment.input import get_solarheat
+from jjjexperiment.inputs.app_config import *
+from jjjexperiment.inputs.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
 
