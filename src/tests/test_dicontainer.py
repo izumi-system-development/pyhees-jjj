@@ -4,11 +4,11 @@ import copy
 
 from jjjexperiment.main import calc
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 from test_utils.utils import *
 
-from jjjexperiment.di_container import *
+from jjjexperiment.inputs.di_container import *
 from injector import Injector
 
 # NOTE: DIコンテナライブラリ Injector 導入の目的:

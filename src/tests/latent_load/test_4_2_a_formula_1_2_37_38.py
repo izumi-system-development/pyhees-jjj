@@ -7,7 +7,7 @@ import pyhees.section4_1 as HC
 import pyhees.section4_2_a as dc_a
 
 # JJJ
-import jjjexperiment.input as input
+import jjjexperiment.inputs.input as input
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3
 import jjjexperiment.section4_2 as jjj_dc

@@ -7,7 +7,7 @@ from os.path import dirname, abspath
 sys.path.append(dirname(dirname(abspath(__file__))))
 # sys.path.append(os.pardir)
 print(sys.path)
-from src.jjjexperiment.denchu_1 import *
+from jjjexperiment.denchu_1 import *
 
 class Test_計算式_乾燥空気密度:
     """ 乾燥空気の密度[kg/m3]の計算が正しい

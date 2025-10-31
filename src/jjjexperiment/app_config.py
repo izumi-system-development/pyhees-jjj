@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from injector import Injector, singleton
 
 # JJJ
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 @dataclass
 class SeasonalSettings:

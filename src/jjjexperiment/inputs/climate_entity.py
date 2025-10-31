@@ -6,7 +6,7 @@ import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
 # JJJ
 from jjjexperiment.common import *
-from jjjexperiment.app_config import *
+from jjjexperiment.inputs.app_config import *
 
 class ClimateEntity:
     """ region に関するデータを保持するクラス """

@@ -1,4 +1,4 @@
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 def version_info() -> str:
   """ 最終編集日をバージョン管理に使用します

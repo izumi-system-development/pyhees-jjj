@@ -2,7 +2,7 @@ import yaml
 from typing import Optional
 from pydantic import BaseModel, ValidationError
 # JJJ
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 class H_A(BaseModel):
     """暖房方式"""

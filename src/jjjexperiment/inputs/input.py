@@ -6,10 +6,10 @@ from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE
 import jjjexperiment.constants as jjj_consts
 
 from jjjexperiment.denchu_1 import Spec, Condition, absolute_humid
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 # TODO: 将来的に input.py は解体 inputs/**_entity.py へ移行する
-from jjjexperiment.app_config import *
+from jjjexperiment.inputs.app_config import *
 
 def get_basic(input: dict):
     """ 基本情報の設定
