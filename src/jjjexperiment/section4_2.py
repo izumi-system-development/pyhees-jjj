@@ -76,8 +76,8 @@ def calc_Q_UT_A(
         skin: jjj_ipt.common.OuterSkin,
         heat_CRAC: jjj_ipt.heating.CRACSpecification,
         cool_CRAC: jjj_ipt.cooling.CRACSpecification,
-        ufac_new: jjj_ufac.inputs.common.UnderfloorAc,
-        ufac_new_df: UfVarsDataFrame,
+        new_ufac: jjj_ufac.inputs.common.UnderfloorAc,
+        new_ufac_df: UfVarsDataFrame,
         v_min_heat_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         v_min_cool_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         V_hs_dsgn_H: VHS_DSGN_H,
@@ -304,7 +304,7 @@ def calc_Q_UT_A(
     ####################################################################################################################
 
     # 脱出条件:
-    should_be_adjusted_Q_hat_hs_d_t = ufac_new.new_ufac_flg == 床下空調ロジック.変更する
+    should_be_adjusted_Q_hat_hs_d_t = new_ufac.new_ufac_flg == 床下空調ロジック.変更する
     while True:
         # (36)　VAV 調整前の熱源機の風量
         if skin.hs_CAV:
@@ -455,7 +455,7 @@ def calc_Q_UT_A(
     df_output['X_star_NR_d_t'] = X_star_NR_d_t
 
     # (52)　負荷バランス時の非居室の室温
-    if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+    if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
         V_dash_supply_d_t_A = np.sum(V_dash_supply_d_t_i[0:5, :], axis=0)
         L_H_NR_d_t_A = np.sum(load.L_H_d_t_i[5:, :], axis=0)
         L_CS_NR_d_t_A = np.sum(load.L_CS_d_t_i[5:, :], axis=0)
@@ -546,7 +546,7 @@ def calc_Q_UT_A(
     if jjj_consts.carry_over_heat == 過剰熱量繰越計算.行う.value:
 
         # NOTE: 過剰熱繰越と併用しないオプションはここで実行を拒否します
-        if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             raise PermissionError("この操作は実行に時間がかかるため併用できません。[過剰熱繰越と床下空調ロジック変更]")
             # NOTE: 過剰熱繰越の8760ループと床下空調ロジック変更の8760ループが合わさると
             # 一時間を超える実行時間になることを確認したため回避しています(2024/02)
@@ -808,7 +808,7 @@ def calc_Q_UT_A(
         # TODO: AppConfig 解散
         # house setter 生きているか？
 
-        if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             # 床下空調 新ロジック
             r_A_ufac = 1.0  # WG資料に一致させるため
             house.r_A_ufac = r_A_ufac
@@ -826,7 +826,7 @@ def calc_Q_UT_A(
         # (8) 熱損失を含む負荷バランス時の暖房負荷
         L_star_H_d_t_i = dc.get_L_star_H_d_t_i(load.L_H_d_t_i, Q_star_trs_prt_d_t_i, house.region)
 
-        if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             # 部屋→床下への熱移動分が戻ってくるため負荷控除する
             delta_L_uf2room_d_t_i = np.hstack([
                 jjj_ufac.calc_delta_L_room2uf_i(
@@ -846,7 +846,7 @@ def calc_Q_UT_A(
             L_star_H_d_t_i[Hf] -= delta_L_uf2room_d_t_i[:5, :][Hf]
 
             # 床下空調 新ロジック 調査用出力ファイル
-            ufac_new_df.update_df({
+            new_ufac_df.update_df({
                 "L_H_d_t_1": load.L_H_d_t_i[0],   "L_H_d_t_2": load.L_H_d_t_i[1],   "L_H_d_t_3": load.L_H_d_t_i[2],   "L_H_d_t_4": load.L_H_d_t_i[3],   "L_H_d_t_5": load.L_H_d_t_i[4],
                 "L_CS_d_t_1": load.L_CS_d_t_i[0], "L_CS_d_t_2": load.L_CS_d_t_i[1], "L_CS_d_t_3": load.L_CS_d_t_i[2], "L_CS_d_t_4": load.L_CS_d_t_i[3], "L_CS_d_t_5": load.L_CS_d_t_i[4],
                 "L_CL_d_t_1": load.L_CL_d_t_i[0], "L_CL_d_t_2": load.L_CL_d_t_i[1], "L_CL_d_t_3": load.L_CL_d_t_i[2], "L_CL_d_t_4": load.L_CL_d_t_i[3], "L_CL_d_t_5": load.L_CL_d_t_i[4],
@@ -951,7 +951,7 @@ def calc_Q_UT_A(
                             L_star_H_d_t_i, L_star_CS_d_t_i, l_duct_i, house.region)
 
         # NOTE: 床下空調を使用する(旧・新 両ロジックとも) 対象居室のみ損失分を補正する
-        if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             # 期待される床下温度を事前に計算(本計算は後で行う)
             Theta_uf_d_t_2023 = jjj_ufac.calc_Theta_uf_d_t_2023(
                 L_star_H_d_t_i, L_star_CS_d_t_i, house.A_A, house.A_MR, house.A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
@@ -973,8 +973,8 @@ def calc_Q_UT_A(
                     L_dash_H_R_d_t_i = L_dash_H_R_d_t_i,
                     L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
                     calc_backwards = True,  # 従来の θuf 用計算式を借りて θuf_supply計算する
-                    new_ufac = ufac_new,
-                    new_ufac_df = ufac_new_df
+                    new_ufac = new_ufac,
+                    new_ufac_df = new_ufac_df
                 )
 
             # 対象居室 i=1,2(1階居室)の損失分を補正する
@@ -1053,7 +1053,7 @@ def calc_Q_UT_A(
                                                        V_supply_d_t_i, L_star_H_d_t_i, L_star_CS_d_t_i, house.region)
 
         # 実行条件: 床下新空調ロジックのみ
-        if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             # θuf の本計算
             Theta_uf_d_t, Theta_g_surf_d_t, *others  \
                 = algo.calc_Theta(  # 新床下空調-2nd
@@ -1072,8 +1072,8 @@ def calc_Q_UT_A(
                     L_dash_H_R_d_t_i = L_dash_H_R_d_t_i,
                     L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
                     calc_backwards = False,  # ここでは θuf の従来計算のみ
-                    new_ufac = ufac_new,
-                    new_ufac_df = ufac_new_df
+                    new_ufac = new_ufac,
+                    new_ufac_df = new_ufac_df
                 )
 
             # 床下・床上の熱貫流分だけ 目標床下温度からわずかな中和がある
@@ -1086,7 +1086,7 @@ def calc_Q_UT_A(
                 ])
             assert np.shape(Theta_supply_d_t_i)==(5, 8760), "想定外の行列数です"
 
-            ufac_new_df.update_df({
+            new_ufac_df.update_df({
                 "Theta_hs_out_d_t": Theta_hs_out_d_t,
                 "Theta_uf_d_t": Theta_uf_d_t,
                 "Theta_supply_d_t_1": Theta_supply_d_t_i[0], "Theta_supply_d_t_2": Theta_supply_d_t_i[1], "Theta_supply_d_t_3": Theta_supply_d_t_i[2], "Theta_supply_d_t_4": Theta_supply_d_t_i[3], "Theta_supply_d_t_5": Theta_supply_d_t_i[4]
@@ -1110,7 +1110,7 @@ def calc_Q_UT_A(
                 Theta_supply_d_t_i[i] = np.where(mask, Theta_uf_d_t, Theta_supply_d_t_i[i])
 
         # (46) 暖冷房区画𝑖の実際の居室の室温
-        if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             HCM = np.array(jjj_ipt.ClimateEntity(house.region).get_HCM_d_t())
             A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
             Theta_HBR_d_t_i = np.hstack([
@@ -1138,7 +1138,7 @@ def calc_Q_UT_A(
                     L_star_H_d_t_i, L_star_CS_d_t_i, house.region)
 
         # (48) 実際の非居室の室温
-        if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             Theta_NR_d_t = np.array([
                 jjj_ufac.get_Theta_NR(
                     Theta_star_NR = Theta_star_NR_d_t[t],
@@ -1406,10 +1406,10 @@ def calc_Q_UT_A(
     df_output['E_C_UT_d_t'] = E_C_UT_d_t
 
     # 床下空調新ロジック調査用変数の出力
-    if ufac_new.new_ufac_flg == 床下空調ロジック.変更する:
+    if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
         filename = case_name + jjj_consts.version_info() + flg_char() + "_output_uf.csv"
         # ネスト関数内で更新されているデータフレーム
-        ufac_new_df.export_to_csv(filename)
+        new_ufac_df.export_to_csv(filename)
 
     match(q_hs_rtd_H(), q_hs_rtd_C()):
         case(None, None):
