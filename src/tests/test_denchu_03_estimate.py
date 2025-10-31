@@ -1,7 +1,7 @@
 import pytest
 import math
 
-from jjjexperiment.denchu.denchu_1 import *
+from jjjexperiment.denchu_1 import *
 from jjjexperiment.denchu.denchu_2 import *
 
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger

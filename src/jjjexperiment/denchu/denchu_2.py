@@ -1,7 +1,7 @@
 import math
 import pandas as pd
 
-from jjjexperiment.denchu.denchu_1 import *
+from jjjexperiment.denchu_1 import *
 
 from pyhees.section11_1 import \
     get_Theta_ex, get_X_ex, load_climate
