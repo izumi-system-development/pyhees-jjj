@@ -7,18 +7,15 @@ import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.common import *
+import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import *
-from jjjexperiment.inputs.app_config import *
 from jjjexperiment.inputs.input import get_solarheat
-import jjjexperiment.inputs as jjj_ipt
 
 import jjjexperiment.underfloor_ac as jjj_ufac
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 class Test_床下空調時_式52:
-
-    # NOTE: setup_class で new_ufac_flg 変更していた
 
     def test_式52_時点計算例(self, Q_hat_hs_d_t):
         """

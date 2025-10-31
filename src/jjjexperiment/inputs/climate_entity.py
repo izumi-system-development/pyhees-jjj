@@ -6,7 +6,6 @@ import pyhees.section11_1 as rgn
 import pyhees.section11_2 as slr
 # JJJ
 from jjjexperiment.common import *
-from jjjexperiment.inputs.app_config import *
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 class ClimateEntity:

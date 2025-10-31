@@ -8,7 +8,6 @@ import pyhees.section4_1 as HC
 # JJJ
 import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.input import get_solarheat
-from jjjexperiment.inputs.app_config import *
 from jjjexperiment.inputs.di_container import *
 
 import jjjexperiment.underfloor_ac as jjj_ufac

@@ -31,7 +31,6 @@ import jjjexperiment.denchu.inputs.cooling as jjj_denchu_cool_ipt
 
 import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.options import *
-from jjjexperiment.inputs.app_config import *
 from jjjexperiment.inputs.di_container import *
 
 import jjjexperiment.constants as jjj_consts
