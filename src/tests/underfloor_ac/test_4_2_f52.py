@@ -10,10 +10,11 @@ from jjjexperiment.common import *
 import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import *
-from jjjexperiment.inputs.input import get_solarheat
 
 import jjjexperiment.underfloor_ac as jjj_ufac
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
+
+from test_utils.utils import *
 
 class Test_床下空調時_式52:
 
@@ -26,6 +27,9 @@ class Test_床下空調時_式52:
             new_ufac_flg = 床下空調ロジック.変更する
         )
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
+        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        outer_skin = injector.get(jjj_ipt.OuterSkin)
+
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
         environment = jjj_ipt.EnvironmentEntity(input)
         climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
@@ -55,7 +59,7 @@ class Test_床下空調時_式52:
             spec_OR = spec_OR,
             mode_MR = mode_MR,
             mode_OR = mode_OR,
-            SHC = get_solarheat()
+            SHC = outer_skin.SHC
         )
         assert np.shape(L_H_d_t_i) == (12, 8760)
 

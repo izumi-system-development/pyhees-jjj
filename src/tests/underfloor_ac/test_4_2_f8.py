@@ -7,11 +7,12 @@ import pyhees.section3_2 as gihi
 import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
 # JJJ
-from jjjexperiment.inputs.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
 
 import jjjexperiment.underfloor_ac as jjj_ufac
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
+
+from test_utils.utils import *
 
 # デバッグ用ロガー
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
@@ -25,8 +26,10 @@ class Test_床下空調時_式8補正:
         _logger.init_logger()
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
+        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        outer_skin = injector.get(jjj_ipt.OuterSkin)
 
+        input = jjj_ipt.load_input_yaml(yaml_fullpath)
         new_ufac = UnderfloorAc.from_dict(input)
         _logger.info(f"UnderfloorAc config: {new_ufac}")
         climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
@@ -65,7 +68,7 @@ class Test_床下空調時_式8補正:
             spec_OR = spec_OR,
             mode_MR = mode_MR,
             mode_OR = mode_OR,
-            SHC = get_solarheat()
+            SHC = outer_skin.SHC
         )
         t = 0  # 01/01 01:00
         _logger.NDdebug("L_H_d_t_i_1", L_H_d_t_i[0])

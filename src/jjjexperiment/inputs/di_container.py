@@ -99,16 +99,17 @@ class JJJExperimentModule(Module):
         """データクラスを跨いだ整合性のロジック"""
         # まだプロバイダーは使用しない書き方にする(できるけど)
         new_ufac_flg = self._input.get('change_underfloor_temperature', None)
-        if new_ufac_flg is not None and new_ufac_flg == 床下空調ロジック.変更する.value:
-            # 新・床下空調
+        old_ufac_flg = self._input.get('underfloor_air_conditioning_air_supply', None)
+        if new_ufac_flg is not None and int(new_ufac_flg) == 床下空調ロジック.変更する.value:
+            # 新床下空調
             self._input['r_A_ufac'] = 100.0  # [%] WG資料より
-            # 強制的に 床下空調アリ
-            self._input['underfloor_air_conditioning_air_supply'] = 2
-            # 床下換気なし・床下断熱状態 設定を強制
-            self._input['underfloor_insulation'] = 2
-        elif self._input['underfloor_air_conditioning_air_supply'] == 2:
+            self._input['underfloor_air_conditioning_air_supply'] = 2  # 従来床下空調を含む
+            # 後はデータクラス内で > 床下換気ナシ & 床下断熱状態
+        elif old_ufac_flg is not None and int(old_ufac_flg) == 2:
             # 従来の床下空調
             self._input['r_A_ufac'] = common_input.OuterSkin.YUCACO_r_A_ufvnt / 100.0  # [%]
+            self._input['underfloor_air_conditioning_air_supply'] = 2
+            # 後はデータクラス内で > 床下換気ナシ & 床下断熱状態
         else:
             # 非床下空調
             if 'r_A_ufvnt' in self._input:

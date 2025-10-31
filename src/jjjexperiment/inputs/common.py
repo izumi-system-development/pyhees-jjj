@@ -110,23 +110,23 @@ class OuterSkin:
         kwargs['mu_H'] = get_mu_H(kwargs.get('eta_A_H', cls.eta_A_H), kwargs.get('r_env', None))
         kwargs['mu_C'] = get_mu_C(kwargs.get('eta_A_C', cls.eta_A_C), kwargs.get('r_env', None))
 
+        # 床下換気
         if 'underfloor_ventilation' in data:
             if int(data['underfloor_ventilation']) == 2:
                 # NOTE: パーセントで入力されているため
                 kwargs['r_A_ufvnt'] = float(data['r_A_ufvnt']) / 100
-                # NOTE: 床下空調アリの時にはわざわざ r_A_ufvnt を見直さなくても
-                # 別の YUCACO_r_A_ufvnt が使用されるので問題ない
 
-        # TODO: 床下空調 r_A_ufac あるとき 床下換気 0 に上書きする
-
+        # 床下断熱
         if 'underfloor_insulation' in data:
             kwargs['underfloor_insulation'] = int(data['underfloor_insulation']) == 2
 
+        # 床下空調
         if 'underfloor_air_conditioning_air_supply' in data:
             # 床下空調がオンです 強制的に、床下換気ナシ・床下断熱状態となります
             if int(data['underfloor_air_conditioning_air_supply']) == 2:
                 kwargs['underfloor_air_conditioning_air_supply'] = True
                 kwargs['underfloor_insulation'] = True
+                kwargs['r_A_ufvnt'] = 0.0  # 床下換気なし
 
         if 'hs_CAV' in data:
             kwargs['hs_CAV'] = int(data['hs_CAV']) == 2

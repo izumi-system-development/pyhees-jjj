@@ -15,7 +15,8 @@ eta_A_H: 4.3
 TS: False
 r_A_ufvnt: null  # [%]
 hs_CAV: False
-change_underfloor_temperature: 1  # 床下空調なし
+change_underfloor_temperature: 1  # 新床下空調なし
+underfloor_air_conditioning_air_supply: 1  # 従来床下空調なし
 R_g: 0.15
 H_A:
   type: 1
