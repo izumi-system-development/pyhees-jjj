@@ -19,7 +19,7 @@ class Test統合テスト_デフォルト入力時:
     def test_インプットデータ_前提確認(self, expected_inputs):
         """ テストコードが想定しているインプットデータかどうか確認
         """
-        result = calc(self._inputs1, test_mode=True)
+        result = calc(self._inputs2, test_mode=True)
 
         assert result['TInput'].q_rtd_C == expected_inputs.q_rtd_C
         assert result['TInput'].q_rtd_H == expected_inputs.q_rtd_H

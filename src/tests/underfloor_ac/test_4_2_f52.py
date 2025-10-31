@@ -12,25 +12,26 @@ from jjjexperiment.inputs.di_container import *
 from jjjexperiment.inputs.app_config import *
 from jjjexperiment.inputs.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
+
 import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 class Test_床下空調時_式52:
 
-    @classmethod
-    def setup_class(cls):
-        """テストクラス共通設定"""
-        app_config = injector.get(AppConfig)
-        app_config.new_ufac_flg = 床下空調ロジック.変更する.value
+    # NOTE: setup_class で new_ufac_flg 変更していた
 
     def test_式52_時点計算例(self, Q_hat_hs_d_t):
         """
         (52) 負荷バランス時の非居室の室温 [℃]
         """
         # Arrange
+        new_ufac = UnderfloorAc(
+            new_ufac_flg = 床下空調ロジック.変更する
+        )
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
         environment = jjj_ipt.EnvironmentEntity(input)
-        climate = jjj_ipt.ClimateEntity(input.region)
+        climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
         H_A = jjj_ipt.ArgHEntity(input)
 
         spec_MR, spec_OR = HC.get_virtual_heating_devices(input.region, None, None)

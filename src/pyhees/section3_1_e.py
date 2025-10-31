@@ -16,6 +16,8 @@ from jjjexperiment.logger import log_res
 from jjjexperiment.inputs.di_container import *
 from jjjexperiment.inputs.app_config import *
 
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
+
 # ============================================================================
 # E.2 床下温度
 # ============================================================================
@@ -372,7 +374,11 @@ def get_table_e_6():
 def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, Theta_sa_d_t, Theta_ex_d_t,
                V_sa_d_t_A, H_OR_C,
                L_dash_H_R_d_t_i,
-               L_dash_CS_R_d_t_i, calc_backwards: bool = False, di: Injector = None):
+               L_dash_CS_R_d_t_i,
+               calc_backwards: bool = False,
+               new_ufac: UnderfloorAc = None,
+               new_ufac_df: UfVarsDataFrame = None
+               ):
     """床下温度及び地盤またはそれを覆う基礎の表面温度 (℃) (1)(9)
 
     Args:
@@ -386,7 +392,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
       Theta_sa_d_t(ndarray): 床下空間または居室へ供給する空気の温度 (℃)
       Theta_ex_d_t(ndarray): 外気温度 (℃)
       V_sa_d_t_A(ndarray): 床下空間または居室へ供給する1時間当たりの空気の風量の合計
-      H_OR_C(str): ※利用されていない
+      H_OR_C(str): 利用されていなかった
       L_dash_H_R_d_t_i(ndarray): 標準住戸の負荷補正前の暖房負荷 (MJ/h)
       L_dash_CS_R_d_t_i(ndarray): 標準住戸の負荷補正前の冷房顕熱負荷 （MJ/h）
       calc_backwards(bool): θuf_supply_d_t の逆算が必要か(その分時間かかる)
@@ -402,7 +408,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
     # 地盤またはそれを覆う基礎の表面熱伝達抵抗 ((m2・K)/W)
     #R_g = 0.15
     #R_g = 0.15 + 2.63  #フェノバボード50mm
-    R_g = injector.get(AppConfig).R_g
+    R_g = getattr(jjj_consts, 'R_g', 0.15)
 
     # 吸熱応答係数の初項
     Phi_A_0 = 0.025504994
@@ -546,7 +552,15 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           theta_uf = theta_uf_upper / theta_uf_lower
           return theta_uf
 
-        if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value  \
+        if new_ufac is None:
+          # 引数で渡されていないときスレッドにセットされていないかチェックする
+          thread_injector = get_current_injector()
+          if thread_injector is not None:
+            new_ufac = thread_injector.get(ufac_input.UnderfloorAc)
+            new_ufac_df = thread_injector.get(UfVarsDataFrame)
+
+        if new_ufac is not None \
+          and new_ufac.new_ufac_flg == 床下空調ロジック.変更する \
           and calc_backwards == True:
           # NOTE: 新床下空調ロジックでも θuf_supply 計算するときとそうでないときで複数使用している
 
@@ -606,18 +620,14 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
         Theta_uf_d_t[dt] = Theta_uf
         Theta_g_surf_d_t[dt] = Theta_g_surf
 
-
-    if di is not None  \
-      and injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value:
-
+    if new_ufac is not None \
+      and new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
       # 床下空調新ロジック調査用 変数出力
-      hci = di.get(HaCaInputHolder)
-      df_holder = di.get(UfVarsDataFrame)
-      df_holder.update_df({
-          f"V_sa{hci.flg_char()}_d_t_A": V_sa_d_t_A,
-          f"Theta_ex{hci.flg_char()}_d_t": Theta_ex_d_t,
+      new_ufac_df.update_df({
+          f"V_sa_{H_OR_C}_d_t_A": V_sa_d_t_A,
+          f"Theta_ex_{H_OR_C}_d_t": Theta_ex_d_t,
           f"Theta_uf_d_t": Theta_uf_d_t,
-          f"Theta_supply{hci.flg_char()}_d_t": Theta_supply_d_t,
+          f"Theta_supply_{H_OR_C}_d_t": Theta_supply_d_t,
         })
 
     return Theta_uf_d_t, Theta_g_surf_d_t, Theta_supply_d_t

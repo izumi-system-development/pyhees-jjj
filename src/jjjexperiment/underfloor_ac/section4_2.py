@@ -4,10 +4,11 @@ import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.inputs.app_config import *
-from jjjexperiment.inputs.di_container import *
+# from jjjexperiment.inputs.di_container import *
 from jjjexperiment.common import *
 from jjjexperiment.inputs.options import *
 
+from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 
 def get_r_A_uf_i() -> Array12x1:
     """暖冷房区画iの床面積のうち床下空間に接する床面積の割合 (-)

@@ -94,8 +94,8 @@ class AppConfig:
 injector = Injector()
 # NOTE: グローバルDIコンテナはベストではないが充分実用的なパターン
 
-injector.binder.bind(
-    AppConfig,
-    to = AppConfig(),  # 規定値で初期化 後で上書き
-    scope = singleton
-)
+# injector.binder.bind(
+#     AppConfig,
+#     to = AppConfig(),  # 規定値で初期化 後で上書き
+#     scope = singleton
+# )

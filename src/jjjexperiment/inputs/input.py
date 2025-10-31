@@ -71,14 +71,6 @@ def get_env(input: dict):
     # 空調空気を床下を通して給気する
     underfloor_air_conditioning_air_supply = int(input['underfloor_air_conditioning_air_supply']) == 2
 
-    # NOTE: 床下空調ロジック「変更する」を優先して強制的に床下空調アリの状態にします
-    if injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value:
-        underfloor_air_conditioning_air_supply = True
-
-    if underfloor_air_conditioning_air_supply:
-        print("床下空調がオンです。強制的に、床下換気ナシ・床下断熱状態となります。")
-        underfloor_insulation = True
-
     # 全体風量を固定する
     hs_CAV = input['hs_CAV'] == '2'
 

@@ -108,29 +108,28 @@ def calc_E_E_H_d_t_type4(
         V_hs_supply_d_t: Array8760,
         P_rac_fan_rtd_H: float,
         simu_R_H,
-        spec: Spec,
-        Theta_real_inner,
-        RH_real_inner,
+        spec: H_CatalogSpec,
+        real_inner: H_RealInnerCondition
     ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_4, "type4 専用ロジック"
     # 『2.2 実験方法と実験条件』より
     # 最大時の給気風量と機器のカタログ公表値(強)の比
-    V_ratio1 = (spec.V_inner * 60) / np.max(V_hs_supply_d_t)
+    V_ratio1 = (spec.V_rac_inner * 60) / np.max(V_hs_supply_d_t)
     # 室外機/室内機 風量比
-    V_ratio2 = spec.V_outer / spec.V_inner
+    V_ratio2 = spec.V_rac_outer / spec.V_rac_inner
 
     COP_H_d_t = denchu_2.calc_COP_H_d_t(
-                        q_d_t= q_hs_H_d_t / 1000,
-                        P_rac_fan_rtd= P_rac_fan_rtd_H / 1000,
-                        R= simu_R_H,
-                        V_rac_inner_d_t= V_ratio1 * V_hs_supply_d_t,
-                        V_rac_outer_d_t= V_ratio2 * V_ratio1 * V_hs_supply_d_t,
-                        region= region,
-                        Theta_real_inner= Theta_real_inner,
-                        RH_real_inner= RH_real_inner,
-                        climateFile= climateFile)
+                        q_d_t = q_hs_H_d_t / 1000,
+                        P_rac_fan_rtd = P_rac_fan_rtd_H / 1000,
+                        R = simu_R_H,
+                        V_rac_inner_d_t = V_ratio1 * V_hs_supply_d_t,
+                        V_rac_outer_d_t = V_ratio2 * V_ratio1 * V_hs_supply_d_t,
+                        region = region,
+                        Theta_real_inner = real_inner.Theta_rac_real_inner,
+                        RH_real_inner = real_inner.RH_rac_real_inner,
+                        climateFile = climateFile)
     E_E_CRAC_H_d_t = np.divide(q_hs_H_d_t / 1000,  # kW
                                COP_H_d_t,
                                out=np.zeros_like(q_hs_H_d_t),
@@ -246,8 +245,8 @@ def calc_E_E_C_d_t_type4(
         V_hs_supply_d_t: Array8760,
         P_rac_fan_rtd_C: float,
         simu_R_C,
-        spec: H_CatalogSpec | C_CatalogSpec,
-        real_inner: H_RealInnerCondition | C_RealInnerCondition
+        spec: C_CatalogSpec,
+        real_inner: C_RealInnerCondition
     ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
@@ -255,21 +254,21 @@ def calc_E_E_C_d_t_type4(
 
     # 『2.2 実験方法と実験条件』より
     # 最大時の給気風量と機器のカタログ公表値(強)の比
-    V_ratio1 = (spec.V_inner * 60) / np.max(V_hs_supply_d_t)
+    V_ratio1 = (spec.V_rac_inner * 60) / np.max(V_hs_supply_d_t)
     # 室外機/室内機 風量比
-    V_ratio2 = spec.V_outer / spec.V_inner
+    V_ratio2 = spec.V_rac_outer / spec.V_rac_inner
 
     # FIXME: COPが大きすぎる問題があります
     COP_C_d_t = denchu_2.calc_COP_C_d_t(
-                    q_d_t= q_hs_C_d_t / 1000,
-                    P_rac_fan_rtd= P_rac_fan_rtd_C / 1000,
-                    R= simu_R_C,
-                    V_rac_inner_d_t= V_ratio1 * V_hs_supply_d_t,
-                    V_rac_outer_d_t= V_ratio2 * V_ratio1 * V_hs_supply_d_t,
-                    region= region,
-                    Theta_real_inner= real_inner.Theta_rac_real_inner,
-                    RH_real_inner= real_inner.RH_rac_real_inner,
-                    climateFile= climateFile)
+                    q_d_t = q_hs_C_d_t / 1000,
+                    P_rac_fan_rtd = P_rac_fan_rtd_C / 1000,
+                    R = simu_R_C,
+                    V_rac_inner_d_t = V_ratio1 * V_hs_supply_d_t,
+                    V_rac_outer_d_t = V_ratio2 * V_ratio1 * V_hs_supply_d_t,
+                    region = region,
+                    Theta_real_inner = real_inner.Theta_rac_real_inner,
+                    RH_real_inner = real_inner.RH_rac_real_inner,
+                    climateFile = climateFile)
     E_E_CRAC_C_d_t = np.divide(q_hs_C_d_t / 1000,  # kW
                         COP_C_d_t,
                         out=np.zeros_like(q_hs_C_d_t),

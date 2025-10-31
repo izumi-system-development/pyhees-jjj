@@ -1,4 +1,5 @@
 import os
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 import pytest
 import numpy as np
 
@@ -11,12 +12,6 @@ import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
 
 class Test_床下空調時_式46_式48:
-
-    @classmethod
-    def setup_class(cls):
-        """テストクラス共通設定"""
-        app_config = injector.get(AppConfig)
-        app_config.new_ufac_flg = 床下空調ロジック.変更する.value
 
     def test_式46_時点計算例(self):
         """

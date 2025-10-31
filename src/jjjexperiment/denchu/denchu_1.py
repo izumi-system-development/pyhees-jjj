@@ -123,7 +123,7 @@ def get_DataFrame_denchu_modeling_consts(
 def calc_reibai_phase_T_C(q: float, P: float, spec: C_CatalogSpec)-> typing.Tuple[float, float]:
     """ q, P [kW]で統一
     """
-    M_evp = (1-BF) * m3ph_to_kgDAps(spec.V_inner * 60, spec.T_evp)
+    M_evp = (1-BF) * m3ph_to_kgDAps(spec.V_rac_inner * 60, spec.T_evp)
     Ca_ein = get_Ca(spec.X_evp / 1000)  # [kJ/(kgDA*K)]
     T_evp = spec.T_evp - q / (M_evp*Ca_ein)
 
@@ -131,7 +131,7 @@ def calc_reibai_phase_T_C(q: float, P: float, spec: C_CatalogSpec)-> typing.Tupl
     if is_over_saturated(T_evp, spec.X_evp):
         T_evp = avoid_over_saturated(T_evp, spec.X_evp)
 
-    M_cnd = (1-BF) * m3ph_to_kgDAps(spec.V_outer * 60, spec.T_cnd)
+    M_cnd = (1-BF) * m3ph_to_kgDAps(spec.V_rac_outer * 60, spec.T_cnd)
     Ca_cin = get_Ca(spec.X_cnd / 1000)  # [kJ/(kgDA*K)]
     T_cnd = spec.T_cnd + (q+P) / (M_cnd*Ca_cin)
 
@@ -141,7 +141,7 @@ def calc_reibai_phase_T_C(q: float, P: float, spec: C_CatalogSpec)-> typing.Tupl
 def calc_reibai_phase_T_H(q: float, P: float, spec: H_CatalogSpec)-> typing.Tuple[float, float]:
     """ q, P [kW]で統一
     """
-    M_evp = (1-BF) * m3ph_to_kgDAps(spec.V_outer * 60, spec.T_evp)
+    M_evp = (1-BF) * m3ph_to_kgDAps(spec.V_rac_outer * 60, spec.T_evp)
     Ca_ein = get_Ca(spec.X_evp / 1000)  # [kJ/(kgDA*K)]
     T_evp = spec.T_evp - (q-P) / (M_evp*Ca_ein)
 
@@ -149,7 +149,7 @@ def calc_reibai_phase_T_H(q: float, P: float, spec: H_CatalogSpec)-> typing.Tupl
     if is_over_saturated(T_evp, spec.X_evp):
         T_evp = avoid_over_saturated(T_evp, spec.X_evp)
 
-    M_cnd = (1-BF) * m3ph_to_kgDAps(spec.V_inner * 60, spec.T_cnd)
+    M_cnd = (1-BF) * m3ph_to_kgDAps(spec.V_rac_inner * 60, spec.T_cnd)
     Ca_cin = get_Ca(spec.X_cnd / 1000)  # [kJ/(kgDA*K)]
     T_cnd = spec.T_cnd + q / (M_cnd*Ca_cin)
 

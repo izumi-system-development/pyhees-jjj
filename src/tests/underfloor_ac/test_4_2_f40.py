@@ -6,10 +6,13 @@ import pyhees.section3_1_d as uf
 import pyhees.section3_1_e as algo
 import pyhees.section4_1 as HC
 # JJJ
-from jjjexperiment.inputs.input import get_solarheat
 import jjjexperiment.inputs as jjj_ipt
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.inputs.input import get_solarheat
 from jjjexperiment.inputs.app_config import *
+from jjjexperiment.inputs.di_container import *
+
+import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 class Test_床下空調時_式40:
 
@@ -29,11 +32,11 @@ class Test_床下空調時_式40:
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
 
-        app_config = injector.get(AppConfig)
-        app_config.update(input.model_dump())
+        injector = create_injector_from_json(input)
 
+        new_ufac = UnderfloorAc.from_dict(input)
+        climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
         environment = jjj_ipt.EnvironmentEntity(input)
-        climate = jjj_ipt.ClimateEntity(input.region)
 
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
@@ -112,10 +115,9 @@ class Test_床下空調時_式40:
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
 
-        app_config = injector.get(AppConfig)
-        app_config.update(input.model_dump())
+        new_ufac = UnderfloorAc.from_dict(input)
+        climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
 
-        climate = jjj_ipt.ClimateEntity(input.region)
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
 
@@ -151,8 +153,9 @@ class Test_床下空調時_式40:
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         input = jjj_ipt.load_input_yaml(yaml_fullpath)
 
+        climate = jjj_ipt.ClimateEntity(input.region, None)  # new_ufac 必須でない
         environment = jjj_ipt.EnvironmentEntity(input)
-        climate = jjj_ipt.ClimateEntity(input.region)
+
         phi = climate.get_phi(environment.get_Q())
 
         # Arrange - 基礎外周長さ [m]
@@ -185,8 +188,7 @@ class Test_床下空調時_式40:
         Phi_A_0 = 0.025504994
 
         # Arrange - 地盤の不易層温度 [℃]
-        environment = jjj_ipt.EnvironmentEntity(input)
-        climate = jjj_ipt.ClimateEntity(input.region)
+        climate = jjj_ipt.ClimateEntity(input.region, None)  # new_ufac 必須でない
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 

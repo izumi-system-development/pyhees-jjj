@@ -7,7 +7,6 @@
 import numpy as np
 
 from functools import lru_cache
-from injector import Injector
 
 import datetime
 
@@ -59,7 +58,6 @@ from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import *
-import jjjexperiment.underfloor_ac as jjj_ufac
 from jjjexperiment.inputs.app_config import *
 
 @jjj_cloned
@@ -1527,7 +1525,6 @@ def get_Q_hs_rtd_C(q_hs_rtd_C):
     else:
         return None
 
-# NOTE: jjj_V_min_input.get_V_hs_min でデコレートしたのでそちらを使用する
 def get_V_hs_min(V_vent_g_i):
     """(39)
 
@@ -2470,6 +2467,7 @@ def get_Theta_SAT_d_t(Theta_ex_d_t, J_d_t):
 # 13.2.2 間仕切り
 # ============================================================================
 
+@log_res(['get_A_prt_i'])
 def get_A_prt_i(A_HCZ_i, r_env, A_MR, A_NR, A_OR):
     """(60-1)(60-2)
 

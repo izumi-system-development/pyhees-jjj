@@ -7,13 +7,15 @@ import pyhees.section11_2 as slr
 # JJJ
 from jjjexperiment.common import *
 from jjjexperiment.inputs.app_config import *
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 class ClimateEntity:
     """ region に関するデータを保持するクラス """
 
-    def __init__(self, region: int):
+    def __init__(self, region: int, new_ufac: UnderfloorAc = None):
         self.region = region
         self.climate = rgn.load_climate(region)
+        self._new_ufac = new_ufac
 
     def get_J_d_t(self) -> Array8760:
         J_d_t = slr.calc_I_s_d_t(0, 0, rgn.get_climate_df(self.climate))
@@ -28,11 +30,10 @@ class ClimateEntity:
         return Theta_ex_d_t
 
     def get_Theta_g_avg(self) -> float:
-        app_config = injector.get(AppConfig)
-        if app_config.Theta_g_avg is None:
-            return algo.get_Theta_g_avg(self.get_Theta_ex_d_t())
+        if (ufac := self._new_ufac) and ufac.Theta_g_avg is not None:
+            return self._new_ufac.Theta_g_avg
         else:
-            return app_config.Theta_g_avg
+            return algo.get_Theta_g_avg(self.get_Theta_ex_d_t())
 
     def get_HCM_d_t(self) -> Array8760:
         H, C, M = dc.get_season_array_d_t(self.region)
@@ -59,11 +60,10 @@ class ClimateEntity:
         Returns:
             phi: 基礎の線熱貫流率 [W/m*K]
         """
-        app_config = injector.get(AppConfig)
-        if app_config.phi is None:
-            return algo.get_phi(self.region, Q)
+        if (ufac := self._new_ufac) and ufac.phi is not None:
+            return self.new_ufac.phi
         else:
-            return app_config.phi
+            return algo.get_phi(self.region, Q)
 
     # NOTE: algo.get_U_s() =定数 と使い分ける
     # こちらはユーザー入力
@@ -76,8 +76,7 @@ class ClimateEntity:
         Returns:
             U_s_vert: 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
         """
-        app_config = injector.get(AppConfig)
-        if app_config.U_s_vert is None:
-            return algo.get_U_s_vert(self.region, Q)
+        if (ufac := self._new_ufac) and ufac.U_s_vert is not None:
+            return self._new_ufac.U_s_vert
         else:
-            return app_config.U_s_vert
+            return algo.get_U_s_vert(self.region, Q)
