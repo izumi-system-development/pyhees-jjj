@@ -30,32 +30,32 @@ class Test_床下空調時_式40:
     def test_床下温度の計算(self):
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
+        data = jjj_ipt.load_input_yaml(yaml_fullpath)
 
-        injector = create_injector_from_json(input)
+        injector = create_injector_from_json(data)
 
-        new_ufac = UnderfloorAc.from_dict(input)
-        climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
-        environment = jjj_ipt.EnvironmentEntity(input)
+        new_ufac = UnderfloorAc.from_dict(data)
+        climate = jjj_ipt.ClimateEntity(data.region, new_ufac)
+        environment = jjj_ipt.EnvironmentEntity(data)
 
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
 
-        spec_MR, spec_OR = HC.get_virtual_heating_devices(input.region, None, None)
-        mode_MR, mode_OR = HC.calc_heating_mode(input.region, H_MR=spec_MR, H_OR=spec_OR)
+        spec_MR, spec_OR = HC.get_virtual_heating_devices(data.region, None, None)
+        mode_MR, mode_OR = HC.calc_heating_mode(data.region, H_MR=spec_MR, H_OR=spec_OR)
 
         L_H_d_t_i, _, _ = HC.calc_heating_load(
-            region = input.region,
-            sol_region = input.sol_region,
-            A_A = input.A_A,
-            A_MR = input.A_MR,
-            A_OR = input.A_OR,
+            region = data.region,
+            sol_region = data.sol_region,
+            A_A = data.A_A,
+            A_MR = data.A_MR,
+            A_OR = data.A_OR,
             Q = environment.get_Q(),
             mu_H = environment.get_mu_H(),
             mu_C = environment.get_mu_C(),
             NV_MR = 0,  # 自然風利用しない
             NV_OR = 0,  # 自然風利用しない
-            TS = input.TS,
+            TS = data.TS,
             HEX = None,  # 熱交換換気なし
             r_A_ufvnt = None,  # 床下換気ナシ
             underfloor_insulation = True,  # 床下断熱アリ
@@ -70,7 +70,7 @@ class Test_床下空調時_式40:
         assert np.shape(L_H_d_t_i) == (12, 8760)
 
         # Arrange - 当該住戸の空気を供給する床下空間に接する床の面積の合計 [m2]
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(data.A_A, data.A_MR, data.A_OR)
         A_s_ufvnt = np.sum(A_s_ufac_i)
 
         L_H_d_t = np.sum(L_H_d_t_i, axis=0)
@@ -101,33 +101,33 @@ class Test_床下空調時_式40:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
+        data = jjj_ipt.load_input_yaml(yaml_fullpath)
         # Act
-        A_s_ufvnt_i, _ = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        A_s_ufvnt_i, _ = jjj_ufac.get_A_s_ufac_i(data.A_A, data.A_MR, data.A_OR)
         A_s_ufvnt = np.sum(A_s_ufvnt_i)
         # Assert
         assert A_s_ufvnt == pytest.approx(65.44, rel=1e-2)
-        assert A_s_ufvnt / input.A_A == pytest.approx(0.54, abs=1e-2)
+        assert A_s_ufvnt / data.A_A == pytest.approx(0.54, abs=1e-2)
 
 
     def test_床下から床上居室への熱移動(self):
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
+        data = jjj_ipt.load_input_yaml(yaml_fullpath)
 
-        new_ufac = UnderfloorAc.from_dict(input)
-        climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
+        new_ufac = UnderfloorAc.from_dict(data)
+        climate = jjj_ipt.ClimateEntity(data.region, new_ufac)
 
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
 
         # Arrange - 当該住戸の空気を供給する床下空間に接する床の面積の合計 [m2]
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(data.A_A, data.A_MR, data.A_OR)
         A_s_ufac_A = np.sum(A_s_ufac_i)
         assert np.shape(A_s_ufac_i) == (12, 1)
 
         # Arrange - 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
-        environment = jjj_ipt.EnvironmentEntity(input)
+        environment = jjj_ipt.EnvironmentEntity(data)
         U_s_vert = climate.get_U_s_vert(environment.get_Q())
 
         # Act
@@ -151,15 +151,15 @@ class Test_床下空調時_式40:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
+        data = jjj_ipt.load_input_yaml(yaml_fullpath)
 
-        climate = jjj_ipt.ClimateEntity(input.region, None)  # new_ufac 必須でない
-        environment = jjj_ipt.EnvironmentEntity(input)
+        climate = jjj_ipt.ClimateEntity(data.region, None)  # new_ufac 必須でない
+        environment = jjj_ipt.EnvironmentEntity(data)
 
         phi = climate.get_phi(environment.get_Q())
 
         # Arrange - 基礎外周長さ [m]
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(data.A_A, data.A_MR, data.A_OR)
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
 
         # Arrange - 外気温度 [℃]
@@ -180,15 +180,15 @@ class Test_床下空調時_式40:
 
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
-        R_g = input.R_g
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        data = jjj_ipt.load_input_yaml(yaml_fullpath)
+        R_g = data.R_g
+        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(data.A_A, data.A_MR, data.A_OR)
 
         # 吸熱応答係数の初項
         Phi_A_0 = 0.025504994
 
         # Arrange - 地盤の不易層温度 [℃]
-        climate = jjj_ipt.ClimateEntity(input.region, None)  # new_ufac 必須でない
+        climate = jjj_ipt.ClimateEntity(data.region, None)  # new_ufac 必須でない
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 

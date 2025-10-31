@@ -49,3 +49,9 @@ def deep_update(d, u):
         else:
             d[k] = u[k]
     return d
+
+def load_input_yaml(path: str) -> dict:
+    import yaml
+    with open(path, 'r', encoding='utf-8') as f:
+        input_yaml = yaml.safe_load(f)
+    return input_yaml
