@@ -24,11 +24,6 @@ class HouseInfo:
     sol_region: Optional[int] = None
     """年間日射地域区分"""
 
-    r_A_ufvnt: float = 100.0
-    """当該住戸において、床下空間全体の面積に対する 換気を供給する床下空間の面積の比 [-]"""
-    _r_A_ufac: float = 0.0
-    """当該住戸において、床下空間全体の面積に対する 空調を供給する床下空間の面積の比 [-]"""
-
     @classmethod
     def from_dict(cls, data: dict) -> 'HouseInfo':
         kwargs = {}
@@ -40,16 +35,13 @@ class HouseInfo:
             kwargs['A_OR'] = float(data['A_OR'])
         if 'region' in data:
             kwargs['region'] = int(data['region'])
-
-        # TODO: 床下空調 r_A_ufac あるとき 床下換気 0 に上書きする
-        if 'r_A_ufvnt' in data:
-            kwargs['r_A_ufvnt'] = float(data['r_A_ufvnt'])
         return cls(**kwargs)
 
 @dataclass
 class OuterSkin:
     """外皮に関する設定値"""
 
+    # TODO: ドキュメント
     method: str = '当該住宅の外皮面積の合計を用いて評価する'
     A_env: float = 307.51
     A_A: float = 120.08  # ダブり
@@ -68,11 +60,16 @@ class OuterSkin:
     SHC: Optional[dict] = None
     """太陽熱集熱式"""
 
-    r_A_ufvnt: Optional[float] = None
-    """床下空間を経由して外気を導入する換気方式の利用"""
     # NOTE: 現時点で入力反映なし 固定値
     YUCACO_r_A_ufvnt: float = (8.28+16.56+21.53) / (9.52+1.24+3.31+3.31+1.66+8.28+16.56+21.53)
     """空調空気を床下を通して給気する場合(YUCACO)の「床下空間全体の面積に対する空気を供給する床下空間の面積の比 (-)」"""
+
+    r_A_ufvnt: Optional[float] = None
+    """当該住戸において、床下空間全体の面積に対する 換気を供給する床下空間の面積の比 [-]"""
+    # ▼ 床下空調利用時
+    r_A_ufac: Optional[float] = None
+    """当該住戸において、床下空間全体の面積に対する 空調を供給する床下空間の面積の比 [-]"""
+    # NOTE: 新・旧 床下空調インプットによって決まる
 
     underfloor_air_conditioning_air_supply: bool = False
     """空調空気を床下を通して給気する(床下空調)"""
@@ -113,11 +110,14 @@ class OuterSkin:
         kwargs['mu_H'] = get_mu_H(kwargs.get('eta_A_H', cls.eta_A_H), kwargs.get('r_env', None))
         kwargs['mu_C'] = get_mu_C(kwargs.get('eta_A_C', cls.eta_A_C), kwargs.get('r_env', None))
 
-        # NOTE: 床下空調アリの時にはわざわざ r_A_ufvnt を見直さなくても
-        # 別の YUCACO_r_A_ufvnt が使用されるので問題ない
         if 'underfloor_ventilation' in data:
             if int(data['underfloor_ventilation']) == 2:
+                # NOTE: パーセントで入力されているため
                 kwargs['r_A_ufvnt'] = float(data['r_A_ufvnt']) / 100
+                # NOTE: 床下空調アリの時にはわざわざ r_A_ufvnt を見直さなくても
+                # 別の YUCACO_r_A_ufvnt が使用されるので問題ない
+
+        # TODO: 床下空調 r_A_ufac あるとき 床下換気 0 に上書きする
 
         if 'underfloor_insulation' in data:
             kwargs['underfloor_insulation'] = int(data['underfloor_insulation']) == 2

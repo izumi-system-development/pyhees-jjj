@@ -3,18 +3,17 @@ from typing import NewType
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from injector import inject
 
 from pyhees.section11_1 import calc_h_ex, load_climate, get_Theta_ex, get_X_ex, get_climate_df
 from pyhees.section11_2 import calc_I_s_d_t
 
 # エアーコンディショナー
 import pyhees.section4_3 as rac
-
 # 床下
 import pyhees.section3_1 as ld
 import pyhees.section3_1_d as uf
 import pyhees.section3_1_e as algo
-
 # ダクト式セントラル空調機
 import pyhees.section4_2 as dc
 import pyhees.section4_2_a as dc_a
@@ -23,11 +22,11 @@ import pyhees.section4_2_a as dc_a
 
 """ JJJ_EXPERIMENT ORIGINAL """
 from jjjexperiment.common import *
+import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
 from jjjexperiment.helper import *
 
-import jjjexperiment.constants as jjj_consts
 import jjjexperiment.carryover_heat as jjj_carryover_heat
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
@@ -35,12 +34,11 @@ import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
 from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
 from jjjexperiment.inputs.options import *
-import jjjexperiment.underfloor_ac as jjj_ufac
-
-# DIコンテナー
-from injector import inject
 from jjjexperiment.inputs.di_container import ClimateFile, CaseName
-# from jjjexperiment.inputs.app_config import *
+
+# F24-5 新床下空調
+import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc, UfVarsDataFrame
 
 @dataclass
 class Load_DTI:
@@ -76,8 +74,8 @@ def calc_Q_UT_A(
         skin: jjj_ipt.common.OuterSkin,
         heat_CRAC: jjj_ipt.heating.CRACSpecification,
         cool_CRAC: jjj_ipt.cooling.CRACSpecification,
-        new_ufac: jjj_ufac.inputs.common.UnderfloorAc,
-        new_ufac_df: jjj_ufac.inputs.common.UfVarsDataFrame,
+        new_ufac: UnderfloorAc,
+        new_ufac_df: UfVarsDataFrame,
         v_min_heat_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         v_min_cool_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         V_hs_dsgn_H: VHS_DSGN_H,
@@ -799,28 +797,6 @@ def calc_Q_UT_A(
         # NOTE: 床下空調のための r_A_ufvnt の上書きはココより前に行わない
         # 外気導入の負荷削減の計算までは、削減ナシ(r_A_ufvnt=None) のままであるべきため
 
-        ''' r_A_ufac: 面積比 (空気供給室の床下面積 / 床下全体面積全体) [-]'''
-        # NOTE: 以降では、r_A_ufvnt は床下空調ロジックのみに使用されているため、
-        # 変数名を r_A_ufvnt -> r_A_ufac と変更して、統一して使用する
-
-        check_variable_undefined("r_A_ufac")
-
-        # TODO: AppConfig 解散
-        # house setter 生きているか？
-
-        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
-            # 床下空調 新ロジック
-            r_A_ufac = 1.0  # WG資料に一致させるため
-            house.r_A_ufac = r_A_ufac
-        elif skin.underfloor_air_conditioning_air_supply:
-            # 床下空調 旧ロジック
-            r_A_ufac = skin.YUCACO_r_A_ufvnt  # (1.0 未満)
-            house.r_A_ufac = r_A_ufac
-            # NOTE: ユカコは新ロジックには使用しない ('24/02 先生)
-        else:  # 非床下空調
-            r_A_ufac = skin.r_A_ufvnt
-            house.r_A_ufac = r_A_ufac
-
         # (9) 熱取得を含む負荷バランス時の冷房顕熱負荷
         L_star_CS_d_t_i = dc.get_L_star_CS_d_t_i(load.L_CS_d_t_i, Q_star_trs_prt_d_t_i, house.region)
         # (8) 熱損失を含む負荷バランス時の暖房負荷
@@ -954,7 +930,7 @@ def calc_Q_UT_A(
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             # 期待される床下温度を事前に計算(本計算は後で行う)
             Theta_uf_d_t_2023 = jjj_ufac.calc_Theta_uf_d_t_2023(
-                L_star_H_d_t_i, L_star_CS_d_t_i, house.A_A, house.A_MR, house.A_OR, r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
+                L_star_H_d_t_i, L_star_CS_d_t_i, house.A_A, house.A_MR, house.A_OR, skin.r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
             # θuf_supply を逆算(二分探索)
             _, _, Theta_uf_supply_d_t  \
                 = algo.calc_Theta(  # 新床下空調-1st
@@ -963,7 +939,7 @@ def calc_Q_UT_A(
                     A_MR = house.A_MR,
                     A_OR = house.A_OR,
                     Q = skin.Q,
-                    r_A_ufvnt = skin.r_A_ufac,
+                    r_A_ufvnt = skin.r_A_ufac,  # 床下換気ではなく床下空調のため
                     underfloor_insulation = skin.underfloor_insulation,
                     Theta_sa_d_t = Theta_uf_d_t_2023,  # ★
                     Theta_ex_d_t = Theta_ex_d_t,
@@ -1006,7 +982,7 @@ def calc_Q_UT_A(
                 # CHECK: 床下温度が i(部屋) で変わるが問題ないか
                 Theta_uf_d_t, Theta_g_surf_d_t, *others  \
                     = algo.calc_Theta(  # 旧床下空調-1st
-                        house.region, house.A_A, house.A_MR, house.A_OR, skin.Q, r_A_ufac, skin.underfloor_insulation,
+                        house.region, house.A_A, house.A_MR, house.A_OR, skin.Q, skin.r_A_ufac, skin.underfloor_insulation,
                         Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                         '', load.L_H_d_t_i, load.L_CS_d_t_i)
 
@@ -1062,7 +1038,7 @@ def calc_Q_UT_A(
                     A_MR = house.A_MR,
                     A_OR = house.A_OR,
                     Q = skin.Q,
-                    r_A_ufvnt = skin.r_A_ufac,
+                    r_A_ufvnt = skin.r_A_ufac,  # 床下換気ではなく床下空調のため
                     underfloor_insulation = skin.underfloor_insulation,
                     Theta_sa_d_t = Theta_hs_out_d_t,  # ★
                     Theta_ex_d_t = Theta_ex_d_t,
@@ -1095,7 +1071,7 @@ def calc_Q_UT_A(
             for i in range(2):  #i=0,1
                 Theta_uf_d_t, Theta_g_surf_d_t, *others  \
                     = algo.calc_Theta(  # 旧床下空調-2nd
-                        house.region, house.A_A, house.A_MR, house.A_OR, skin.Q, r_A_ufac, skin.underfloor_insulation,
+                        house.region, house.A_A, house.A_MR, house.A_OR, skin.Q, skin.r_A_ufac, skin.underfloor_insulation,
                         Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                         '', load.L_H_d_t_i, load.L_CS_d_t_i)
 
@@ -1171,7 +1147,6 @@ def calc_Q_UT_A(
     _logger.NDdebug("Theta_HBR_d_t_3", Theta_HBR_d_t_i[2])
     _logger.NDdebug("Theta_HBR_d_t_4", Theta_HBR_d_t_i[3])
     _logger.NDdebug("Theta_HBR_d_t_5", Theta_HBR_d_t_i[4])
-
     _logger.NDdebug("Theta_NR_d_t", Theta_NR_d_t)
 
     if jjj_consts.carry_over_heat == 過剰熱量繰越計算.行う.value:

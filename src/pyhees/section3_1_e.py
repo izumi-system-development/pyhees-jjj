@@ -7,14 +7,11 @@ from math import sqrt
 from functools import lru_cache
 
 # JJJ_EXPERIMENT ADD
-from injector import Injector
-
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.common import *
-from jjjexperiment.inputs.options import *
 from jjjexperiment.logger import log_res
 from jjjexperiment.inputs.di_container import *
-from jjjexperiment.inputs.app_config import *
+from jjjexperiment.inputs.options import *
 
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc, UfVarsDataFrame
 

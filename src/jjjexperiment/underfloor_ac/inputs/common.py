@@ -1,5 +1,4 @@
 import pandas as pd
-from typing import Optional
 from dataclasses import dataclass
 # JJJ
 from jjjexperiment.inputs.options import *

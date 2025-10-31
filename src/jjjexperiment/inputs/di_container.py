@@ -1,16 +1,14 @@
 from typing import NewType, Optional
-import pandas as pd
-from dataclasses import dataclass
-from injector import Injector, singleton, inject, provider, Module
-# JJJ
+from injector import Injector, singleton, provider, Module
+# JJJ 共通
+from jjjexperiment.inputs.options import *
 import jjjexperiment.inputs.common as common_input
 import jjjexperiment.inputs.cooling as common_cooling_input
 import jjjexperiment.inputs.heating as common_heating_input
-from jjjexperiment.inputs.options import *
-
+# F23 電中研モデル
 import jjjexperiment.denchu.inputs.heating as denchu_heating_input
 import jjjexperiment.denchu.inputs.cooling as denchu_cooling_input
-# F24-05 床下空調
+# F24-05 新床下空調
 import jjjexperiment.underfloor_ac.inputs.common as ufac_input
 # F25-01 最小風量・最低電力 直接入力
 import jjjexperiment.ac_min_volume_input.inputs.heating as v_min_heating_input
@@ -52,10 +50,11 @@ import jjjexperiment.ac_min_volume_input.inputs.cooling as v_min_cooling_input
 # https://zenn.dev/ktnyt/articles/cc5056ce81e9d3
 
 # DI用の型エイリアス
+# NOTE: 単一クラスをわざわざデータクラス化するのを回避できる
 TestMode = NewType('TestMode', bool)
 CaseName = NewType('CaseName', str)
-ClimateFile = NewType('ClimateFile', str)
 LoadFile = NewType('LoadFile', str)
+ClimateFile = NewType('ClimateFile', str)
 
 def create_injector_from_json(input_data: dict, test_mode: bool = False) -> Injector:
     """ファクトリーメソッド"""
@@ -66,8 +65,10 @@ def create_injector_from_json(input_data: dict, test_mode: bool = False) -> Inje
     module._injector = injector
     return injector
 
-# NOTE: ネストされた関数からの取得用(グローバルDIコンテナーは回避した)
-# 今は ContextManager でない簡易なもの
+# ネストされた関数からの取得用
+# NOTE: injectの連鎖でも到達できない深いネストの時
+# (グローバルDIコンテナーは回避した)
+# ContextManager にする方法もあるが今は簡易性を優先
 import threading
 _current_injector = threading.local()
 def set_current_injector(injector: Injector):
@@ -87,7 +88,6 @@ def clear_current_injector():
 class JJJExperimentModule(Module):
     def __init__(self, input: dict = None, test_mode: bool = False):
         """inputオブジェクトから設定値を更新する"""
-
         # メンバー変数
         self._input = input
         self._test_mode = test_mode
@@ -96,19 +96,31 @@ class JJJExperimentModule(Module):
         self._validate_and_update_inputs()
 
     def _validate_and_update_inputs(self):
-        """データクラス間の整合性を実行"""
-        new_ufac = self.provide_underfloor_ac_input()
-        # 新床下空調ロジックが有効のとき
-        if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
+        """データクラスを跨いだ整合性のロジック"""
+        # まだプロバイダーは使用しない書き方にする(できるけど)
+        new_ufac_flg = self._input.get('change_underfloor_temperature', None)
+        if new_ufac_flg is not None and new_ufac_flg == 床下空調ロジック.変更する.value:
+            # 新・床下空調
+            self._input['r_A_ufac'] = 100.0  # [%] WG資料より
             # 強制的に 床下空調アリ
             self._input['underfloor_air_conditioning_air_supply'] = 2
             # 床下換気なし・床下断熱状態 設定を強制
             self._input['underfloor_insulation'] = 2
+        elif self._input['underfloor_air_conditioning_air_supply'] == 2:
+            # 従来の床下空調
+            self._input['r_A_ufac'] = common_input.OuterSkin.YUCACO_r_A_ufvnt / 100.0  # [%]
+        else:
+            # 非床下空調
+            if 'r_A_ufvnt' in self._input:
+                self._input['r_A_ufac'] = self._input.get('r_A_ufvnt', None)
+            else:
+                raise KeyError('r_A_ufvnt が設定されていません')
 
     @singleton
     @provider
     def provide_injector(self) -> Injector:
         return self._injector
+    # NOTE: Injector 自身の注入は 通常のDI利用ケースでは必須ではないが本プロジェクトでは使用しています
 
     @singleton
     @provider
@@ -156,6 +168,7 @@ class JJJExperimentModule(Module):
                 house_info.region,
                 house_info.A_A)
 
+    @singleton
     @provider
     def provide_common_cooling_crac_input(self) -> common_cooling_input.CRACSpecification:
         house_info = self.create_houseinfo()
@@ -166,11 +179,11 @@ class JJJExperimentModule(Module):
     @singleton
     @provider
     def provide_common_heating_crac_input(self) -> common_heating_input.CRACSpecification:
-        house_info = self.create_houseinfo()
         cool_crac_input = self.provide_common_cooling_crac_input()
         return common_heating_input.CRACSpecification \
             .from_dict(
                 self._input['H_A'] if self._input is not None and 'H_A' in self._input else {},
+                # NOTE: ルームエアコン冷房情報を使用する
                 cool_crac_input.q_rtd, cool_crac_input.q_max, cool_crac_input.e_rtd)
 
     # 電中研モデル

@@ -3,49 +3,6 @@ from injector import Injector, singleton
 # JJJ
 from jjjexperiment.inputs.options import *
 
-@dataclass
-class SeasonalSettings:
-    """季節ごとの設定値"""
-
-    # [F25-01] 最低風量・最低電力 直接入力
-    input_V_hs_min: 最低風量直接入力 = 最低風量直接入力.入力しない
-    """熱源機ファン最低風量の直接入力フラグ"""
-    V_hs_min: float = 0.0
-    """熱源機ファン最低風量の直接入力値 [m3/h]"""
-    input_E_E_fan_min: 最低電力直接入力 = 最低電力直接入力.入力しない
-    """熱源機ファン最低電力の直接入力フラグ"""
-    E_E_fan_min: float = 0.0
-    """熱源機ファン最低電力の直接入力値 [W]"""
-    E_E_fan_logic: ファン消費電力算定方法 = ファン消費電力算定方法.直線近似法
-    """最低電力入力時 ファン消費電力算定方法"""
-
-    def update_from_input(self, input: dict):
-        """inputオブジェクトから設定値を更新する"""
-        # 熱源機ファン最低風量ユーザー入力(F24-02)
-        if 'input_V_hs_min' in input:
-            self.input_V_hs_min = 最低風量直接入力(int(input['input_V_hs_min']))
-
-            if self.input_V_hs_min == 最低風量直接入力.入力する.value:
-                # 事前条件: 有効な入力値が存在する
-                if 'V_hs_min' not in input:
-                    raise Exception('V_hs_min 最低風量の直接入力がありません.')
-                self.V_hs_min = float(input['V_hs_min'])
-
-                # NOTE: 最低電力直接入力は最低風量直接入力が有効なことが前提の仕様です
-                if 'input_E_E_fan_min' in input:
-                    self.input_E_E_fan_min = 最低電力直接入力(int(input['input_E_E_fan_min']))
-
-                    if self.input_E_E_fan_min == 最低電力直接入力.入力する.value:
-                        # 事前条件: 有効な入力値が存在する
-                        if 'E_E_fan_min' not in input:
-                            raise Exception('E_E_fan_min 最低電力の直接入力がありません.')
-                        self.E_E_fan_min = float(input['E_E_fan_min'])
-
-                        # 事前条件: 電力算定方法の指定あり
-                        if 'E_E_fan_logic' not in input:
-                            raise Exception('E_E_fan_logic ファン消費電力算定方法の指定がありません.')
-                        self.E_E_fan_logic = ファン消費電力算定方法(int(input['E_E_fan_logic']))
-
 # NOTE: singleton パターンを強調したクライアントコードでは
 # 取得したインスタンスを使いまわすのではなく逐一 get() します.
 
@@ -53,8 +10,6 @@ class SeasonalSettings:
 class AppConfig:
     def __init__(self):
         """規定値で初期化"""
-        self.H = SeasonalSettings()
-        self.C = SeasonalSettings()
 
         # 床下空調新ロジック(F24-05)
         self.new_ufac_flg: int = 床下空調ロジック.変更しない.value
