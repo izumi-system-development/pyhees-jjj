@@ -295,6 +295,7 @@ def calc(input_data: dict, test_mode=False):
                 match injector.get(AppConfig).H.general_ventilation:
                     case True:
                         # 全般換気あり
+                        # CHECK: 仕様の置換対象は V_vent_g_i かも
                         V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_H, V_hs_vent_d_t)
                     case False:
                         # 全般換気なし
@@ -325,14 +326,15 @@ def calc(input_data: dict, test_mode=False):
                         E_E_fan_logic = injector.get(AppConfig).H.E_E_fan_logic
 
                         import jjjexperiment.ac_min_volume_input.section4_2_a as jjj_V_min_input
-                        E_E_fan_H_d_t = np.vectorize(jjj_V_min_input.get_E_E_fan)
-                        E_E_fan_H_d_t = E_E_fan_H_d_t(E_E_fan_logic,
+                        E_E_fan_H_d_t = \
+                            jjj_V_min_input.get_E_E_fan(
+                                E_E_fan_logic
                                 # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
-                                P_rac_fan_rtd_H if H_A['type'] == PROCESS_TYPE_2 else H_A['P_fan_rtd_H']
+                                , P_rac_fan_rtd_H if H_A['type'] == PROCESS_TYPE_2 else H_A['P_fan_rtd_H']
                                 , V_hs_vent_d_t  # 上書きアリ
                                 , V_hs_supply_d_t
                                 , V_hs_dsgn_H
-                                , q_hs_H_d_t
+                                , q_hs_H_d_t  # W
                                 , E_E_fan_min_H)
                     case _:
                         raise ValueError
@@ -512,6 +514,7 @@ def calc(input_data: dict, test_mode=False):
                 match injector.get(AppConfig).C.general_ventilation:
                     case True:
                         # 全般換気あり
+                        # CHECK: 仕様の置換対象は V_vent_g_i かも
                         V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_C, V_hs_vent_d_t)
                     case False:
                         # 全般換気なし
@@ -542,10 +545,11 @@ def calc(input_data: dict, test_mode=False):
                         E_E_fan_logic = injector.get(AppConfig).C.E_E_fan_logic
 
                         import jjjexperiment.ac_min_volume_input.section4_2_a as jjj_V_min_input
-                        E_E_fan_C_d_t = np.vectorize(jjj_V_min_input.get_E_E_fan)
-                        E_E_fan_C_d_t = E_E_fan_C_d_t(E_E_fan_logic,
+                        E_E_fan_C_d_t = \
+                            jjj_V_min_input.get_E_E_fan_d_t(
+                                E_E_fan_logic
                                 # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
-                                P_rac_fan_rtd_C if C_A['type'] == PROCESS_TYPE_2 else C_A['P_fan_rtd_C']
+                                , P_rac_fan_rtd_C if C_A['type'] == PROCESS_TYPE_2 else C_A['P_fan_rtd_C']
                                 , V_hs_vent_d_t  # 上書きアリ
                                 , V_hs_supply_d_t
                                 , V_hs_dsgn_C
