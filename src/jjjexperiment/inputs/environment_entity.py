@@ -4,8 +4,6 @@ import pyhees.section3_1 as ld
 import pyhees.section3_2 as gihi
 import pyhees.section4_2 as dc
 import pyhees.section4_2_b as dc_spec
-import pyhees.section11_1 as rgn
-import pyhees.section11_2 as slr
 # JJJ
 from jjjexperiment.common import *
 import jjjexperiment.inputs as jjj_ipt

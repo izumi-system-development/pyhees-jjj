@@ -6,6 +6,7 @@ import pyhees.section4_2 as dc
 # JJJ
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
+from test_utils.utils import load_input_yaml
 
 @pytest.fixture(scope='class')
 def climate_entity(request) -> jjj_ipt.ClimateEntity:
@@ -13,8 +14,12 @@ def climate_entity(request) -> jjj_ipt.ClimateEntity:
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
     yaml_path = os.path.join(current_dir, yaml_filename)
-    input_data = jjj_ipt.load_input_yaml(yaml_path)
-    climate = jjj_ipt.ClimateEntity(input_data.region)
+
+    injector = jjj_ipt.di_container.create_injector_from_json(load_input_yaml(yaml_path))
+    house_info = injector.get(jjj_ipt.common.HouseInfo)
+    new_ufac = injector.get(jjj_ufac.common.UnderfloorAc)
+
+    climate = jjj_ipt.ClimateEntity(house_info.region, new_ufac)
     return climate
 
 @pytest.fixture(scope='class')

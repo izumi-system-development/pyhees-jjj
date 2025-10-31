@@ -1,5 +1,4 @@
-# TODO: テスト収集対象から外すように設定する
-class TestInputPickups:
+class SutValues:
     """ 計算結果の確認をする前に入力値が想定したものかチェックするため
     """
     def __init__(self, q_rtd_C, q_rtd_H, q_max_C, q_max_H, e_rtd_C, e_rtd_H):

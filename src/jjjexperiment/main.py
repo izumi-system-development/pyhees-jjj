@@ -611,7 +611,7 @@ def calc_main(
 
     # NOTE: 結合テストで確認したい値を返すのに使用します
     if test_mode:
-        i = TestInputPickups(cool_CRAC.q_rtd, heat_CRAC.q_rtd, cool_CRAC.q_max, heat_CRAC.q_max, cool_CRAC.e_rtd, heat_CRAC.e_rtd)
+        i = SutValues(cool_CRAC.q_rtd, heat_CRAC.q_rtd, cool_CRAC.q_max, heat_CRAC.q_max, cool_CRAC.e_rtd, heat_CRAC.e_rtd)
         r = ResultSummary(E_C, E_H)
         # NOTE: 今後の拡張を想定して既存コードが壊れにくい辞書型にしています
         return {'TInput':i, 'TValue':r}
