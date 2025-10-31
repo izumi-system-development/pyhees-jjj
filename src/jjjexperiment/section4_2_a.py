@@ -7,13 +7,16 @@ import pyhees.section4_3
 
 # JJJ
 from jjjexperiment.common import *
-from jjjexperiment.denchu_1 import Spec
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 import jjjexperiment.denchu.denchu_2 as denchu_2
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.app_config import *
+
+from jjjexperiment.denchu.denchu_1 import Spec
+from jjjexperiment.denchu.inputs.heating import DenchuCatalogSpecification as H_CatalogSpec, RealInnerCondition as H_RealInnerCondition
+from jjjexperiment.denchu.inputs.cooling import DenchuCatalogSpecification as C_CatalogSpec, RealInnerCondition as C_RealInnerCondition
 
 @log_res(['E_E_H_d_t(type:1,3)'])
 def calc_E_E_H_d_t_type1_and_type3(
@@ -243,9 +246,8 @@ def calc_E_E_C_d_t_type4(
         V_hs_supply_d_t: Array8760,
         P_rac_fan_rtd_C: float,
         simu_R_C,
-        spec: Spec,
-        Theta_real_inner,
-        RH_real_inner,
+        spec: H_CatalogSpec | C_CatalogSpec,
+        real_inner: H_RealInnerCondition | C_RealInnerCondition
     ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
@@ -265,8 +267,8 @@ def calc_E_E_C_d_t_type4(
                     V_rac_inner_d_t= V_ratio1 * V_hs_supply_d_t,
                     V_rac_outer_d_t= V_ratio2 * V_ratio1 * V_hs_supply_d_t,
                     region= region,
-                    Theta_real_inner= Theta_real_inner,
-                    RH_real_inner= RH_real_inner,
+                    Theta_real_inner= real_inner.Theta_rac_real_inner,
+                    RH_real_inner= real_inner.RH_rac_real_inner,
                     climateFile= climateFile)
     E_E_CRAC_C_d_t = np.divide(q_hs_C_d_t / 1000,  # kW
                         COP_C_d_t,

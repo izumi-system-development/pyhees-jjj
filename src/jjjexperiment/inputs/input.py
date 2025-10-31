@@ -5,7 +5,7 @@ import pyhees.section4_3_a as rac_spec
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 import jjjexperiment.constants as jjj_consts
 
-from jjjexperiment.denchu_1 import Spec, Condition, absolute_humid
+from jjjexperiment.denchu.denchu_1 import Spec, Condition, absolute_humid
 from jjjexperiment.inputs.options import *
 
 # TODO: 将来的に input.py は解体 inputs/**_entity.py へ移行する

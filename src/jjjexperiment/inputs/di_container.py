@@ -1,6 +1,8 @@
 import pandas as pd
 from dataclasses import dataclass
 from injector import Injector, singleton, inject, provider, Module
+import jjjexperiment.denchu.inputs.heating as denchu_heating_input
+import jjjexperiment.denchu.inputs.cooling as denchu_cooling_input
 
 # 【injector の基本】
 # DIコンテナという考え方を行うためのライブラリ
@@ -118,6 +120,18 @@ class HaCaInputHolder:
 
 # DIコンテナの設定
 class JJJExperimentModule(Module):
+    # 電中研モデル
+    @singleton
+    @provider
+    def provide_denchu_catalog_heating_input(self) -> denchu_heating_input.DenchuCatalogSpecification:
+        return denchu_heating_input.DenchuCatalogSpecification \
+            .from_dict(self._input['H_A'] if self._input is not None and 'H_A' in self._input else {})
+    @singleton
+    @provider
+    def provide_denchu_catalog_cooling_input(self) -> denchu_cooling_input.DenchuCatalogSpecification:
+        return denchu_cooling_input.DenchuCatalogSpecification \
+            .from_dict(self._input['C_A'] if self._input is not None and 'C_A' in self._input else {})
+
     @singleton
     @provider
     def provide_uf_vars_data_frame(self) -> UfVarsDataFrame:

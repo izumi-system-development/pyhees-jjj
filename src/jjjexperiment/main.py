@@ -24,8 +24,10 @@ import jjjexperiment.section4_2_a as jjj_dc_a
 """ 独自ロジック """
 
 # 電中研モデルロジック
-import jjjexperiment.denchu_1
+import jjjexperiment.denchu.denchu_1
 import jjjexperiment.denchu.denchu_2
+import jjjexperiment.denchu.inputs.heating as jjj_denchu_heat_ipt
+import jjjexperiment.denchu.inputs.cooling as jjj_denchu_cool_ipt
 
 import jjjexperiment.inputs.input
 import jjjexperiment.constants as jjj_consts
