@@ -107,7 +107,7 @@ class JJJExperimentModule(Module):
             # 後はデータクラス内で > 床下換気ナシ & 床下断熱状態
         elif old_ufac_flg is not None and int(old_ufac_flg) == 2:
             # 従来の床下空調
-            self._input['r_A_ufac'] = common_input.OuterSkin.YUCACO_r_A_ufvnt / 100.0  # [%]
+            self._input['r_A_ufac'] = common_input.OuterSkin.YUCACO_r_A_ufvnt * 100.0  # [%]
             self._input['underfloor_air_conditioning_air_supply'] = 2
             # 後はデータクラス内で > 床下換気ナシ & 床下断熱状態
         else:

@@ -127,6 +127,7 @@ class OuterSkin:
                 kwargs['underfloor_air_conditioning_air_supply'] = True
                 kwargs['underfloor_insulation'] = True
                 kwargs['r_A_ufvnt'] = 0.0  # 床下換気なし
+                kwargs['r_A_ufac'] = float(data['r_A_ufac']) / 100  # 床下空調あり
 
         if 'hs_CAV' in data:
             kwargs['hs_CAV'] = int(data['hs_CAV']) == 2
