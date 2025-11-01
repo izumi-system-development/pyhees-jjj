@@ -12,6 +12,7 @@ class SeasonalLoad:
     """冷房に関する設定値"""
 
     # NOTE: キー名は Heat/Cool 共通にする
+    # 親で H/C 分かれているのでフィールドに _H/_C 不要
 
     mode: str = '住戸全体を連続的に冷房する方式'
 
@@ -37,7 +38,6 @@ class SeasonalLoad:
     P_fan_mid: float = 0.0
     P_hs_mid: float = 0.0
 
-    # Design air volume
     V_hs_dsgn: float = 0.0
     """設計風量 [m3/h]"""
 
@@ -78,8 +78,6 @@ class SeasonalLoad:
                 case _:
                     raise ValueError
 
-        if 'q_hs_rtd' in data:
-            kwargs['q_hs_rtd'] = dc_spec.get_q_hs_rtd_C(region, A_A)
         if 'VAV' in data:
             kwargs['VAV'] = int(data['VAV']) == 2
         if 'general_ventilation' in data:

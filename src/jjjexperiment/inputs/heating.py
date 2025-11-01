@@ -39,7 +39,6 @@ class SeasonalLoad:
     P_fan_mid: float = 0.0
     P_hs_mid: float = 0.0
 
-    # Design air volume
     V_hs_dsgn: float = 0.0
     """設計風量 [m3/h]"""
 
@@ -68,8 +67,6 @@ class SeasonalLoad:
                 case _:
                     raise ValueError
 
-        if 'q_hs_rtd' in data:
-            kwargs['q_hs_rtd'] = dc_spec.get_q_hs_rtd_H(region, A_A)
         if 'VAV' in data:
             kwargs['VAV'] = int(data['VAV']) == 2
         if 'general_ventilation' in data:

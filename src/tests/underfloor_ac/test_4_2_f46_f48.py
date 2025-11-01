@@ -5,10 +5,13 @@ import numpy as np
 
 # JJJ
 from jjjexperiment.common import *
+
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import *
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
+
+from test_utils.utils import load_input_yaml
 
 class Test_床下空調時_式46_式48:
 
@@ -18,10 +21,13 @@ class Test_床下空調時_式46_式48:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
-        environment = jjj_ipt.EnvironmentEntity(input)
+        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        skin = injector.get(jjj_ipt.OuterSkin)
+        house = injector.get(jjj_ipt.HouseInfo)
+        environment = jjj_ipt.EnvironmentEntity(house, skin)
+
+        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         A_HCZ_i = environment.get_A_HCZ_i().reshape(-1, 1)
 
         # Act

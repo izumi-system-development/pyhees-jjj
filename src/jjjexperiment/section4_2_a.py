@@ -10,12 +10,11 @@ from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
-import jjjexperiment.denchu.denchu_2 as denchu_2
 from jjjexperiment.inputs.options import *
 
-from jjjexperiment.denchu.denchu_1 import Spec
 from jjjexperiment.denchu.inputs.heating import DenchuCatalogSpecification as H_CatalogSpec, RealInnerCondition as H_RealInnerCondition
 from jjjexperiment.denchu.inputs.cooling import DenchuCatalogSpecification as C_CatalogSpec, RealInnerCondition as C_RealInnerCondition
+import jjjexperiment.denchu.denchu_2 as denchu_2
 
 @log_res(['E_E_H_d_t(type:1,3)'])
 def calc_E_E_H_d_t_type1_and_type3(

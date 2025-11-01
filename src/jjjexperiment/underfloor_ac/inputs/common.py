@@ -9,7 +9,7 @@ class UnderfloorAc:
 
     new_ufac_flg: 床下空調ロジック = 床下空調ロジック.変更しない
 
-    # NOTE: pyhees では上書き対象でない定数たち
+    # NOTE: 従来 pyhees では上書き対象でない定数たち
     """床下空調ロジック"""
     Theta_g_avg: float = 15.7
     """地盤内の不易層の温度 [℃]"""

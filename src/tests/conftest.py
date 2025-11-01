@@ -16,13 +16,12 @@ def climate_entity(request) -> jjj_ipt.ClimateEntity:
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
     yaml_path = os.path.join(current_dir, yaml_filename)
-
     injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_path))
+
     house_info = injector.get(jjj_ipt.HouseInfo)
     new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
 
-    climate = jjj_ipt.ClimateEntity(house_info.region, new_ufac)
-    return climate
+    return jjj_ipt.ClimateEntity(house_info.region, new_ufac)
 
 @pytest.fixture(scope='class')
 def environment_entity(request) -> jjj_ipt.EnvironmentEntity:
@@ -30,18 +29,24 @@ def environment_entity(request) -> jjj_ipt.EnvironmentEntity:
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
     yaml_path = os.path.join(current_dir, yaml_filename)
-    input_data = jjj_ipt.load_input_yaml(yaml_path)
-    environment = jjj_ipt.EnvironmentEntity(input_data)
-    return environment
+    injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_path))
+
+    house = injector.get(jjj_ipt.HouseInfo)
+    skin = injector.get(jjj_ipt.OuterSkin)
+    return jjj_ipt.EnvironmentEntity(house, skin)
 
 @pytest.fixture
 def Q_hat_hs_d_t():
     """(40) 熱源機の風量を計算するための熱源機の出力"""
     yaml_fullpath = os.path.join(os.path.dirname(__file__), 'inputs/test_input.yaml')
-    input = jjj_ipt.load_input_yaml(yaml_fullpath)
+    injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-    environment = jjj_ipt.EnvironmentEntity(input)
-    climate = jjj_ipt.ClimateEntity(input.region)
+    house = injector.get(jjj_ipt.HouseInfo)
+    skin = injector.get(jjj_ipt.OuterSkin)
+    new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
+
+    environment = jjj_ipt.EnvironmentEntity(house, skin)
+    climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
 
     V_vent_l_d_t = np.array(dc.get_V_vent_l_d_t(
         dc.get_V_vent_l_NR_d_t(),
@@ -55,7 +60,7 @@ def Q_hat_hs_d_t():
     vector_Q_hat_hs = np.vectorize(jjj_ufac.calc_Q_hat_hs)
     Q_hat_hs_d_t = vector_Q_hat_hs(
         Q=environment.get_Q(),
-        A_A=input.A_A,
+        A_A=house.A_A,
         V_vent_l=V_vent_l_d_t,
         sum_V_vent_g_i=sum_V_vent_g_i,
         mu_H=environment.get_mu_H(),

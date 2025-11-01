@@ -8,6 +8,8 @@ import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
 # JJJ
 import jjjexperiment.inputs as jjj_ipt
+from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
+from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
 
 import jjjexperiment.underfloor_ac as jjj_ufac
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
@@ -27,38 +29,42 @@ class Test_床下空調時_式8補正:
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
-        outer_skin = injector.get(jjj_ipt.OuterSkin)
 
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
-        new_ufac = UnderfloorAc.from_dict(input)
+        house = injector.get(jjj_ipt.HouseInfo)
+        skin = injector.get(jjj_ipt.OuterSkin)
+        new_ufac = injector.get(UnderfloorAc)
+        heat_load = injector.get(CommonHeatLoad)
+        cool_load = injector.get(CommonCoolLoad)
+
         _logger.info(f"UnderfloorAc config: {new_ufac}")
-        climate = jjj_ipt.ClimateEntity(input.region, new_ufac)
-        environment = jjj_ipt.EnvironmentEntity(input)
+
+        climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
+        environment = jjj_ipt.EnvironmentEntity(house, skin)
 
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         _logger.NDdebug("Theta_ex_d_t", Theta_ex_d_t)
         _logger.NDdebug("Theta_in_d_t", Theta_in_d_t)
 
-        spec_MR, spec_OR = HC.get_virtual_heating_devices(input.region, None, None)
-        mode_MR, mode_OR = HC.calc_heating_mode(input.region, H_MR=spec_MR, H_OR=spec_OR)
+        spec_MR, spec_OR = HC.get_virtual_heating_devices(house.region, None, None)
+        mode_MR, mode_OR = HC.calc_heating_mode(house.region, H_MR=spec_MR, H_OR=spec_OR)
 
-        _logger.debug(f"region: {input.region}")
-        _logger.debug(f"A_A: {input.A_A}, A_MR: {input.A_MR}, A_OR: {input.A_OR}")
-        _logger.debug(f"Q: {environment.get_Q()}, mu_H: {environment.get_mu_H()}, mu_C: {environment.get_mu_C()}")
+        _logger.debug(f"region: {house.region}")
+        _logger.debug(f"A_A: {house.A_A}, A_MR: {house.A_MR}, A_OR: {house.A_OR}")
+        _logger.debug(f"Q: {skin.Q}, mu_H: {skin.mu_H}, mu_C: {skin.mu_C}")
 
         L_H_d_t_i, _, _ = HC.calc_heating_load(
-            region = input.region,
-            sol_region = input.sol_region,
-            A_A = input.A_A,
-            A_MR = input.A_MR,
-            A_OR = input.A_OR,
+            region = house.region,
+            sol_region = house.sol_region,
+            A_A = house.A_A,
+            A_MR = house.A_MR,
+            A_OR = house.A_OR,
             Q = environment.get_Q(),
             mu_H = environment.get_mu_H(),
             mu_C = environment.get_mu_C(),
             NV_MR = 0,  # 自然風利用しない
             NV_OR = 0,  # 自然風利用しない
-            TS = input.TS,
+            TS = skin.TS,
             r_A_ufvnt = None,  # 床下換気ナシ
             HEX = None,  # 熱交換換気なし
             underfloor_insulation = True,  # 床下断熱アリ
@@ -68,7 +74,7 @@ class Test_床下空調時_式8補正:
             spec_OR = spec_OR,
             mode_MR = mode_MR,
             mode_OR = mode_OR,
-            SHC = outer_skin.SHC
+            SHC = skin.SHC
         )
         t = 0  # 01/01 01:00
         _logger.NDdebug("L_H_d_t_i_1", L_H_d_t_i[0])
@@ -84,10 +90,10 @@ class Test_床下空調時_式8補正:
         assert L_H_d_t_i[4][t] == pytest.approx(1.899, abs=1e-1)
 
         L_CS_d_t_i, _ = HC.calc_cooling_load(
-            region = input.region,
-            A_A = input.A_A,
-            A_MR = input.A_MR,
-            A_OR = input.A_OR,
+            region = house.region,
+            A_A = house.A_A,
+            A_MR = house.A_MR,
+            A_OR = house.A_OR,
             Q = environment.get_Q(),
             mu_H = environment.get_mu_H(),
             mu_C = environment.get_mu_C(),
@@ -99,7 +105,7 @@ class Test_床下空調時_式8補正:
             mode_H = '住戸全体を連続的に暖房する方式',
             mode_MR = mode_MR,
             mode_OR = mode_OR,
-            TS = input.TS,
+            TS = skin.TS,
             HEX = None  # 熱交換換気なし
         )
         _logger.NDdebug('L_CS_d_t_i_1', L_CS_d_t_i[0])
@@ -110,12 +116,12 @@ class Test_床下空調時_式8補正:
 
         V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t(
             V_hs_min = dc.get_V_hs_min(environment.get_V_vent_g_i()),
-            V_hs_dsgn_H = input.H_A.V_hs_dsgn_H,
-            V_hs_dsgn_C = input.C_A.V_hs_dsgn_C,
-            Q_hs_rtd_H = dc.get_Q_hs_rtd_H(environment.get_q_hs_rtd_H()),
-            Q_hs_rtd_C = dc.get_Q_hs_rtd_C(environment.get_q_hs_rtd_C()),
+            V_hs_dsgn_H = heat_load.V_hs_dsgn,
+            V_hs_dsgn_C = cool_load.V_hs_dsgn,
+            Q_hs_rtd_H = dc.get_Q_hs_rtd_H(heat_load.q_hs_rtd),
+            Q_hs_rtd_C = dc.get_Q_hs_rtd_C(cool_load.q_hs_rtd),
             Q_hat_hs_d_t = Q_hat_hs_d_t,  # fixture
-            region = input.region)
+            region = house.region)
         _logger.NDdebug('V_dash_hs_supply_d_t', V_dash_hs_supply_d_t)
 
         V_dash_supply_d_t_i = dc.get_V_dash_supply_d_t_i(
@@ -130,14 +136,10 @@ class Test_床下空調時_式8補正:
         _logger.NDdebug('V_dash_supply_d_t_5', V_dash_supply_d_t_i[4])
 
         # 床面積の合計に対する外皮の部位の面積の合計の比
-        r_env = gihi.calc_r_env(
-            method='当該住戸の外皮の部位の面積等を用いて外皮性能を評価する方法',
-            A_env=input.A_env,
-            A_A=input.A_A
-        )
+        r_env = skin.r_env
         _logger.debug(f"r_env: {r_env}")
 
-        A_prt_i = dc.get_A_prt_i(environment.get_A_HCZ_i(), r_env, input.A_MR, environment.get_A_NR(), input.A_OR)
+        A_prt_i = dc.get_A_prt_i(environment.get_A_HCZ_i(), r_env, house.A_MR, environment.get_A_NR(), house.A_OR)
         _logger.debug(f"A_prt_i: {A_prt_i}")
         _logger.debug(f"A_HCZ_i: {environment.get_A_HCZ_i()}")
         _logger.debug(f"A_NR: {environment.get_A_NR()}")
@@ -155,7 +157,7 @@ class Test_床下空調時_式8補正:
             A_prt_i = A_prt_i,
             L_H_d_t_i = L_H_d_t_i,
             L_CS_d_t_i = L_CS_d_t_i,
-            region = input.region
+            region = house.region
         )
         _logger.NDdebug('Theta_star_NR_d_t', Theta_star_NR_d_t)
         # NOTE: このθ*NRは既存式を利用しているが 式(52)にも改変を加えている
@@ -175,14 +177,14 @@ class Test_床下空調時_式8補正:
 
         # Act
         # (8) 熱損失を含む負荷バランス時の暖房負荷
-        L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, input.region)
+        L_star_H_d_t_i = dc.get_L_star_H_d_t_i(L_H_d_t_i, Q_star_trs_prt_d_t_i, house.region)
         _logger.NDdebug("L_star_H_d_t_i_1_before_correction", L_star_H_d_t_i[0])
         _logger.NDdebug("L_star_H_d_t_i_2_before_correction", L_star_H_d_t_i[1])
         _logger.NDdebug("L_star_H_d_t_i_3_before_correction", L_star_H_d_t_i[2])
         _logger.NDdebug("L_star_H_d_t_i_4_before_correction", L_star_H_d_t_i[3])
         _logger.NDdebug("L_star_H_d_t_i_5_before_correction", L_star_H_d_t_i[4])
 
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         _logger.debug(f"A_s_ufac_i: {A_s_ufac_i}")
         _logger.debug(f"r_A_s_ufac: {r_A_s_ufac}")
 

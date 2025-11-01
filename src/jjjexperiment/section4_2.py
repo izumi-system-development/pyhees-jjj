@@ -25,7 +25,6 @@ from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
-from jjjexperiment.helper import *
 
 import jjjexperiment.carryover_heat as jjj_carryover_heat
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
@@ -101,10 +100,6 @@ def calc_Q_UT_A(
             case CommonCoolLoad(): return common_load.q_hs_rtd
             case _: raise ValueError
 
-    # ha_ca_holder = di.get(HaCaInputHolder)
-    # ha_ca_holder.q_hs_rtd_H = q_hs_rtd_H
-    # ha_ca_holder.q_hs_rtd_C = q_hs_rtd_C
-
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
     df_output2 = pd.DataFrame()
     df_output3 = pd.DataFrame()
@@ -120,14 +115,6 @@ def calc_Q_UT_A(
     Theta_ex_d_t = np.array(get_Theta_ex(climate))
     X_ex_d_t = get_X_ex(climate)
 
-    # TODO: 切替が不十分
-    match common_load:
-        case CommonHeatLoad():
-            Theta_in_d_t = uf.get_Theta_in_d_t('H')
-        case CommonCoolLoad():
-            Theta_in_d_t = uf.get_Theta_in_d_t('CS')
-        case _:
-            raise ValueError
 
     J_d_t = calc_I_s_d_t(0, 0, get_climate_df(climate))
     h_ex_d_t = calc_h_ex(X_ex_d_t, Theta_ex_d_t)
@@ -301,6 +288,11 @@ def calc_Q_UT_A(
     df_output3['Q_hs_rtd_H'] = [Q_hs_rtd_H]
     ####################################################################################################################
 
+    match common_load:
+        case CommonHeatLoad(): Theta_in_d_t = uf.get_Theta_in_d_t('H')
+        case CommonCoolLoad(): Theta_in_d_t = uf.get_Theta_in_d_t('CS')
+        case _: raise ValueError
+
     # 脱出条件:
     should_be_adjusted_Q_hat_hs_d_t = new_ufac.new_ufac_flg == 床下空調ロジック.変更する
     while True:
@@ -398,8 +390,8 @@ def calc_Q_UT_A(
                 ) for t in range(24*365)
             ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
-        climate = jjj_ipt.ClimateEntity(house.region)
-        phi = climate.get_phi(Q)
+        climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
+        phi = climate.get_phi(skin.Q)
 
         delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
         delta_L_uf2outdoor_d_t  \
@@ -464,7 +456,7 @@ def calc_Q_UT_A(
 
         #デバッグ用 250501 IGUCHI
         print("Theta_in_d_t[4848]", Theta_in_d_t[4848])
-        print("Q", Q)
+        print("Q", skin.Q)
         print("A_NR", A_NR)
         print("V_vent_l_NR_d_t[4848]", V_vent_l_NR_d_t[4848])
         print("V_dash_supply_A[4848]", V_dash_supply_d_t_A[4848])
@@ -479,8 +471,8 @@ def calc_Q_UT_A(
         print("HCM[4848]", HCM[4848])
 
         Theta_star_NR_d_t = np.vectorize(jjj_ufac.get_Theta_star_NR)
-        Theta_star_NR_d_t  \
-            = Theta_star_NR_d_t(
+        Theta_star_NR_d_t = \
+            Theta_star_NR_d_t(
                 Theta_star_HBR = Theta_star_HBR_d_t,  # (8760,)
                 Q = skin.Q,
                 A_NR = A_NR,
@@ -490,14 +482,14 @@ def calc_Q_UT_A(
                 A_prt_A = A_prt_A,
                 L_H_NR_A = L_H_NR_d_t_A,  # (8760,)
                 L_CS_NR_A = L_CS_NR_d_t_A,  # (8760,)
-                Theta_NR = Theta_in_d_t,              # この時点では仮置きの値を使用⇒夏期は27℃とする必要がある　250501 井口
+                Theta_NR = Theta_in_d_t,  # この時点では仮置きの値を使用⇒夏期は27℃とする必要がある　250501 井口
                 Theta_uf = Theta_uf_d_t,  # (8760,)
                 HCM = HCM  # (8760,)
             )
         print("Theta_star_NR_d_t[4848]", Theta_star_NR_d_t[4848])
     else:
-        Theta_star_NR_d_t  \
-            = dc.get_Theta_star_NR_d_t(
+        Theta_star_NR_d_t = \
+            dc.get_Theta_star_NR_d_t(
                 Theta_star_HBR_d_t, skin.Q, A_NR,
                 V_vent_l_NR_d_t, V_dash_supply_d_t_i,
                 U_prt, A_prt_i, load.L_H_d_t_i, load.L_CS_d_t_i, house.region)
@@ -813,11 +805,11 @@ def calc_Q_UT_A(
             ])
             H, C, M = dc.get_season_array_d_t(house.region)
             # (9)-補正
-            Cf = np.logical_and(C, L_CS_d_t_i[:5, :] > 0)
+            Cf = np.logical_and(C, load.L_CS_d_t_i[:5, :] > 0)
             assert Cf.shape == (5, 24*365)
             L_star_CS_d_t_i[Cf] -= delta_L_uf2room_d_t_i[:5, :][Cf]
             # (8)-補正
-            Hf = np.logical_and(H, L_H_d_t_i[:5, :] > 0)
+            Hf = np.logical_and(H, load.L_H_d_t_i[:5, :] > 0)
             assert Hf.shape == (5, 24*365)
             L_star_H_d_t_i[Hf] -= delta_L_uf2room_d_t_i[:5, :][Hf]
 
@@ -946,8 +938,8 @@ def calc_Q_UT_A(
                     # 熱源機出口温度から吹き出し温度を計算する
                     V_sa_d_t_A = np.sum(V_dash_supply_d_t_i[:2, :], axis=0),  # i=1,2
                     H_OR_C = "",
-                    L_dash_H_R_d_t_i = L_dash_H_R_d_t_i,
-                    L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
+                    L_dash_H_R_d_t_i = load.L_dash_H_R_d_t_i,
+                    L_dash_CS_R_d_t_i = load.L_dash_CS_R_d_t_i,
                     calc_backwards = True,  # 従来の θuf 用計算式を借りて θuf_supply計算する
                     new_ufac = new_ufac,
                     new_ufac_df = new_ufac_df
@@ -972,8 +964,7 @@ def calc_Q_UT_A(
                 case (_, _):
                     raise Exception("どちらかのみを前提")
 
-            survey_df_uf = di.get(UfVarsDataFrame)
-            survey_df_uf.update_df({
+            new_ufac_df.update_df({
                 "Theta_uf_d_t_2023": Theta_uf_d_t_2023,
                 "Theta_req_d_t_1": Theta_req_d_t_i[0], "Theta_req_d_t_2": Theta_req_d_t_i[1], "Theta_req_d_t_3": Theta_req_d_t_i[2], "Theta_req_d_t_4": Theta_req_d_t_i[3], "Theta_req_d_t_5": Theta_req_d_t_i[4],
             })
@@ -1050,8 +1041,8 @@ def calc_Q_UT_A(
                     # 熱源機出口温度から吹き出し温度を計算する
                     V_sa_d_t_A = np.sum(V_dash_supply_d_t_i[:2, :], axis=0),  # i=1,2
                     H_OR_C = "",
-                    L_dash_H_R_d_t_i = L_dash_H_R_d_t_i,
-                    L_dash_CS_R_d_t_i = L_dash_CS_R_d_t_i,
+                    L_dash_H_R_d_t_i = load.L_dash_H_R_d_t_i,
+                    L_dash_CS_R_d_t_i = load.L_dash_CS_R_d_t_i,
                     calc_backwards = False,  # ここでは θuf の従来計算のみ
                     new_ufac = new_ufac,
                     new_ufac_df = new_ufac_df

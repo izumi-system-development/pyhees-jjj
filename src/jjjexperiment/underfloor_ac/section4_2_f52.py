@@ -35,6 +35,8 @@ def get_Theta_star_NR(
     Returns:
         Theta_star_NR: 単時点版 負荷バランス時の非居室の室温 [℃]
     """
+    # NOTE: 新床下空調ロジックのみで使用可能
+
     # vectorize可能
     c_p_air = dc.get_c_p_air()
     rho_air = dc.get_rho_air()

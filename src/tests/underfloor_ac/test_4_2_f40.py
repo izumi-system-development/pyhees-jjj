@@ -12,6 +12,7 @@ from jjjexperiment.inputs.di_container import *
 import jjjexperiment.underfloor_ac as jjj_ufac
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
+import jjjexperiment.constants as jjj_consts
 from test_utils.utils import load_input_yaml
 
 class Test_床下空調時_式40:
@@ -114,14 +115,13 @@ class Test_床下空調時_式40:
     def test_床下から床上居室への熱移動(self):
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
-
         injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+
         house = injector.get(jjj_ipt.HouseInfo)
+        skin = injector.get(jjj_ipt.OuterSkin)
         new_ufac = injector.get(jjj_ufac.inputs.common.UnderfloorAc)
 
         climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
-
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
 
@@ -131,8 +131,7 @@ class Test_床下空調時_式40:
         assert np.shape(A_s_ufac_i) == (12, 1)
 
         # Arrange - 暖冷房負荷計算時に想定した床の熱貫流率 [W/m2*K]
-        environment = jjj_ipt.EnvironmentEntity(input)
-        U_s_vert = climate.get_U_s_vert(environment.get_Q())
+        U_s_vert = climate.get_U_s_vert(skin.Q)
 
         # Act
         # NOTE: ここでは意図した空調ではなく漏れなので 通常の0.7となる
@@ -155,15 +154,16 @@ class Test_床下空調時_式40:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        data = jjj_ipt.load_input_yaml(yaml_fullpath)
+        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        climate = jjj_ipt.ClimateEntity(data.region, None)  # new_ufac 必須でない
-        environment = jjj_ipt.EnvironmentEntity(data)
+        house = injector.get(jjj_ipt.HouseInfo)
+        skin = injector.get(jjj_ipt.OuterSkin)
 
-        phi = climate.get_phi(environment.get_Q())
+        climate = jjj_ipt.ClimateEntity(house.region, None)  # new_ufac 必須でない
+        phi = climate.get_phi(skin.Q)
 
         # Arrange - 基礎外周長さ [m]
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(data.A_A, data.A_MR, data.A_OR)
+        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
 
         # Arrange - 外気温度 [℃]
@@ -184,15 +184,19 @@ class Test_床下空調時_式40:
 
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        data = jjj_ipt.load_input_yaml(yaml_fullpath)
-        R_g = data.R_g
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(data.A_A, data.A_MR, data.A_OR)
+        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+
+        house = injector.get(jjj_ipt.HouseInfo)
+
+        R_g = getattr(jjj_consts, 'R_g', 0.15)
+
+        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
 
         # 吸熱応答係数の初項
         Phi_A_0 = 0.025504994
 
         # Arrange - 地盤の不易層温度 [℃]
-        climate = jjj_ipt.ClimateEntity(data.region, None)  # new_ufac 必須でない
+        climate = jjj_ipt.ClimateEntity(house.region, None)  # new_ufac 必須でない
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 
