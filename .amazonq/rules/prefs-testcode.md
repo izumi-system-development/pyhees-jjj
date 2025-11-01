@@ -2,6 +2,7 @@
 
 ## Test Structure
 - **AAA Pattern**: All tests must follow Arrange-Act-Assert structure with clear comments
+- **Flexible AAA**: When it makes tests simpler, Arrange & Act can be combined into a single section
 - **Japanese Comments**: Use Japanese for docstrings and comments for development team
 - **Focused Tests**: One test per specific behavior, avoid complex integration tests
 
@@ -10,7 +11,14 @@
 - **Examples**: 
   - `test_fan_power_f_37_38.py` (formulas 37 & 38)
   - `test_heating_cooling_load_f_1_2.py` (formulas 1 & 2)
-- **Benefits**: Clear subject identification, formula number reference, searchable
+- **Class Names**: Use Japanese descriptive names
+  - `class ファン電力計算テスト(unittest.TestCase):`
+  - `class 暖冷房負荷計算テスト(unittest.TestCase):`
+- **Method Names**: Use Japanese descriptive names
+  - `def test_基本計算_正常値(self):`
+  - `def test_境界値_ゼロ負荷(self):`
+  - `def test_異常値_負の値(self):`
+- **Benefits**: Clear subject identification, formula number reference, searchable, Japanese team readability
 
 ## Test Organization
 ```
@@ -37,7 +45,7 @@ src/tests/latent_load/               # latent_load = 潜熱評価 feature
 - **Proper Indexing**: Verify array bounds and expected lengths
 
 ## Test Content Guidelines
-- **Clear Test Names**: Descriptive method names in Japanese
+- **Japanese Names**: Use Japanese for class names, method names, docstrings, and comments
 - **Minimal Setup**: Avoid complex preparation functions
 - **Direct Assertions**: Test specific expected values, not just "something changed"
 - **Edge Cases**: Include zero load, boundary conditions, parameter variations
@@ -51,18 +59,41 @@ src/tests/latent_load/               # latent_load = 潜熱評価 feature
 - Testing entire calculation workflows in unit tests
 
 ## Example AAA Structure
+
+### Standard AAA Pattern
 ```python
-def test_basic_calculation(self):
-    """基本計算のテスト"""
-    # Arrange
-    param1 = 100.0
-    param2 = np.zeros(8760)
-    param2[0] = 50.0  # Winter index for heating test
-    
-    # Act
-    result = target_function(param1, param2)
-    
-    # Assert
-    assert isinstance(result, np.ndarray)
-    assert result[0] > 0
+class Testファン電力計算(unittest.TestCase):
+    """ファン電力計算のテストクラス"""
+
+    def test_基本計算_正常値(self):
+        """基本計算のテスト - 正常値"""
+        # Arrange
+        param1 = 100.0
+        param2 = np.zeros(8760)
+        param2[0] = 50.0  # 暖房期のインデックス
+
+        # Act
+        result = target_function(param1, param2)
+
+        # Assert
+        assert isinstance(result, np.ndarray)
+        assert result[0] > 0
+```
+
+### Combined Arrange & Act (when simpler)
+```python
+class Test温度計算(unittest.TestCase):
+    """温度計算のテストクラス"""
+
+    def test_基本計算_正常値(self):
+        """基本計算のテスト - 正常値"""
+        # Arrange & Act
+        result = target_function(
+            temperature=20.0,  # 設定温度
+            load=5.17,        # 負荷
+            area=51.34        # 面積
+        )
+
+        # Assert
+        assert result == pytest.approx(19.39, abs=1e-2)
 ```

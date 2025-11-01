@@ -21,6 +21,7 @@ dist/
 # 利用エージェントは指定しない
 # NOTE: GitHub Speckit が生成するカスタムプロンプトを共有しない
 .amazonq/prompts/
+.amazonq/plans/
 
 # Poetry
 # NOTE: poetry.lock は除外しない(依存バージョンを固定しており開発者間で共有すべきものです)
