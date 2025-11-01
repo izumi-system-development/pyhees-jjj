@@ -378,7 +378,7 @@ def calc_Q_UT_A(
             case CommonHeatLoad():
                 L_d_t_flr1st = 1 * r_A_s_ufac * np.sum(load.L_H_d_t_i, axis=0)
             case CommonCoolLoad():
-                L_d_t_flr1st = 1 * r_A_s_ufac * np.sum(load.L_CS_d_t_i, axis=0)
+                L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(load.L_CS_d_t_i, axis=0)
                 # NOTE[井口_250501]: 一階冷房負荷は顕熱のみ
             case _:
                 raise ValueError

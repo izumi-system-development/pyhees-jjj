@@ -60,7 +60,7 @@ class ClimateEntity:
             phi: 基礎の線熱貫流率 [W/m*K]
         """
         if (ufac := self._new_ufac) and ufac.phi is not None:
-            return self.new_ufac.phi
+            return self._new_ufac.phi
         else:
             return algo.get_phi(self.region, Q)
 
