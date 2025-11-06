@@ -33,7 +33,7 @@ import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
 from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
 from jjjexperiment.options import *
-from jjjexperiment.inputs.di_container import ClimateFile, CaseName
+from jjjexperiment.di_container import ClimateFile, CaseName
 
 # F24-5 新床下空調
 import jjjexperiment.underfloor_ac as jjj_ufac

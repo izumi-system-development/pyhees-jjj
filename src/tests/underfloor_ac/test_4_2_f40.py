@@ -7,7 +7,7 @@ import pyhees.section3_1_e as algo
 import pyhees.section4_1 as HC
 # JJJ
 import jjjexperiment.inputs as jjj_ipt
-from jjjexperiment.inputs.di_container import *
+from jjjexperiment.di_container import *
 
 import jjjexperiment.underfloor_ac as jjj_ufac
 

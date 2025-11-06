@@ -6,7 +6,7 @@ import numpy as np
 from jjjexperiment.common import *
 
 from jjjexperiment.options import *
-from jjjexperiment.inputs.di_container import *
+from jjjexperiment.di_container import *
 import jjjexperiment.inputs as jjj_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
 

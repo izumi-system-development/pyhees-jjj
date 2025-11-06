@@ -57,7 +57,7 @@ import jjjexperiment.constants as jjj_consts
 from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 from jjjexperiment.options import *
-from jjjexperiment.inputs.di_container import *
+from jjjexperiment.di_container import *
 
 @jjj_cloned
 # 未処理負荷と機器の計算に必要な変数を取得

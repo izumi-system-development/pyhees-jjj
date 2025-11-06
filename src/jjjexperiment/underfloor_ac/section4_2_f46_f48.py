@@ -2,7 +2,7 @@ import numpy as np
 
 import pyhees.section4_2 as dc
 # JJJ
-from jjjexperiment.inputs.di_container import *
+from jjjexperiment.di_container import *
 from jjjexperiment.common import *
 from jjjexperiment.options import *
 
