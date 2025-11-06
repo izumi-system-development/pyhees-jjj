@@ -1,10 +1,9 @@
-import unittest
 import pytest
 
 from jjjexperiment.common import JJJ_HCM
 import jjjexperiment.underfloor_ac as jjj_ufac
 
-class Test式52負荷バランス時非居室室温(unittest.TestCase):
+class Test式52負荷バランス時非居室室温:
     """式52 負荷バランス時の非居室の室温計算のテストクラス"""
 
     def test_暖房期_基本計算1(self):

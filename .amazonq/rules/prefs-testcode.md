@@ -1,5 +1,9 @@
 # Test Code Preferences
 
+## Test Framework
+- **pytest Only**: Use pytest framework exclusively, never use unittest.TestCase
+- **pytest Features**: Use pytest.mark.parametrize, pytest.approx, pytest fixtures
+
 ## Test Structure
 - **AAA Pattern**: All tests must follow Arrange-Act-Assert structure with clear comments
 - **Flexible AAA**: When it makes tests simpler, Arrange & Act can be combined into a single section
@@ -11,9 +15,9 @@
 - **Examples**: 
   - `test_fan_power_f_37_38.py` (formulas 37 & 38)
   - `test_heating_cooling_load_f_1_2.py` (formulas 1 & 2)
-- **Class Names**: Use Japanese descriptive names
-  - `class ファン電力計算テスト(unittest.TestCase):`
-  - `class 暖冷房負荷計算テスト(unittest.TestCase):`
+- **Class Names**: Use Japanese descriptive names (pure pytest classes)
+  - `class ファン電力計算テスト:`
+  - `class 暖冷房負荷計算テスト:`
 - **Method Names**: Use Japanese descriptive names
   - `def test_基本計算_正常値(self):`
   - `def test_境界値_ゼロ負荷(self):`
@@ -62,7 +66,7 @@ src/tests/latent_load/               # latent_load = 潜熱評価 feature
 
 ### Standard AAA Pattern
 ```python
-class Testファン電力計算(unittest.TestCase):
+class Testファン電力計算:
     """ファン電力計算のテストクラス"""
 
     def test_基本計算_正常値(self):
@@ -82,7 +86,7 @@ class Testファン電力計算(unittest.TestCase):
 
 ### Combined Arrange & Act (when simpler)
 ```python
-class Test温度計算(unittest.TestCase):
+class Test温度計算:
     """温度計算のテストクラス"""
 
     def test_基本計算_正常値(self):
@@ -96,4 +100,22 @@ class Test温度計算(unittest.TestCase):
 
         # Assert
         assert result == pytest.approx(19.39, abs=1e-2)
+```
+
+### Parametrized Tests
+```python
+class Test計算:
+    """計算のテストクラス"""
+
+    @pytest.mark.parametrize("input_data, expected", [
+        ((10, 20), 30),
+        ((5, 15), 20),
+    ])
+    def test_パラメータ化テスト(self, input_data, expected):
+        """パラメータ化テスト"""
+        # Arrange & Act
+        result = target_function(*input_data)
+        
+        # Assert
+        assert result == expected
 ```
