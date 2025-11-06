@@ -10,8 +10,9 @@ from functools import lru_cache
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.common import *
 from jjjexperiment.logger import log_res
-from jjjexperiment.inputs.di_container import *
-from jjjexperiment.inputs.options import *
+# NOTE: pyhees->jjj への依存は可能な限り絞る
+from jjjexperiment.inputs.di_container import get_current_injector
+from jjjexperiment.inputs.options import 床下空調ロジック
 
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc, UfVarsDataFrame
 
@@ -553,7 +554,7 @@ def calc_Theta(region, A_A, A_MR, A_OR, Q, r_A_ufvnt, underfloor_insulation, The
           # 引数で渡されていないときスレッドにセットされていないかチェックする
           thread_injector = get_current_injector()
           if thread_injector is not None:
-            new_ufac = thread_injector.get(ufac_input.UnderfloorAc)
+            new_ufac = thread_injector.get(UnderfloorAc)
             new_ufac_df = thread_injector.get(UfVarsDataFrame)
 
         if new_ufac is not None \
