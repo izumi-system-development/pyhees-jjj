@@ -28,7 +28,8 @@ class Test風量特性_熱源機:
     @classmethod
     def setup_class(cls):
         """ 特性曲線を指定 """
-        input = json.load(open(INPUT_SAMPLE_TYPE3_PATH, 'r'))
+        with open(INPUT_SAMPLE_TYPE3_PATH, 'r') as f:
+            input = json.load(f)
         fixture_C = {
             'airvolume_coeff': [0, 0, 0, cls._C1, cls._C0],
             'airvolume_minimum': cls._airvolume_minimum_C,

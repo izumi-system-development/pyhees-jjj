@@ -10,7 +10,6 @@ import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.di_container import *
 
 import jjjexperiment.underfloor_ac as jjj_ufac
-from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 import jjjexperiment.constants as jjj_consts
 from test_utils.utils import load_input_yaml

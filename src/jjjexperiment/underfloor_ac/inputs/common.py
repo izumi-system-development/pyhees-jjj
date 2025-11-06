@@ -3,6 +3,8 @@ from dataclasses import dataclass
 # JJJ
 from jjjexperiment.inputs.options import *
 
+__all__ = ['UnderfloorAc', 'UfVarsDataFrame']
+
 @dataclass
 class UnderfloorAc:
     """F24-05 床下空調に関する設定値"""
@@ -25,7 +27,7 @@ class UnderfloorAc:
             new_ufac_flg = 床下空調ロジック(int(data['change_underfloor_temperature']))
             kwargs['new_ufac_flg'] = new_ufac_flg
 
-            if new_ufac_flg == 床下空調ロジック.変更する.value:
+            if new_ufac_flg == 床下空調ロジック.変更する:
                 # 実行条件: 明示的な上書き宣言が必要
                 if 'input_ufac_consts' in data and int(data['input_ufac_consts']) == 2:
                     kwargs['Theta_g_avg'] = float(data['Theta_g_avg'])

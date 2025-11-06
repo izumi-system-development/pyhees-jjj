@@ -3,6 +3,9 @@ from typing import Optional
 # 床下
 from pyhees.section3_2 import calc_r_env, get_Q_dash, get_mu_H, get_mu_C
 
+# for scope of import *
+__all__ = ['HouseInfo', 'OuterSkin', 'HEX']
+
 @dataclass
 class HouseInfo:
     """家に関する設定値"""

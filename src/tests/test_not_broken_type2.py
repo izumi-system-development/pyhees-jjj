@@ -17,7 +17,8 @@ class Test既存計算維持_入力値切替_方式2:
     """ 既存計算が壊れていないことのテスト
         暖房・冷房ともに「ルームエアコンディショナ活用型全館空調」
     """
-    _inputs: dict = json.load(open(INPUT_SAMPLE_TYPE2_PATH, 'r'))
+    with open(INPUT_SAMPLE_TYPE2_PATH, 'r') as f:
+        _inputs: dict = json.load(f)
 
     def test_前提確認_入力値(self, expected_inputs):
         """ テストコードが想定しているインプットデータかどうか確認

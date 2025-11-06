@@ -65,7 +65,8 @@ class Test潜熱評価結合:
         inputs_copied = copy.deepcopy(inputs)
         return deep_update(inputs_copied, fixtures)
 
-    _inputs_type3: dict = json.load(open(INPUT_SAMPLE_TYPE3_PATH, 'r'))
+    with open(INPUT_SAMPLE_TYPE3_PATH, 'r') as f:
+        _inputs_type3: dict = json.load(f)
     _default_E_H = 42533.87
     _default_E_C = 14641.53
 

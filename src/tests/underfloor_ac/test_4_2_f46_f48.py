@@ -1,5 +1,4 @@
 import os
-from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 import pytest
 import numpy as np
 

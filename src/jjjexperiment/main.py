@@ -78,7 +78,7 @@ def calc_main(
     cool_denchu_catalog: jjj_denchu_cool_ipt.DenchuCatalogSpecification,
     heat_real_inner: jjj_denchu_heat_ipt.RealInnerCondition,
     cool_real_inner: jjj_denchu_cool_ipt.RealInnerCondition
-    ):
+    ) -> dict | None:
     print("q_rtd_C, q_rtd_H, q_max_C, q_max_H, e_rtd_C, e_rtd_H")
     print(cool_CRAC.q_rtd, heat_CRAC.q_rtd, cool_CRAC.q_max, heat_CRAC.q_max, cool_CRAC.e_rtd, heat_CRAC.e_rtd)
 
@@ -168,15 +168,6 @@ def calc_main(
             "ZEROS": arr.size - np.count_nonzero(arr),
             "AVG  ": np.average(arr[np.nonzero(arr)])
         }
-
-    # TODO: DI型定義したのでそれをログする
-    calc_Q_UT_A_input = {}
-    if test_mode and False:
-        # 調査用
-        with open(case_name + jjj_consts.version_info() + '_calc_Q_UT_A_input.json', 'w') as json_file:
-            json.dump(calc_Q_UT_A_input, json_file, indent=4, ensure_ascii=False)
-    else:
-        pass
 
     # 暖房負荷アクティブ
     injector.binder.bind(jjj_dc.ActiveSeasonalLoad, to=heat_load)
@@ -376,7 +367,7 @@ def calc_main(
 
     def get_V_hs_dsgn_C(type: str, v_fan_rtd: float, q_rtd_C: float):
         if type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3:
-            v_fan_rtd = v_fan_rtd
+            pass
         elif type == PROCESS_TYPE_2 or type == PROCESS_TYPE_4:
             v_fan_rtd = dc_spec.get_V_fan_rtd_C(q_rtd_C)
         else:

@@ -1,4 +1,3 @@
-import pytest
 import json
 import copy
 
@@ -52,10 +51,14 @@ class TestV最低風量入力結合:
         inputs_copied = copy.deepcopy(inputs)
         return deep_update(inputs_copied, fixtures)
 
-    _inputs1: dict = json.load(open(INPUT_SAMPLE_TYPE1_PATH, 'r'))
-    _inputs2: dict = json.load(open(INPUT_SAMPLE_TYPE2_PATH, 'r'))
-    _inputs3: dict = json.load(open(INPUT_SAMPLE_TYPE3_PATH, 'r'))
-    _inputs4: dict = json.load(open(INPUT_SAMPLE_TYPE4_PATH, 'r'))
+    with open(INPUT_SAMPLE_TYPE1_PATH, 'r') as f:
+        _inputs1: dict = json.load(f)
+    with open(INPUT_SAMPLE_TYPE2_PATH, 'r') as f:
+        _inputs2: dict = json.load(f)
+    with open(INPUT_SAMPLE_TYPE3_PATH, 'r') as f:
+        _inputs3: dict = json.load(f)
+    with open(INPUT_SAMPLE_TYPE4_PATH, 'r') as f:
+        _inputs4: dict = json.load(f)
 
     # 最低風量直接入力 & タイプ3
     def test_Type3(self):

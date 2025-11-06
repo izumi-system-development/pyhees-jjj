@@ -83,18 +83,17 @@ def calc_Q_UT_A(
     """未処理負荷と機器の計算に必要な変数を取得"""
 
     # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_H, q_hs_rtd_C のどちらが None かで判別している
-    def flg_char():
+    def flg_char() -> str:
         match common_load:
             case CommonHeatLoad(): return '_H'
             case CommonCoolLoad(): return '_C'
             case _: raise ValueError
-    def q_hs_rtd_H():
+    def q_hs_rtd_H() -> float | None:
         match common_load:
             case CommonHeatLoad(): return common_load.q_hs_rtd
             case CommonCoolLoad(): return None
             case _: raise ValueError
-
-    def q_hs_rtd_C():
+    def q_hs_rtd_C() -> float | None:
         match common_load:
             case CommonHeatLoad(): return None
             case CommonCoolLoad(): return common_load.q_hs_rtd

@@ -11,10 +11,14 @@ from test_utils.utils import *
 
 class Test統合テスト_デフォルト入力時:
 
-    _inputs1: dict = json.load(open(INPUT_SAMPLE_TYPE1_PATH, 'r'))
-    _inputs2: dict = json.load(open(INPUT_SAMPLE_TYPE2_PATH, 'r'))
-    _inputs3: dict = json.load(open(INPUT_SAMPLE_TYPE3_PATH, 'r'))
-    _inputs4: dict = json.load(open(INPUT_SAMPLE_TYPE4_PATH, 'r'))
+    with open(INPUT_SAMPLE_TYPE1_PATH, 'r') as f:
+        _inputs1: dict = json.load(f)
+    with open(INPUT_SAMPLE_TYPE2_PATH, 'r') as f:
+        _inputs2: dict = json.load(f)
+    with open(INPUT_SAMPLE_TYPE3_PATH, 'r') as f:
+        _inputs3: dict = json.load(f)
+    with open(INPUT_SAMPLE_TYPE4_PATH, 'r') as f:
+        _inputs4: dict = json.load(f)
 
     def test_インプットデータ_前提確認(self, expected_inputs):
         """ テストコードが想定しているインプットデータかどうか確認

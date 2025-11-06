@@ -1,7 +1,5 @@
 import numpy as np
-import pytest
 from pyhees.section4_2_a import get_q_hs_H_d_t, get_q_hs_C_d_t
-
 
 class TestHeatingLoad:
     """暖房負荷計算のユニットテスト (式1: get_q_hs_H_d_t)"""
@@ -13,7 +11,7 @@ class TestHeatingLoad:
         Theta_hs_in_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         C_df_H_d_t = np.ones(8760)  # デフロスト補正係数
-        
+
         # 暖房期の代表的な条件を設定
         Theta_hs_out_d_t[0] = 35.0  # 出口温度 [℃]
         Theta_hs_in_d_t[0] = 20.0   # 入口温度 [℃]
@@ -42,7 +40,7 @@ class TestHeatingLoad:
         Theta_hs_in_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         C_df_H_d_t = np.ones(8760)
-        
+
         # 出口・入口温度を同じに設定（温度差ゼロ）
         Theta_hs_out_d_t[0] = 20.0
         Theta_hs_in_d_t[0] = 20.0
@@ -68,7 +66,7 @@ class TestHeatingLoad:
         Theta_hs_in_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         C_df_H_d_t = np.ones(8760)
-        
+
         Theta_hs_out_d_t[0] = 35.0
         Theta_hs_in_d_t[0] = 20.0
         V_hs_supply_d_t[0] = 300.0
@@ -99,7 +97,7 @@ class TestCoolingLoad:
         X_hs_out_d_t = np.zeros(8760)
         X_hs_in_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
-        
+
         # 冷房期の代表的な条件を設定（夏期：6-8月頃）
         summer_index = 4848  # 夏期の代表時刻
         Theta_hs_out_d_t[summer_index] = 15.0  # 出口温度 [℃]
@@ -133,7 +131,7 @@ class TestCoolingLoad:
         X_hs_out_d_t = np.zeros(8760)
         X_hs_in_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
-        
+
         summer_index = 4848
         # 出口・入口温度を同じに設定（温度差ゼロ）
         Theta_hs_out_d_t[summer_index] = 25.0
@@ -164,7 +162,7 @@ class TestCoolingLoad:
         X_hs_out_d_t = np.zeros(8760)
         X_hs_in_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
-        
+
         summer_index = 4848
         Theta_hs_out_d_t[summer_index] = 15.0  # 温度差あり
         Theta_hs_in_d_t[summer_index] = 27.0
@@ -198,20 +196,20 @@ class TestHeatingCoolingComparison:
         Theta_hs_in_H = np.zeros(8760)
         V_hs_supply_H = np.zeros(8760)
         C_df_H_d_t = np.ones(8760)
-        
+
         # 冷房負荷用パラメータ
         Theta_hs_out_C = np.zeros(8760)
         Theta_hs_in_C = np.zeros(8760)
         X_hs_out_C = np.zeros(8760)
         X_hs_in_C = np.zeros(8760)
         V_hs_supply_C = np.zeros(8760)
-        
+
         # 冬期条件（暖房）
         winter_index = 100
         Theta_hs_out_H[winter_index] = 35.0
         Theta_hs_in_H[winter_index] = 20.0
         V_hs_supply_H[winter_index] = 300.0
-        
+
         # 夏期条件（冷房）
         summer_index = 4848
         Theta_hs_out_C[summer_index] = 15.0
@@ -219,7 +217,7 @@ class TestHeatingCoolingComparison:
         X_hs_out_C[summer_index] = 0.008
         X_hs_in_C[summer_index] = 0.012
         V_hs_supply_C[summer_index] = 400.0
-        
+
         region = 6
 
         # Act
@@ -230,7 +228,7 @@ class TestHeatingCoolingComparison:
             C_df_H_d_t=C_df_H_d_t,
             region=region
         )
-        
+
         cooling_result = get_q_hs_C_d_t(
             Theta_hs_out_d_t=Theta_hs_out_C,
             Theta_hs_in_d_t=Theta_hs_in_C,

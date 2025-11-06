@@ -58,3 +58,7 @@ class 最低電力直接入力(Enum):
 class ファン消費電力算定方法(Enum):
     直線近似法 = 1  # 従来式
     風量三乗近似法 = 2
+
+# Export all Enum classes automatically
+__all__ = [name for name, obj in globals().items()
+        if isinstance(obj, type) and issubclass(obj, Enum) and obj is not Enum]

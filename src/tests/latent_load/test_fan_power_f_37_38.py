@@ -1,7 +1,5 @@
 import numpy as np
-import pytest
 from pyhees.section4_2_a import get_E_E_fan_H_d_t, get_E_E_fan_C_d_t
-
 
 class TestFanPowerHeating:
     """暖房送風機消費電力のユニットテスト (式37: get_E_E_fan_H_d_t)"""
@@ -13,7 +11,7 @@ class TestFanPowerHeating:
         V_hs_vent_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         q_hs_H_d_t = np.zeros(8760)
-        
+
         V_hs_vent_d_t[:3] = [50.0, 100.0, 150.0]  # 全般換気分風量 [m3/h]
         V_hs_supply_d_t[:3] = [200.0, 400.0, 600.0]  # 送風量 [m3/h]
         q_hs_H_d_t[:3] = [1000.0, 2000.0, 3000.0]  # 平均暖房能力 [W]
@@ -43,7 +41,7 @@ class TestFanPowerHeating:
         V_hs_vent_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         q_hs_H_d_t = np.zeros(8760)  # 全てゼロ - 暖房負荷なし
-        
+
         V_hs_vent_d_t[0] = 50.0
         V_hs_supply_d_t[0] = 200.0
         V_hs_dsgn_H = 500.0
@@ -67,7 +65,7 @@ class TestFanPowerHeating:
         V_hs_vent_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         q_hs_H_d_t = np.zeros(8760)
-        
+
         V_hs_vent_d_t[0] = 50.0
         V_hs_supply_d_t[0] = 200.0
         q_hs_H_d_t[0] = 1000.0
@@ -99,7 +97,7 @@ class TestFanPowerCooling:
         V_hs_vent_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         q_hs_C_d_t = np.zeros(8760)
-        
+
         V_hs_vent_d_t[:3] = [60.0, 120.0, 180.0]  # 全般換気分風量 [m3/h]
         V_hs_supply_d_t[:3] = [250.0, 500.0, 750.0]  # 送風量 [m3/h]
         q_hs_C_d_t[:3] = [1200.0, 2400.0, 3600.0]  # 平均冷房能力 [W]
@@ -129,7 +127,7 @@ class TestFanPowerCooling:
         V_hs_vent_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         q_hs_C_d_t = np.zeros(8760)  # 全てゼロ - 冷房負荷なし
-        
+
         V_hs_vent_d_t[0] = 60.0
         V_hs_supply_d_t[0] = 250.0
         V_hs_dsgn_C = 600.0
@@ -153,7 +151,7 @@ class TestFanPowerCooling:
         V_hs_vent_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         q_hs_C_d_t = np.zeros(8760)
-        
+
         V_hs_vent_d_t[0] = 60.0
         V_hs_supply_d_t[0] = 250.0
         q_hs_C_d_t[0] = 1200.0
@@ -185,7 +183,7 @@ class TestFanPowerComparison:
         V_hs_vent_d_t = np.zeros(8760)
         V_hs_supply_d_t = np.zeros(8760)
         q_hs_d_t = np.zeros(8760)
-        
+
         V_hs_vent_d_t[0] = 50.0
         V_hs_supply_d_t[0] = 200.0
         q_hs_d_t[0] = 1000.0
