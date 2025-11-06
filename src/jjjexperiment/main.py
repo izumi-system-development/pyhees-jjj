@@ -243,13 +243,13 @@ def calc_main(
                 assert V_hs_vent_d_t.shape == Array8760.shape
 
                 V_hs_min_H = v_min_heating_input.V_hs_min
-                match v_min_heating_input.general_ventilation:
-                    case True:
-                        # 全般換気あり
+                match heat_load.general_ventilation:
+                    case 全般換気機能.あり:
+                        print(全般換気機能.あり)
                         # CHECK: 仕様の置換対象は V_vent_g_i かも
                         V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_H, V_hs_vent_d_t)
-                    case False:
-                        # 全般換気なし
+                    case 全般換気機能.なし:
+                        print(全般換気機能.なし)
                         H = np.array([hcm == HCM.暖房期 for hcm in HCM])
                         V_hs_vent_d_t[H] = V_hs_min_H
                     case _:
@@ -460,13 +460,13 @@ def calc_main(
                 assert V_hs_vent_d_t.shape == Array8760.shape
 
                 V_hs_min_C = v_min_cooling_input.V_hs_min
-                match v_min_cooling_input.general_ventilation:
-                    case True:
-                        # 全般換気あり
+                match cool_load.general_ventilation:
+                    case 全般換気機能.あり:
+                        print(全般換気機能.あり)
                         # CHECK: 仕様の置換対象は V_vent_g_i かも
                         V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_C, V_hs_vent_d_t)
-                    case False:
-                        # 全般換気なし
+                    case 全般換気機能.なし:
+                        print(全般換気機能.なし)
                         C = np.array([hcm == HCM.冷房期 for hcm in HCM])
                         V_hs_vent_d_t[C] = V_hs_min_C
                     case _:

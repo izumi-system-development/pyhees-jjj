@@ -7,8 +7,6 @@ import pyhees.section4_3_a as rac_spec
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.inputs.options import *
 
-# TODO: 暖房・冷房を共通のベースクラスにして、calc_Q_UT_A の引数として使う
-
 @dataclass
 class SeasonalLoad:
     """暖房に関する設定値"""
@@ -21,7 +19,7 @@ class SeasonalLoad:
     q_hs_rtd: float = 0
     VAV: bool = False
     general_ventilation: bool = True
-
+    """全般換気"""
     f_SFP: float = 0.4 * 0.36
     """ファンの比消費電力"""
 

@@ -20,7 +20,7 @@ class SeasonalLoad:
     q_hs_rtd: float = 0
     VAV: bool = False
     general_ventilation: bool = True
-
+    """全般換気"""
     f_SFP: float = 0.4 * 0.36
     """ファンの比消費電力"""
 

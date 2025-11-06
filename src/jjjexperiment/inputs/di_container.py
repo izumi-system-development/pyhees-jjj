@@ -150,6 +150,7 @@ class JJJExperimentModule(Module):
     def provide_heatexchangeventilation(self) -> common_input.HEX:
         return common_input.HEX.from_dict(self._input if self._input is not None else {})
 
+    # TODO: 可能ならクラス定義を一箇所にして別クラスとして使用したい。二重管理を防げる
     @singleton
     @provider
     def provide_common_heating_input(self) -> common_heating_input.SeasonalLoad:
