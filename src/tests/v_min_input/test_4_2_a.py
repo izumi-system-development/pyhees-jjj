@@ -1,6 +1,6 @@
 import pytest
 from jjjexperiment.ac_min_volume_input.section4_2_a import get_E_E_fan_d_t
-from jjjexperiment.inputs.options import ファン消費電力算定方法
+from jjjexperiment.options import ファン消費電力算定方法
 
 def test_get_E_E_fan_linear_method():
     """直線近似法のテスト"""

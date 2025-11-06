@@ -5,7 +5,7 @@ import pyhees.section4_2_b as dc_spec
 import pyhees.section4_3_a as rac_spec
 
 import jjjexperiment.constants as jjj_consts
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 
 @dataclass
 class SeasonalLoad:

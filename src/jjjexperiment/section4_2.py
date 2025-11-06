@@ -32,7 +32,7 @@ import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 import jjjexperiment.inputs as jjj_ipt
 from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
 from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 
 # F24-5 新床下空調

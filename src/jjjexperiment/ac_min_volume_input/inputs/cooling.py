@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 # JJJ
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 
 @dataclass
 class InputMinVolumeInput:

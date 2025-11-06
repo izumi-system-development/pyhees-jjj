@@ -9,7 +9,7 @@ from test_utils.utils import  \
 
 # JJJ
 from jjjexperiment.main import calc
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger
 
 

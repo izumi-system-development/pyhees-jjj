@@ -4,7 +4,7 @@ import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.common import *
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 

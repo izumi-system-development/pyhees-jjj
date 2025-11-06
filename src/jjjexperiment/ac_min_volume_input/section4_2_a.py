@@ -1,6 +1,6 @@
 # JJJ
 from jjjexperiment.common import *
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 
 # ============================================================================
 # A.6 送風機

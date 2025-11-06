@@ -5,7 +5,7 @@ import warnings
 
 from jjjexperiment.main import calc
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 
 from test_utils.utils import *
 

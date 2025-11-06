@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 # JJJ
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 
 @dataclass
 class InputMinVolumeInput:

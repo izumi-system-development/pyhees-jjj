@@ -56,7 +56,7 @@ from pyhees.section11_6 import \
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
-from jjjexperiment.inputs.options import *
+from jjjexperiment.options import *
 from jjjexperiment.inputs.di_container import *
 
 @jjj_cloned
