@@ -10,7 +10,7 @@ from jjjexperiment.inputs.climate_entity import ClimateEntity
 from jjjexperiment.inputs.environment_entity import EnvironmentEntity
 
 import jjjexperiment.underfloor_ac.inputs as jjj_ufac_ipt
-from jjjexperiment.underfloor_ac.section4_2 import calc_Q_hat_hs
+from jjjexperiment.underfloor_ac.section4_2_f40 import calc_Q_hat_hs
 
 from test_utils.utils import load_input_yaml
 

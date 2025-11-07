@@ -10,7 +10,7 @@ from jjjexperiment.inputs.di_container import create_injector_from_json
 from jjjexperiment.inputs.environment_entity import EnvironmentEntity
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i
-from jjjexperiment.underfloor_ac.section4_2_f52 import get_Theta_HBR_i, get_Theta_NR
+from jjjexperiment.underfloor_ac.section4_2_f46_f48 import get_Theta_HBR_i, get_Theta_NR
 
 from test_utils.utils import load_input_yaml
 

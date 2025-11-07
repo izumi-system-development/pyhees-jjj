@@ -39,7 +39,8 @@ from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 # F24-5 新床下空調
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i, get_r_A_uf_i, calc_Theta_uf, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
 from jjjexperiment.underfloor_ac.section3_1_e import calc_Theta_uf_d_t_2023
-from jjjexperiment.underfloor_ac.section4_2_f52 import get_Theta_star_NR, get_Theta_HBR_i, get_Theta_NR
+from jjjexperiment.underfloor_ac.section4_2_f52 import get_Theta_star_NR
+from jjjexperiment.underfloor_ac.section4_2_f46_f48 import get_Theta_HBR_i, get_Theta_NR
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc, UfVarsDataFrame
 
 @dataclass
