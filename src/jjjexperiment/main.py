@@ -29,9 +29,13 @@ import jjjexperiment.denchu.denchu_2
 import jjjexperiment.denchu.inputs.heating as jjj_denchu_heat_ipt
 import jjjexperiment.denchu.inputs.cooling as jjj_denchu_cool_ipt
 
-import jjjexperiment.inputs as jjj_ipt
+import jjjexperiment.inputs.di_container as jjj_ipt_di
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import *
+from jjjexperiment.inputs.climate_entity import ClimateEntity
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin, HEX
+from jjjexperiment.inputs.heating import SeasonalLoad as HeatLoad, CRACSpecification as HeatCRACSpec
+from jjjexperiment.inputs.cooling import SeasonalLoad as CoolLoad, CRACSpecification as CoolCRACSpec
 
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
@@ -52,7 +56,7 @@ def calc(input_data: dict, test_mode=False):
     # NOTE: 必要最小限に留めること
     jjj_consts.set_constants(input_data)
 
-    injector = jjj_ipt.di_container.create_injector_from_json(input_data, test_mode)
+    injector = jjj_ipt_di.create_injector_from_json(input_data, test_mode)
     # NOTE: 引数全てを型解決できるようにする必要があった
     return injector.call_with_injection(calc_main)
 
@@ -60,20 +64,20 @@ def calc(input_data: dict, test_mode=False):
 def calc_main(
     injector: Injector,
     # NOTE: 型解決するだけなら下記のみで充分だが、文脈の追加変更を行うため injector 自身も受取
-    test_mode: jjj_ipt.di_container.TestMode,
-    case_name: jjj_ipt.di_container.CaseName,
-    climateFile: jjj_ipt.di_container.ClimateFile,
-    loadFile: jjj_ipt.di_container.LoadFile,
+    test_mode: jjj_ipt_di.TestMode,
+    case_name: jjj_ipt_di.CaseName,
+    climateFile: jjj_ipt_di.ClimateFile,
+    loadFile: jjj_ipt_di.LoadFile,
     v_min_heating_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
     v_min_cooling_input: jjj_V_min_input.inputs.cooling.InputMinVolumeInput,
-    house: jjj_ipt.common.HouseInfo,
-    skin: jjj_ipt.common.OuterSkin,
-    hex: jjj_ipt.common.HEX,
+    house: HouseInfo,
+    skin: OuterSkin,
+    hex: HEX,
     ufac: jjj_ufac_ipt.common.UnderfloorAc,
-    heat_load: jjj_ipt.heating.SeasonalLoad,
-    cool_load: jjj_ipt.cooling.SeasonalLoad,
-    heat_CRAC: jjj_ipt.heating.CRACSpecification,
-    cool_CRAC: jjj_ipt.cooling.CRACSpecification,
+    heat_load: HeatLoad,
+    cool_load: CoolLoad,
+    heat_CRAC: HeatCRACSpec,
+    cool_CRAC: CoolCRACSpec,
     heat_denchu_catalog: jjj_denchu_heat_ipt.DenchuCatalogSpecification,
     cool_denchu_catalog: jjj_denchu_cool_ipt.DenchuCatalogSpecification,
     heat_real_inner: jjj_denchu_heat_ipt.RealInnerCondition,
@@ -197,7 +201,7 @@ def calc_main(
         dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, house.region)
     # NOTE: 消費電力量計算に広く使用されており、広いスコープで定義してよいことを確認済
 
-    climate = jjj_ipt.ClimateEntity(house.region)
+    climate = ClimateEntity(house.region)
     HCM = climate.get_HCM_d_t()
 
     E_E_fan_H_d_t: Array8760

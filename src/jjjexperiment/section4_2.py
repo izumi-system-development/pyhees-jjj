@@ -29,9 +29,10 @@ from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ
 import jjjexperiment.carryover_heat as jjj_carryover_heat
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 
-import jjjexperiment.inputs as jjj_ipt
-from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
-from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
+from jjjexperiment.inputs.climate_entity import ClimateEntity
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
+from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad, CRACSpecification as HeatCRACSpec
+from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad, CRACSpecification as CoolCRACSpec
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 
@@ -68,11 +69,11 @@ class ActiveSeasonalLoad:
 def calc_Q_UT_A(
         case_name: CaseName,
         climateFile: ClimateFile,
-        house: jjj_ipt.common.HouseInfo,
+        house: HouseInfo,
         common_load: ActiveSeasonalLoad,
-        skin: jjj_ipt.common.OuterSkin,
-        heat_CRAC: jjj_ipt.heating.CRACSpecification,
-        cool_CRAC: jjj_ipt.cooling.CRACSpecification,
+        skin: OuterSkin,
+        heat_CRAC: HeatCRACSpec,
+        cool_CRAC: CoolCRACSpec,
         new_ufac: UnderfloorAc,
         new_ufac_df: UfVarsDataFrame,
         v_min_heat_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
@@ -348,7 +349,7 @@ def calc_Q_UT_A(
 
         # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
-        U_s_vert = jjj_ipt.ClimateEntity(house.region).get_U_s_vert(skin.Q)  # 床の熱貫流率 [W/m2K]
+        U_s_vert = ClimateEntity(house.region).get_U_s_vert(skin.Q)  # 床の熱貫流率 [W/m2K]
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
 
         assert A_s_ufac_i.ndim == 2
@@ -389,7 +390,7 @@ def calc_Q_UT_A(
                 ) for t in range(24*365)
             ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
-        climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
+        climate = ClimateEntity(house.region, new_ufac)
         phi = climate.get_phi(skin.Q)
 
         delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
@@ -451,7 +452,7 @@ def calc_Q_UT_A(
 
         assert A_prt_i.shape == (5,)
         A_prt_A = np.sum(A_prt_i)
-        HCM = np.array(jjj_ipt.ClimateEntity(house.region).get_HCM_d_t())
+        HCM = np.array(ClimateEntity(house.region).get_HCM_d_t())
 
         #デバッグ用 250501 IGUCHI
         print("Theta_in_d_t[4848]", Theta_in_d_t[4848])
@@ -1088,7 +1089,7 @@ def calc_Q_UT_A(
 
         # (46) 暖冷房区画𝑖の実際の居室の室温
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
-            HCM = np.array(jjj_ipt.ClimateEntity(house.region).get_HCM_d_t())
+            HCM = np.array(ClimateEntity(house.region).get_HCM_d_t())
             A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
             Theta_HBR_d_t_i = np.hstack([
                 jjj_ufac.get_Theta_HBR_i(

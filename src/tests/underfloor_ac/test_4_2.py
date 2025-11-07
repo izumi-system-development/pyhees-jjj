@@ -2,7 +2,8 @@ import os
 import pytest
 import numpy as np
 # JJJ
-import jjjexperiment.inputs as jjj_ipt
+from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.common import HouseInfo
 import jjjexperiment.underfloor_ac as jjj_ufac
 from test_utils.utils import load_input_yaml
 
@@ -14,9 +15,9 @@ class Test_床下空調時_共通:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        house = injector.get(jjj_ipt.HouseInfo)
+        house = injector.get(HouseInfo)
 
         # Act
         A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)

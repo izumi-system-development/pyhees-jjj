@@ -6,8 +6,9 @@ import pyhees.section3_1_d as uf
 import pyhees.section3_1_e as algo
 import pyhees.section4_1 as HC
 # JJJ
-import jjjexperiment.inputs as jjj_ipt
-from jjjexperiment.inputs.di_container import *
+from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.climate_entity import ClimateEntity
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 
 import jjjexperiment.underfloor_ac as jjj_ufac
 
@@ -31,11 +32,11 @@ class Test_床下空調時_式40:
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
-        house = injector.get(jjj_ipt.HouseInfo)
-        skin = injector.get(jjj_ipt.OuterSkin)
+        house = injector.get(HouseInfo)
+        skin = injector.get(OuterSkin)
         new_ufac = injector.get(jjj_ufac.inputs.common.UnderfloorAc)
 
-        climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
+        climate = ClimateEntity(house.region, new_ufac)
 
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
@@ -101,7 +102,7 @@ class Test_床下空調時_式40:
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
         injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
-        house_info = injector.get(jjj_ipt.HouseInfo)
+        house_info = injector.get(HouseInfo)
 
         # Act
         A_s_ufvnt_i, _ = jjj_ufac.get_A_s_ufac_i(house_info.A_A, house_info.A_MR, house_info.A_OR)
@@ -114,13 +115,13 @@ class Test_床下空調時_式40:
     def test_床下から床上居室への熱移動(self):
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        house = injector.get(jjj_ipt.HouseInfo)
-        skin = injector.get(jjj_ipt.OuterSkin)
+        house = injector.get(HouseInfo)
+        skin = injector.get(OuterSkin)
         new_ufac = injector.get(jjj_ufac.inputs.common.UnderfloorAc)
 
-        climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
+        climate = ClimateEntity(house.region, new_ufac)
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
 
@@ -153,12 +154,12 @@ class Test_床下空調時_式40:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        house = injector.get(jjj_ipt.HouseInfo)
-        skin = injector.get(jjj_ipt.OuterSkin)
+        house = injector.get(HouseInfo)
+        skin = injector.get(OuterSkin)
 
-        climate = jjj_ipt.ClimateEntity(house.region, None)  # new_ufac 必須でない
+        climate = ClimateEntity(house.region, None)  # new_ufac 必須でない
         phi = climate.get_phi(skin.Q)
 
         # Arrange - 基礎外周長さ [m]
@@ -183,9 +184,9 @@ class Test_床下空調時_式40:
 
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        house = injector.get(jjj_ipt.HouseInfo)
+        house = injector.get(HouseInfo)
 
         R_g = getattr(jjj_consts, 'R_g', 0.15)
 
@@ -195,7 +196,7 @@ class Test_床下空調時_式40:
         Phi_A_0 = 0.025504994
 
         # Arrange - 地盤の不易層温度 [℃]
-        climate = jjj_ipt.ClimateEntity(house.region, None)  # new_ufac 必須でない
+        climate = ClimateEntity(house.region, None)  # new_ufac 必須でない
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 

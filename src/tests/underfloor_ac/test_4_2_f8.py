@@ -7,7 +7,10 @@ import pyhees.section3_2 as gihi
 import pyhees.section4_1 as HC
 import pyhees.section4_2 as dc
 # JJJ
-import jjjexperiment.inputs as jjj_ipt
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
+from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.climate_entity import ClimateEntity
+from jjjexperiment.inputs.environment_entity import EnvironmentEntity
 from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
 from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
 
@@ -28,18 +31,18 @@ class Test_床下空調時_式8補正:
         _logger.init_logger()
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        house = injector.get(jjj_ipt.HouseInfo)
-        skin = injector.get(jjj_ipt.OuterSkin)
+        house = injector.get(HouseInfo)
+        skin = injector.get(OuterSkin)
         new_ufac = injector.get(UnderfloorAc)
         heat_load = injector.get(CommonHeatLoad)
         cool_load = injector.get(CommonCoolLoad)
 
         _logger.info(f"UnderfloorAc config: {new_ufac}")
 
-        climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
-        environment = jjj_ipt.EnvironmentEntity(house, skin)
+        climate = ClimateEntity(house.region, new_ufac)
+        environment = EnvironmentEntity(house, skin)
 
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_in_d_t = uf.get_Theta_in_d_t('H')

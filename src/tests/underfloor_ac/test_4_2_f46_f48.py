@@ -6,8 +6,9 @@ import numpy as np
 from jjjexperiment.common import *
 
 from jjjexperiment.inputs.options import *
-from jjjexperiment.inputs.di_container import *
-import jjjexperiment.inputs as jjj_ipt
+from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.environment_entity import EnvironmentEntity
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 import jjjexperiment.underfloor_ac as jjj_ufac
 
 from test_utils.utils import load_input_yaml
@@ -20,11 +21,11 @@ class Test_床下空調時_式46_式48:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+        injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        skin = injector.get(jjj_ipt.OuterSkin)
-        house = injector.get(jjj_ipt.HouseInfo)
-        environment = jjj_ipt.EnvironmentEntity(house, skin)
+        skin = injector.get(OuterSkin)
+        house = injector.get(HouseInfo)
+        environment = EnvironmentEntity(house, skin)
 
         A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         A_HCZ_i = environment.get_A_HCZ_i().reshape(-1, 1)

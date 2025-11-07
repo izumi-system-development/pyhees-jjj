@@ -5,7 +5,8 @@ import math
 import pyhees.section4_2 as dc
 
 # JJJ
-import jjjexperiment.inputs as jjj_ipt
+from jjjexperiment.inputs.common import HouseInfo
+from jjjexperiment.inputs.di_container import create_injector_from_json
 import jjjexperiment.constants as jjj_consts
 # JJJ-Test
 from test_utils.utils import INPUT_SAMPLE_TYPE3_PATH
@@ -44,8 +45,8 @@ class Test風量特性_熱源機:
         input['H_A'].update(fixture_H)
         jjj_consts.set_constants(input)
 
-        injector = jjj_ipt.create_injector_from_json(input)
-        house = injector.get(jjj_ipt.HouseInfo)
+        injector = create_injector_from_json(input)
+        house = injector.get(HouseInfo)
 
         cls._region = house.region
         cls._H, cls._C, cls._M = dc.get_season_array_d_t(house.region)

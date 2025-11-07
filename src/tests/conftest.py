@@ -4,49 +4,53 @@ import numpy as np
 
 import pyhees.section4_2 as dc
 # JJJ
-import jjjexperiment.inputs as jjj_ipt
+from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
+from jjjexperiment.inputs.climate_entity import ClimateEntity
+from jjjexperiment.inputs.environment_entity import EnvironmentEntity
+
 import jjjexperiment.underfloor_ac.inputs as jjj_ufac_ipt
 import jjjexperiment.underfloor_ac as jjj_ufac
 
 from test_utils.utils import load_input_yaml
 
 @pytest.fixture(scope='class')
-def climate_entity(request) -> jjj_ipt.ClimateEntity:
+def climate_entity(request) -> ClimateEntity:
     # Arrange
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
     yaml_path = os.path.join(current_dir, yaml_filename)
-    injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_path))
+    injector = create_injector_from_json(load_input_yaml(yaml_path))
 
-    house_info = injector.get(jjj_ipt.HouseInfo)
+    house_info = injector.get(HouseInfo)
     new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
 
-    return jjj_ipt.ClimateEntity(house_info.region, new_ufac)
+    return ClimateEntity(house_info.region, new_ufac)
 
 @pytest.fixture(scope='class')
-def environment_entity(request) -> jjj_ipt.EnvironmentEntity:
+def environment_entity(request) -> EnvironmentEntity:
     # Arrange
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
     yaml_path = os.path.join(current_dir, yaml_filename)
-    injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_path))
+    injector = create_injector_from_json(load_input_yaml(yaml_path))
 
-    house = injector.get(jjj_ipt.HouseInfo)
-    skin = injector.get(jjj_ipt.OuterSkin)
-    return jjj_ipt.EnvironmentEntity(house, skin)
+    house = injector.get(HouseInfo)
+    skin = injector.get(OuterSkin)
+    return EnvironmentEntity(house, skin)
 
 @pytest.fixture
 def Q_hat_hs_d_t():
     """(40) 熱源機の風量を計算するための熱源機の出力"""
     yaml_fullpath = os.path.join(os.path.dirname(__file__), 'inputs/test_input.yaml')
-    injector = jjj_ipt.create_injector_from_json(load_input_yaml(yaml_fullpath))
+    injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-    house = injector.get(jjj_ipt.HouseInfo)
-    skin = injector.get(jjj_ipt.OuterSkin)
+    house = injector.get(HouseInfo)
+    skin = injector.get(OuterSkin)
     new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
 
-    environment = jjj_ipt.EnvironmentEntity(house, skin)
-    climate = jjj_ipt.ClimateEntity(house.region, new_ufac)
+    environment = EnvironmentEntity(house, skin)
+    climate = ClimateEntity(house.region, new_ufac)
 
     V_vent_l_d_t = np.array(dc.get_V_vent_l_d_t(
         dc.get_V_vent_l_NR_d_t(),
