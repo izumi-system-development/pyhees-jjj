@@ -1,7 +1,11 @@
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Optional
+from injector import Injector
 import numpy as np
 from numpy.typing import NDArray
+
+# NOTE: どこからでも利用するのでカスタムファイルへ依存させない
+# 循環参照の原因になるため
 
 Array5 = Annotated[NDArray[np.float64], '5']
 Array5x1 = Annotated[NDArray[np.float64], '5x1']
@@ -35,3 +39,22 @@ def jjj_mod(func):
   """ pyheesモジュール内における jjjexperimentによる 改変された実装"""
   # NOTE: オリジナルに手を加え 複製はしない
   return func
+
+# ネストされた関数からの取得用
+# NOTE: injectの連鎖でも到達できない深いネストの時
+# (グローバルDIコンテナーは回避した)
+# ContextManager にする方法もあるが今は簡易性を優先
+import threading
+_current_injector = threading.local()
+def set_current_injector(injector: Injector):
+    """スレッドにDIコンテキストをセット"""
+    _current_injector.value = injector
+
+def get_current_injector() -> Optional[Injector]:
+    """スレッドからDIコンテキストを取得"""
+    return getattr(_current_injector, 'value', None)
+
+def clear_current_injector():
+    """スレッドにセットしたDIコンテキストをリセット"""
+    if hasattr(_current_injector, 'value'):
+        delattr(_current_injector, 'value')

@@ -1,4 +1,4 @@
-from typing import NewType, Optional
+from typing import NewType
 from injector import Injector, singleton, provider, Module
 # JJJ 共通
 from jjjexperiment.inputs.options import *
@@ -64,25 +64,6 @@ def create_injector_from_json(input_data: dict, test_mode: bool = False) -> Inje
     # 計算過程で後付けで bind したり、文脈を分岐させることができる(Heat/Coolの切替に使用)
     module._injector = injector
     return injector
-
-# ネストされた関数からの取得用
-# NOTE: injectの連鎖でも到達できない深いネストの時
-# (グローバルDIコンテナーは回避した)
-# ContextManager にする方法もあるが今は簡易性を優先
-import threading
-_current_injector = threading.local()
-def set_current_injector(injector: Injector):
-    """スレッドにDIコンテキストをセット"""
-    _current_injector.value = injector
-
-def get_current_injector() -> Optional[Injector]:
-    """スレッドからDIコンテキストを取得"""
-    return getattr(_current_injector, 'value', None)
-
-def clear_current_injector():
-    """スレッドにセットしたDIコンテキストをリセット"""
-    if hasattr(_current_injector, 'value'):
-        delattr(_current_injector, 'value')
 
 # DIコンテナの設定
 class JJJExperimentModule(Module):
