@@ -9,7 +9,8 @@ from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import create_injector_from_json
 from jjjexperiment.inputs.environment_entity import EnvironmentEntity
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i
+from jjjexperiment.underfloor_ac.section4_2_f52 import get_Theta_HBR_i, get_Theta_NR
 
 from test_utils.utils import load_input_yaml
 
@@ -27,12 +28,12 @@ class Test_床下空調時_式46_式48:
         house = injector.get(HouseInfo)
         environment = EnvironmentEntity(house, skin)
 
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+        A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         A_HCZ_i = environment.get_A_HCZ_i().reshape(-1, 1)
 
         # Act
         Theta_star_HBR = 20.0
-        Theta_HBR_i = jjj_ufac.get_Theta_HBR_i(
+        Theta_HBR_i = get_Theta_HBR_i(
             Theta_star_HBR = Theta_star_HBR,
             V_supply_i = np.array([342.3, 190.2, 152.0, 123.6, 123.7]).reshape(-1, 1),
             Theta_supply_i = np.array([24.89, 24.89, 36.78, 35.39, 36.85]).reshape(-1, 1),
@@ -63,7 +64,7 @@ class Test_床下空調時_式46_式48:
         # Arrange
 
         # Act
-        Theta_NR = jjj_ufac.get_Theta_NR(
+        Theta_NR = get_Theta_NR(
             Theta_star_NR = 19.40,
             Theta_star_HBR = 20.0,
             # 上テストのアサートと同一値

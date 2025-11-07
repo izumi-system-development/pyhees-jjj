@@ -14,7 +14,7 @@ from jjjexperiment.inputs.environment_entity import EnvironmentEntity
 from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
 from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
 
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 from test_utils.utils import *
@@ -187,14 +187,14 @@ class Test_床下空調時_式8補正:
         _logger.NDdebug("L_star_H_d_t_i_4_before_correction", L_star_H_d_t_i[3])
         _logger.NDdebug("L_star_H_d_t_i_5_before_correction", L_star_H_d_t_i[4])
 
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+        A_s_ufac_i, r_A_s_ufac = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         _logger.debug(f"A_s_ufac_i: {A_s_ufac_i}")
         _logger.debug(f"r_A_s_ufac: {r_A_s_ufac}")
 
         U_s_vert = climate.get_U_s_vert(environment.get_Q())
         _logger.debug(f"U_s_vert: {U_s_vert}")
         delta_L_uf2room_d_t_i = np.hstack([
-            jjj_ufac.calc_delta_L_room2uf_i(
+            calc_delta_L_room2uf_i(
                 U_s_vert, A_s_ufac_i,
                 np.abs(Theta_star_HBR_d_t[tt] - Theta_ex_d_t[tt]))
             for tt in range(24*365)

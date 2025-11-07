@@ -10,7 +10,7 @@ from jjjexperiment.inputs.climate_entity import ClimateEntity
 from jjjexperiment.inputs.environment_entity import EnvironmentEntity
 
 import jjjexperiment.underfloor_ac.inputs as jjj_ufac_ipt
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.section4_2 import calc_Q_hat_hs
 
 from test_utils.utils import load_input_yaml
 
@@ -61,7 +61,7 @@ def Q_hat_hs_d_t():
     sum_V_vent_g_i = np.sum(environment.get_V_vent_g_i())
     HCM=np.array(climate.get_HCM_d_t())
 
-    vector_Q_hat_hs = np.vectorize(jjj_ufac.calc_Q_hat_hs)
+    vector_Q_hat_hs = np.vectorize(calc_Q_hat_hs)
     Q_hat_hs_d_t = vector_Q_hat_hs(
         Q=environment.get_Q(),
         A_A=house.A_A,

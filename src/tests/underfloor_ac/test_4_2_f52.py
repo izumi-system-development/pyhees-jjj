@@ -1,7 +1,7 @@
 import pytest
 
 from jjjexperiment.common import JJJ_HCM
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.section4_2_f52 import get_Theta_star_NR
 
 class Test式52負荷バランス時非居室室温:
     """式52 負荷バランス時の非居室の室温計算のテストクラス"""
@@ -10,7 +10,7 @@ class Test式52負荷バランス時非居室室温:
         """基本計算のテスト - 正常値での式52計算"""
         # NOTE: ダクトセントラル・床下定数 変更なし(index=0)
         # Arrange & Act
-        result = jjj_ufac.get_Theta_star_NR(
+        result = get_Theta_star_NR(
             Theta_star_HBR=20.0,    # 居室設定温度
             Q=2.65,                 # 熱損失係数
             A_NR=38.9,              # 非居室面積
@@ -31,7 +31,7 @@ class Test式52負荷バランス時非居室室温:
         """基本計算のテスト - 正常値での式52計算"""
         # NOTE: ダクトセントラル・床下定数 変更あり(index=0)
         # Arrange & Act
-        result = jjj_ufac.get_Theta_star_NR(
+        result = get_Theta_star_NR(
             Theta_star_HBR=20.0,    # 居室設定温度
             Q=2.65,                 # 熱損失係数
             A_NR=38.9,              # 非居室面積
@@ -52,7 +52,7 @@ class Test式52負荷バランス時非居室室温:
         """冷房期のテスト - 夏期条件での式52計算"""
         # NOTE: ダクトセントラル・床下定数 変更なし(index=4848)
         # Arrange & Act
-        result = jjj_ufac.get_Theta_star_NR(
+        result = get_Theta_star_NR(
             Theta_star_HBR=27.0,    # 冷房設定温度
             Q=2.65,                 # 熱損失係数
             A_NR=38.9,              # 非居室面積

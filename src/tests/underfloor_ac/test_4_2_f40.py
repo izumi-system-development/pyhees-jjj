@@ -10,7 +10,8 @@ from jjjexperiment.inputs.di_container import create_injector_from_json
 from jjjexperiment.inputs.climate_entity import ClimateEntity
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_Theta_uf, calc_delta_L_room2uf_i, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 import jjjexperiment.constants as jjj_consts
 from test_utils.utils import load_input_yaml
@@ -34,7 +35,7 @@ class Test_床下空調時_式40:
         injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
         house = injector.get(HouseInfo)
         skin = injector.get(OuterSkin)
-        new_ufac = injector.get(jjj_ufac.inputs.common.UnderfloorAc)
+        new_ufac = injector.get(UnderfloorAc)
 
         climate = ClimateEntity(house.region, new_ufac)
 
@@ -70,7 +71,7 @@ class Test_床下空調時_式40:
         assert np.shape(L_H_d_t_i) == (12, 8760)
 
         # Arrange - 当該住戸の空気を供給する床下空間に接する床の面積の合計 [m2]
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+        A_s_ufac_i, r_A_s_ufac = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         A_s_ufvnt = np.sum(A_s_ufac_i)
 
         L_H_d_t = np.sum(L_H_d_t_i, axis=0)
@@ -88,7 +89,7 @@ class Test_床下空調時_式40:
         assert V_dash_supply_flr1st == pytest.approx(527.5, rel=1e-2)
 
         Theta_uf  \
-            = jjj_ufac.calc_Theta_uf(1, None,  # 暖房期
+            = calc_Theta_uf(1, None,  # 暖房期
                 L_H_d_t_flr1st[t], A_s_ufvnt, U_s_vert, Theta_in_d_t[t], Theta_ex_d_t[t], V_dash_supply_flr1st)
 
         # Assert
@@ -105,7 +106,7 @@ class Test_床下空調時_式40:
         house_info = injector.get(HouseInfo)
 
         # Act
-        A_s_ufvnt_i, _ = jjj_ufac.get_A_s_ufac_i(house_info.A_A, house_info.A_MR, house_info.A_OR)
+        A_s_ufvnt_i, _ = get_A_s_ufac_i(house_info.A_A, house_info.A_MR, house_info.A_OR)
         A_s_ufvnt = np.sum(A_s_ufvnt_i)
         # Assert
         assert A_s_ufvnt == pytest.approx(65.44, rel=1e-2)
@@ -119,14 +120,14 @@ class Test_床下空調時_式40:
 
         house = injector.get(HouseInfo)
         skin = injector.get(OuterSkin)
-        new_ufac = injector.get(jjj_ufac.inputs.common.UnderfloorAc)
+        new_ufac = injector.get(UnderfloorAc)
 
         climate = ClimateEntity(house.region, new_ufac)
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
 
         # Arrange - 当該住戸の空気を供給する床下空間に接する床の面積の合計 [m2]
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+        A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         A_s_ufac_A = np.sum(A_s_ufac_i)
         assert np.shape(A_s_ufac_i) == (12, 1)
 
@@ -140,7 +141,7 @@ class Test_床下空調時_式40:
         assert Theta_in_d_t[t] > Theta_ex_d_t[t], "暖房期の前提"
 
         delta_L_uf2room \
-            = jjj_ufac.calc_delta_L_room2uf_i(
+            = calc_delta_L_room2uf_i(
                 U_s_vert, A_s_ufac_i, Theta_in_d_t[t] - Theta_ex_d_t[t])
 
         # Assert
@@ -163,7 +164,7 @@ class Test_床下空調時_式40:
         phi = climate.get_phi(skin.Q)
 
         # Arrange - 基礎外周長さ [m]
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+        A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
 
         # Arrange - 外気温度 [℃]
@@ -172,7 +173,7 @@ class Test_床下空調時_式40:
         # Act
         t = 0
         Theta_uf = 23.2  # 床下温度 [℃]
-        delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
+        delta_L_uf2outdoor_d_t = np.vectorize(calc_delta_L_uf2outdoor)
         delta_L_uf2outdoor \
             = delta_L_uf2outdoor_d_t(phi, L_uf, Theta_uf - Theta_ex_d_t[t])
 
@@ -190,7 +191,7 @@ class Test_床下空調時_式40:
 
         R_g = getattr(jjj_consts, 'R_g', 0.15)
 
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+        A_s_ufac_i, r_A_s_ufac = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
 
         # 吸熱応答係数の初項
         Phi_A_0 = 0.025504994
@@ -205,7 +206,7 @@ class Test_床下空調時_式40:
         # θ'_g_surf_A_m_d_t: 日付dの時刻tにおける 指数項mの 吸熱応答の項別成分 [℃]
         sum_Theta_dash_g_surf_A_m = 4.138  # 算出方不明
 
-        delta_L_uf2gnd_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2gnd)
+        delta_L_uf2gnd_d_t = np.vectorize(calc_delta_L_uf2gnd)
         delta_L_uf2gnd \
             = delta_L_uf2gnd_d_t(1, None,  # 暖房期
                 np.sum(A_s_ufac_i), R_g, Phi_A_0, Theta_uf,

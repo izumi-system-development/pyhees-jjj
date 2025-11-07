@@ -37,7 +37,9 @@ from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 
 # F24-5 新床下空調
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i, get_r_A_uf_i, calc_Theta_uf, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
+from jjjexperiment.underfloor_ac.section3_1_e import calc_Theta_uf_d_t_2023
+from jjjexperiment.underfloor_ac.section4_2_f52 import get_Theta_star_NR, get_Theta_HBR_i, get_Theta_NR
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc, UfVarsDataFrame
 
 @dataclass
@@ -350,12 +352,12 @@ def calc_Q_UT_A(
         # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
         U_s_vert = ClimateEntity(house.region).get_U_s_vert(skin.Q)  # 床の熱貫流率 [W/m2K]
-        A_s_ufac_i, r_A_s_ufac = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+        A_s_ufac_i, r_A_s_ufac = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
 
         assert A_s_ufac_i.ndim == 2
         delta_L_room2uf_d_t_i  \
             = np.hstack([
-                jjj_ufac.calc_delta_L_room2uf_i(
+                calc_delta_L_room2uf_i(
                     U_s_vert,
                     A_s_ufac_i,
                     np.abs(Theta_ex_d_t[t] - Theta_in_d_t[t])
@@ -375,13 +377,13 @@ def calc_Q_UT_A(
             case _:
                 raise ValueError
 
-        mask_uf_i = jjj_ufac.get_r_A_uf_i() > 0  # 床下空調部屋のみ
+        mask_uf_i = get_r_A_uf_i() > 0  # 床下空調部屋のみ
         V_dash_supply_flr1st_d_t  \
             = np.sum(V_dash_supply_d_t_i[mask_uf_i.flatten()[:5], :], axis=0)
 
         Theta_uf_d_t  \
             = np.array([
-                jjj_ufac.calc_Theta_uf(q_hs_rtd_H(), q_hs_rtd_C(),
+                calc_Theta_uf(q_hs_rtd_H(), q_hs_rtd_C(),
                     L_d_t_flr1st[t],
                     np.sum(A_s_ufac_i),
                     U_s_vert,
@@ -393,7 +395,7 @@ def calc_Q_UT_A(
         climate = ClimateEntity(house.region, new_ufac)
         phi = climate.get_phi(skin.Q)
 
-        delta_L_uf2outdoor_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2outdoor)
+        delta_L_uf2outdoor_d_t = np.vectorize(calc_delta_L_uf2outdoor)
         delta_L_uf2outdoor_d_t  \
             = delta_L_uf2outdoor_d_t(phi, L_uf, (Theta_uf_d_t - Theta_ex_d_t))
         assert np.shape(delta_L_uf2outdoor_d_t) == (24 * 365,)
@@ -415,7 +417,7 @@ def calc_Q_UT_A(
         A_s_ufac_A = np.sum(A_s_ufac_i)
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 
-        delta_L_uf2gnd_d_t = np.vectorize(jjj_ufac.calc_delta_L_uf2gnd)
+        delta_L_uf2gnd_d_t = np.vectorize(calc_delta_L_uf2gnd)
         delta_L_uf2gnd_d_t = \
             delta_L_uf2gnd_d_t(q_hs_rtd_H(), q_hs_rtd_C(),
                 A_s_ufac_A, jjj_consts.R_g, Phi_A_0, Theta_uf_d_t, sum_Theta_dash_g_surf_A_m, Theta_g_avg)
@@ -470,7 +472,7 @@ def calc_Q_UT_A(
         print("Theta_uf_d_t[4848]", Theta_uf_d_t[4848])
         print("HCM[4848]", HCM[4848])
 
-        Theta_star_NR_d_t = np.vectorize(jjj_ufac.get_Theta_star_NR)
+        Theta_star_NR_d_t = np.vectorize(get_Theta_star_NR)
         Theta_star_NR_d_t = \
             Theta_star_NR_d_t(
                 Theta_star_HBR = Theta_star_HBR_d_t,  # (8760,)
@@ -797,7 +799,7 @@ def calc_Q_UT_A(
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             # 部屋→床下への熱移動分が戻ってくるため負荷控除する
             delta_L_uf2room_d_t_i = np.hstack([
-                jjj_ufac.calc_delta_L_room2uf_i(
+                calc_delta_L_room2uf_i(
                     U_s_vert,
                     A_s_ufac_i,
                     np.abs(Theta_star_HBR_d_t[t] - Theta_ex_d_t[t])
@@ -921,7 +923,7 @@ def calc_Q_UT_A(
         # NOTE: 床下空調を使用する(旧・新 両ロジックとも) 対象居室のみ損失分を補正する
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             # 期待される床下温度を事前に計算(本計算は後で行う)
-            Theta_uf_d_t_2023 = jjj_ufac.calc_Theta_uf_d_t_2023(
+            Theta_uf_d_t_2023 = calc_Theta_uf_d_t_2023(
                 L_star_H_d_t_i, L_star_CS_d_t_i, house.A_A, house.A_MR, house.A_OR, skin.r_A_ufac, V_dash_supply_d_t_i, Theta_ex_d_t)
             # θuf_supply を逆算(二分探索)
             _, _, Theta_uf_supply_d_t  \
@@ -1090,9 +1092,9 @@ def calc_Q_UT_A(
         # (46) 暖冷房区画𝑖の実際の居室の室温
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             HCM = np.array(ClimateEntity(house.region).get_HCM_d_t())
-            A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
+            A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
             Theta_HBR_d_t_i = np.hstack([
-                jjj_ufac.get_Theta_HBR_i(
+                get_Theta_HBR_i(
                     Theta_star_HBR = Theta_star_HBR_d_t[t],
                     V_supply_i = V_supply_d_t_i[:, t:t+1],
                     Theta_supply_i = Theta_supply_d_t_i[:, t:t+1],
@@ -1118,7 +1120,7 @@ def calc_Q_UT_A(
         # (48) 実際の非居室の室温
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
             Theta_NR_d_t = np.array([
-                jjj_ufac.get_Theta_NR(
+                get_Theta_NR(
                     Theta_star_NR = Theta_star_NR_d_t[t],
                     Theta_star_HBR = Theta_star_HBR_d_t[t],
                     Theta_HBR_i = Theta_HBR_d_t_i[:, t:t+1],
