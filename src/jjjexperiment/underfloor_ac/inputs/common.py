@@ -1,7 +1,7 @@
 import pandas as pd
 from dataclasses import dataclass
 # JJJ
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 __all__ = ['UnderfloorAc', 'UfVarsDataFrame']
 

@@ -3,7 +3,7 @@ import json
 import copy
 
 from jjjexperiment.main import calc
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 from test_utils.utils import INPUT_SAMPLE_TYPE3_PATH, deep_update
 

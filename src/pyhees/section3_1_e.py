@@ -11,8 +11,8 @@ import jjjexperiment.constants as jjj_consts
 from jjjexperiment.common import *
 from jjjexperiment.logger import log_res
 # NOTE: pyhees->jjj への依存は可能な限り絞る
-from jjjexperiment.di_container import get_current_injector
-from jjjexperiment.options import 床下空調ロジック
+from jjjexperiment.inputs.di_container import get_current_injector
+from jjjexperiment.inputs.options import 床下空調ロジック
 
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc, UfVarsDataFrame
 

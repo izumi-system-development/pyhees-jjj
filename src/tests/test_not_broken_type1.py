@@ -10,7 +10,7 @@ from test_utils.utils import  \
 # JJJ
 from jjjexperiment.main import calc
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 
 class Test既存計算維持_入力値切替_方式1:

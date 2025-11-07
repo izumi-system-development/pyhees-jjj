@@ -2,8 +2,8 @@ import pytest
 from injector import Injector
 from jjjexperiment.underfloor_ac.inputs.common import UfVarsDataFrame
 
-from jjjexperiment.options import *
-from jjjexperiment.di_container import *
+from jjjexperiment.inputs.options import *
+from jjjexperiment.inputs.di_container import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger
 
 from jjjexperiment.underfloor_ac.inputs.common import UfVarsDataFrame

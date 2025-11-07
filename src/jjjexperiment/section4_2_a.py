@@ -10,7 +10,7 @@ from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 
 from jjjexperiment.denchu.inputs.heating import DenchuCatalogSpecification as H_CatalogSpec, RealInnerCondition as H_RealInnerCondition
 from jjjexperiment.denchu.inputs.cooling import DenchuCatalogSpecification as C_CatalogSpec, RealInnerCondition as C_RealInnerCondition

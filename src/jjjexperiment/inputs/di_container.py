@@ -1,7 +1,7 @@
 from typing import NewType, Optional
 from injector import Injector, singleton, provider, Module
 # JJJ 共通
-from jjjexperiment.options import *
+from jjjexperiment.inputs.options import *
 import jjjexperiment.inputs.common as common_input
 import jjjexperiment.inputs.cooling as common_cooling_input
 import jjjexperiment.inputs.heating as common_heating_input
