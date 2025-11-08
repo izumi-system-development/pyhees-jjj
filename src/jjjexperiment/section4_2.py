@@ -1407,4 +1407,4 @@ def calc_Q_UT_A(
 
     return E_C_UT_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i,  \
             Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  \
-            X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t
+            X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, C_df_H_d_t

@@ -13,12 +13,12 @@ class TestV最低風量入力結合:
         """最低風量直接入力を有効"""
         fixtures = {
             "H_A": {
-                "input_V_hs_min_H": 最低風量直接入力.入力する.value,
-                "V_hs_min_H": 1200,
+                "input_V_hs_min": 最低風量直接入力.入力する.value,
+                "V_hs_min": 1200,
             },
             "C_A": {
-                "input_V_hs_min_C": 最低風量直接入力.入力する.value,
-                "V_hs_min_C": 1200,
+                "input_V_hs_min": 最低風量直接入力.入力する.value,
+                "V_hs_min": 1200,
             }
         }
         inputs_copied = copy.deepcopy(inputs)
@@ -27,8 +27,8 @@ class TestV最低風量入力結合:
     def _change_general_ventilation(self, inputs: dict, enabled: bool) -> dict:
         """全般換気設定"""
         fixtures = {
-            "H_A": {"general_ventilation_H": enabled},
-            "C_A": {"general_ventilation_C": enabled}
+            "H_A": {"general_ventilation": enabled},
+            "C_A": {"general_ventilation": enabled}
         }
         inputs_copied = copy.deepcopy(inputs)
         return deep_update(inputs_copied, fixtures)
@@ -38,14 +38,14 @@ class TestV最低風量入力結合:
         val = solve.value
         fixtures = {
             "H_A": {
-                "input_E_E_fan_min_H": 最低電力直接入力.入力する.value,
-                "E_E_fan_min_H": 100,
-                "E_E_fan_logic_H": val
+                "input_E_E_fan_min": 最低電力直接入力.入力する.value,
+                "E_E_fan_min": 100,
+                "E_E_fan_logic": val
             },
             "C_A": {
-                "input_E_E_fan_min_C": 最低電力直接入力.入力する.value,
-                "E_E_fan_min_C": 100,
-                "E_E_fan_logic_C": val
+                "input_E_E_fan_min": 最低電力直接入力.入力する.value,
+                "E_E_fan_min": 100,
+                "E_E_fan_logic": val
             }
         }
         inputs_copied = copy.deepcopy(inputs)

@@ -176,7 +176,7 @@ def calc_main(
     # 暖房負荷アクティブ
     injector.binder.bind(jjj_dc.ActiveSeasonalLoad, to=heat_load)
 
-    _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, C_df_H_d_t = \
+    _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, C_df_H_d_t = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
@@ -234,24 +234,20 @@ def calc_main(
             case 最低風量直接入力.入力する:
                 print(最低風量直接入力.入力する)
 
-                # V_hs_vent_d_t の上書き
-                assert V_hs_vent_d_t.shape == Array8760.shape
-
                 V_hs_min_H = v_min_heating_input.V_hs_min
                 match heat_load.general_ventilation:
-                    case 全般換気機能.あり:
+                    case True:
                         print(全般換気機能.あり)
-                        # CHECK: 仕様の置換対象は V_vent_g_i かも
-                        V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_H, V_hs_vent_d_t)
-                    case 全般換気機能.なし:
+                        V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_H, np.sum(V_vent_g_i))
+                    case False:
                         print(全般換気機能.なし)
-                        H = np.array([hcm == HCM.暖房期 for hcm in HCM])
+                        H = np.array([hcm == JJJ_HCM.H for hcm in HCM])
                         V_hs_vent_d_t[H] = V_hs_min_H
                     case _:
                         raise ValueError
 
                 match v_min_heating_input.input_E_E_fan_min:
-                    case 最低電力直接入力.入力しない.value:
+                    case 最低電力直接入力.入力しない:
                         print(最低電力直接入力.入力しない)
 
                         # 従来式
@@ -265,15 +261,14 @@ def calc_main(
                                 , q_hs_H_d_t  # W
                                 , heat_load.f_SFP)  # NOTE: 従来式は標準値固定だがカスタム値を反映
 
-                    case 最低電力直接入力.入力する.value:
+                    case 最低電力直接入力.入力する:
                         print(最低電力直接入力.入力する)
 
                         E_E_fan_min_H = v_min_heating_input.E_E_fan_min
                         E_E_fan_logic = v_min_heating_input.E_E_fan_logic
 
-                        import jjjexperiment.ac_min_volume_input.section4_2_a as jjj_V_min_input
-                        E_E_fan_H_d_t = \
-                            jjj_V_min_input.get_E_E_fan(
+                        from jjjexperiment.ac_min_volume_input.section4_2_a import get_E_E_fan_d_t
+                        E_E_fan_H_d_t = get_E_E_fan_d_t(
                                 E_E_fan_logic
                                 # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
                                 , P_rac_fan_rtd_H if heat_load.type == PROCESS_TYPE_2 else heat_load.P_fan_rtd
@@ -408,7 +403,7 @@ def calc_main(
     # 冷房負荷アクティブ
     injector.binder.bind(jjj_dc.ActiveSeasonalLoad, to=cool_load)
 
-    E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, _ = \
+    E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, _ = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
@@ -451,24 +446,20 @@ def calc_main(
             case 最低風量直接入力.入力する:
                 print(最低風量直接入力.入力する)
 
-                # V_hs_vent_d_t の上書き
-                assert V_hs_vent_d_t.shape == Array8760.shape
-
                 V_hs_min_C = v_min_cooling_input.V_hs_min
                 match cool_load.general_ventilation:
-                    case 全般換気機能.あり:
+                    case True:
                         print(全般換気機能.あり)
-                        # CHECK: 仕様の置換対象は V_vent_g_i かも
-                        V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_C, V_hs_vent_d_t)
-                    case 全般換気機能.なし:
+                        V_hs_vent_d_t: Array8760 = np.maximum(V_hs_min_C, np.sum(V_vent_g_i))
+                    case False:
                         print(全般換気機能.なし)
-                        C = np.array([hcm == HCM.冷房期 for hcm in HCM])
+                        C = np.array([hcm == JJJ_HCM.C for hcm in HCM])
                         V_hs_vent_d_t[C] = V_hs_min_C
                     case _:
                         raise ValueError
 
                 match v_min_cooling_input.input_E_E_fan_min:
-                    case 最低電力直接入力.入力しない.value:
+                    case 最低電力直接入力.入力しない:
                         print(最低電力直接入力.入力しない)
 
                         # 従来式
@@ -482,15 +473,14 @@ def calc_main(
                                 , q_hs_C_d_t  # W
                                 , cool_load.f_SFP)  # NOTE: 従来式は標準値固定だがカスタム値を反映
 
-                    case 最低電力直接入力.入力する.value:
+                    case 最低電力直接入力.入力する:
                         print(最低電力直接入力.入力する)
 
                         E_E_fan_min_C = v_min_cooling_input.E_E_fan_min
                         E_E_fan_logic = v_min_cooling_input.E_E_fan_logic
 
-                        import jjjexperiment.ac_min_volume_input.section4_2_a as jjj_V_min_input
-                        E_E_fan_C_d_t = \
-                            jjj_V_min_input.get_E_E_fan_d_t(
+                        from jjjexperiment.ac_min_volume_input.section4_2_a import get_E_E_fan_d_t
+                        E_E_fan_C_d_t = get_E_E_fan_d_t(
                                 E_E_fan_logic
                                 # ルームエアコンファン(P_rac_fan) OR 循環ファン(P_fan)
                                 , P_rac_fan_rtd_C if cool_load.type == PROCESS_TYPE_2 else cool_load.P_fan_rtd

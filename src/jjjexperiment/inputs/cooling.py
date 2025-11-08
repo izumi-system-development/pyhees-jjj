@@ -21,6 +21,7 @@ class SeasonalLoad:
     VAV: bool = False
     general_ventilation: bool = True
     """全般換気"""
+    # NOTE: enumもあるが現状はboolなので注意
     f_SFP: float = 0.4 * 0.36
     """ファンの比消費電力"""
 

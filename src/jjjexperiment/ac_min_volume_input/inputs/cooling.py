@@ -23,17 +23,17 @@ class InputMinVolumeInput:
         if 'input_V_hs_min' in data:
             kwargs['input_V_hs_min'] = 最低風量直接入力(int(data['input_V_hs_min']))
 
-            if kwargs['input_V_hs_min'] == 最低風量直接入力.入力する.value:
+            if kwargs['input_V_hs_min'] == 最低風量直接入力.入力する:
                 # 事前条件: 有効な入力値が存在する
                 if 'V_hs_min' not in data:
                     raise Exception('V_hs_min 最低風量の直接入力がありません.')
-                kwargs['V_hs_min'].V_hs_min = float(data['V_hs_min'])
+                kwargs['V_hs_min'] = float(data['V_hs_min'])
 
                 # NOTE: 最低電力直接入力は最低風量直接入力が有効なことが前提の仕様です
                 if 'input_E_E_fan_min' in data:
                     kwargs['input_E_E_fan_min'] = 最低電力直接入力(int(data['input_E_E_fan_min']))
 
-                    if kwargs['input_E_E_fan_min'] == 最低電力直接入力.入力する.value:
+                    if kwargs['input_E_E_fan_min'] == 最低電力直接入力.入力する:
                         # 事前条件: 有効な入力値が存在する
                         if 'E_E_fan_min' not in data:
                             raise Exception('E_E_fan_min 最低電力の直接入力がありません.')

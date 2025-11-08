@@ -7,6 +7,7 @@ from numpy.typing import NDArray
 # NOTE: どこからでも利用するのでカスタムファイルへ依存させない
 # 循環参照の原因になるため
 
+# WARNING: np.shape のアサートには残念ながら使用できない
 Array5 = Annotated[NDArray[np.float64], '5']
 Array5x1 = Annotated[NDArray[np.float64], '5x1']
 Array5x8760 = Annotated[NDArray[np.float64], '5x8760']
