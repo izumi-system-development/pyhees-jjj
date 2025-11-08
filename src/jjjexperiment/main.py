@@ -428,7 +428,7 @@ def calc_main(
         print(cool_load.type)
 
         # [F25-01] 最低風量・最低電力 直接入力
-        match v_min_heating_input.input_V_hs_min:
+        match v_min_cooling_input.input_V_hs_min:
             case 最低風量直接入力.入力しない:
                 print(最低風量直接入力.入力しない)
 
