@@ -3,6 +3,8 @@ from injector import Injector, singleton, provider, Module
 # JJJ 共通
 from jjjexperiment.inputs.options import *
 import jjjexperiment.inputs.common as common_input
+from jjjexperiment.inputs.ac_setting import HeatingAcSetting, CoolingAcSetting
+from jjjexperiment.inputs.ac_quantity_entity import HeatQuantity, CoolQuantity
 import jjjexperiment.inputs.cooling as common_cooling_input
 import jjjexperiment.inputs.heating as common_heating_input
 # F23 電中研モデル
@@ -98,6 +100,10 @@ class JJJExperimentModule(Module):
             else:
                 raise KeyError('r_A_ufvnt が設定されていません')
 
+    # NOTE: プロバイダーについて
+    # 現在はDI解決用データクラスのみを提供しています
+    # 計算用のエンティティについては自分でデータクラスを注入して利用します
+
     @singleton
     @provider
     def provide_injector(self) -> Injector:
@@ -131,25 +137,19 @@ class JJJExperimentModule(Module):
     def provide_heatexchangeventilation(self) -> common_input.HEX:
         return common_input.HEX.from_dict(self._input if self._input is not None else {})
 
-    # TODO: 可能ならクラス定義を一箇所にして別クラスとして使用したい。二重管理を防げる
     @singleton
     @provider
-    def provide_common_heating_input(self) -> common_heating_input.SeasonalLoad:
-        house_info = self.create_houseinfo()
-        return common_heating_input.SeasonalLoad \
-            .from_dict(
-                self._input['H_A'] if self._input is not None and 'H_A' in self._input else {},
-                house_info.region,
-                house_info.A_A)
+    def provide_heating_ac_setting(self) -> HeatingAcSetting:
+        return HeatingAcSetting.from_dict(
+            self._input['H_A'] if self._input is not None and 'H_A' in self._input else {}
+        )
+    
     @singleton
     @provider
-    def provide_common_cooling_input(self) -> common_cooling_input.SeasonalLoad:
-        house_info = self.create_houseinfo()
-        return common_cooling_input.SeasonalLoad \
-            .from_dict(
-                self._input['C_A'] if self._input is not None and 'C_A' in self._input else {},
-                house_info.region,
-                house_info.A_A)
+    def provide_cooling_ac_setting(self) -> CoolingAcSetting:
+        return CoolingAcSetting.from_dict(
+            self._input['C_A'] if self._input is not None and 'C_A' in self._input else {}
+        )
 
     @singleton
     @provider
