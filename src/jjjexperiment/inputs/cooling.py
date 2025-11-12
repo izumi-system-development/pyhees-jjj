@@ -1,5 +1,10 @@
 # SeasonalLoadクラスは削除 - 新アーキテクチャではAcSetting + Entityパターンを使用
 # CoolingAcSetting + CoolQuantityを使用してください
+from .ac_setting import CoolingAcSetting
+from .ac_quantity_entity import CoolQuantity
+
+# 後方互換性のためのエイリアス
+SeasonalLoad = CoolQuantity
 import pyhees.section4_3_a as rac_spec
 from dataclasses import dataclass
 

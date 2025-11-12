@@ -9,13 +9,15 @@ import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.ac_setting import HeatingAcSetting, CoolingAcSetting
+from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
+
+# 計算用エンティティ
 from jjjexperiment.inputs.climate_entity import ClimateEntity
 from jjjexperiment.inputs.environment_entity import EnvironmentEntity
-from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad
-from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad
+from jjjexperiment.inputs.ac_quantity_entity import HeatQuantity, CoolQuantity
 
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i
-from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 from test_utils.utils import *
 
@@ -36,8 +38,8 @@ class Test_床下空調時_式8補正:
         house = injector.get(HouseInfo)
         skin = injector.get(OuterSkin)
         new_ufac = injector.get(UnderfloorAc)
-        heat_load = injector.get(CommonHeatLoad)
-        cool_load = injector.get(CommonCoolLoad)
+        heat_ac_setting = injector.get(HeatingAcSetting)
+        cool_ac_setting = injector.get(CoolingAcSetting)
 
         _logger.info(f"UnderfloorAc config: {new_ufac}")
 
@@ -117,12 +119,15 @@ class Test_床下空調時_式8補正:
         _logger.NDdebug('L_CS_d_t_i_4', L_CS_d_t_i[3])
         _logger.NDdebug('L_CS_d_t_i_5', L_CS_d_t_i[4])
 
+        q_hs_rtd_H = HeatQuantity(heat_ac_setting, house.region, house.A_A).q_hs_rtd
+        q_hs_rtd_C = CoolQuantity(cool_ac_setting, house.region, house.A_A).q_hs_rtd
+
         V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t(
             V_hs_min = dc.get_V_hs_min(environment.get_V_vent_g_i()),
-            V_hs_dsgn_H = heat_load.V_hs_dsgn,
-            V_hs_dsgn_C = cool_load.V_hs_dsgn,
-            Q_hs_rtd_H = dc.get_Q_hs_rtd_H(heat_load.q_hs_rtd),
-            Q_hs_rtd_C = dc.get_Q_hs_rtd_C(cool_load.q_hs_rtd),
+            V_hs_dsgn_H = heat_ac_setting.V_hs_dsgn,
+            V_hs_dsgn_C = cool_ac_setting.V_hs_dsgn,
+            Q_hs_rtd_H = dc.get_Q_hs_rtd_H(q_hs_rtd_H),
+            Q_hs_rtd_C = dc.get_Q_hs_rtd_C(q_hs_rtd_C),
             Q_hat_hs_d_t = Q_hat_hs_d_t,  # fixture
             region = house.region)
         _logger.NDdebug('V_dash_hs_supply_d_t', V_dash_hs_supply_d_t)

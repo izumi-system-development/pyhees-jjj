@@ -480,8 +480,8 @@ class Test既存計算維持_入力値切替_方式2:
             H_A_V_hs_dsgn_H
         """
         inputs = copy.deepcopy(self._inputs)
-        inputs["H_A"]["input_V_hs_dsgn_H"] = 2
-        inputs["H_A"]["V_hs_dsgn_H"] = 1820
+        inputs["H_A"]["input_V_hs_dsgn"] = 2
+        inputs["H_A"]["V_hs_dsgn"] = 1820
 
         result = calc(inputs, test_mode=True)
 
@@ -516,9 +516,9 @@ class Test既存計算維持_入力値切替_方式2:
         inputs["H_A"]["fixed_fin_direction2"] = 2
 
         # ファンの比消費電力（入力しない or 入力する）
-        inputs["H_A"]["input_f_SFP_H"] = 1
+        inputs["H_A"]["input_f_SFP"] = 1
         # ▼ 入力する場合
-        inputs["H_A"]["f_SFP_H"] = 1  # ファンの比消費電力 [W/(m3/h)]
+        inputs["H_A"]["f_SFP"] = 1  # ファンの比消費電力 [W/(m3/h)]
 
         result = calc(inputs, test_mode=True)
 
@@ -560,9 +560,9 @@ class Test既存計算維持_入力値切替_方式2:
         inputs["H_A"]["fixed_fin_direction2"] = 1
 
         # ファンの比消費電力（入力しない or 入力する）
-        inputs["H_A"]["input_f_SFP_H"] = 2  # ★ 入力する
+        inputs["H_A"]["input_f_SFP"] = 2  # ★ 入力する
         # ▼ 入力する場合のみ
-        inputs["H_A"]["f_SFP_H"] = 0.3  # ファンの比消費電力 [W/(m3/h)]
+        inputs["H_A"]["f_SFP"] = 0.3  # ファンの比消費電力 [W/(m3/h)]
 
         result = calc(inputs, test_mode=True)
 
@@ -630,8 +630,8 @@ class Test既存計算維持_入力値切替_方式2:
             C_A_V_hs_dsgn_C
         """
         inputs = copy.deepcopy(self._inputs)
-        inputs["C_A"]["input_V_hs_dsgn_C"] = 2
-        inputs["C_A"]["V_hs_dsgn_C"] = 1650
+        inputs["C_A"]["input_V_hs_dsgn"] = 2
+        inputs["C_A"]["V_hs_dsgn"] = 1650
 
         result = calc(inputs, test_mode=True)
 
@@ -666,9 +666,9 @@ class Test既存計算維持_入力値切替_方式2:
         inputs["C_A"]["fixed_fin_direction2"] = 2
 
         # ファンの比消費電力（入力しない or 入力する）
-        inputs["C_A"]["input_f_SFP_C"] = 1  # ★ 入力しない
+        inputs["C_A"]["input_f_SFP"] = 1  # ★ 入力しない
         # ▼ 入力する場合のみ
-        inputs["C_A"]["f_SFP_C"] = 1  # ファンの比消費電力W [(m3/h)/W]
+        inputs["C_A"]["f_SFP"] = 1  # ファンの比消費電力W [(m3/h)/W]
 
         result = calc(inputs, test_mode=True)
 
@@ -710,9 +710,9 @@ class Test既存計算維持_入力値切替_方式2:
         inputs["C_A"]["fixed_fin_direction2"] = 1
 
         # ファンの比消費電力（入力しない or 入力する）
-        inputs["C_A"]["input_f_SFP_C"] = 2  # ★ 入力する
+        inputs["C_A"]["input_f_SFP"] = 2  # ★ 入力する
         # ▼ 入力する場合のみ
-        inputs["C_A"]["f_SFP_C"] = 0.3  # ファンの比消費電力W [(m3/h)/W]
+        inputs["C_A"]["f_SFP"] = 0.3  # ファンの比消費電力W [(m3/h)/W]
 
         result = calc(inputs, test_mode=True)
 

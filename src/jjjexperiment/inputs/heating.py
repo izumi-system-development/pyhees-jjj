@@ -1,5 +1,10 @@
 # SeasonalLoadクラスは削除 - 新アーキテクチャではAcSetting + Entityパターンを使用
 # HeatingAcSetting + HeatQuantityを使用してください
+from .ac_setting import HeatingAcSetting
+from .ac_quantity_entity import HeatQuantity
+
+# 後方互換性のためのエイリアス
+SeasonalLoad = HeatQuantity
 import pyhees.section4_3_a as rac_spec
 from dataclasses import dataclass
 

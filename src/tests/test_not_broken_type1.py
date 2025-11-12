@@ -486,8 +486,8 @@ class Test既存計算維持_入力値切替_方式1:
             H_A_V_hs_dsgn_H
         """
         inputs = copy.deepcopy(self._inputs)
-        inputs["H_A"]["input_V_hs_dsgn_H"] = 2
-        inputs["H_A"]["V_hs_dsgn_H"] = 1820
+        inputs["H_A"]["input_V_hs_dsgn"] = 2
+        inputs["H_A"]["V_hs_dsgn"] = 1820
 
         result = calc(inputs, test_mode=True)
 
@@ -501,8 +501,8 @@ class Test既存計算維持_入力値切替_方式1:
             C_A_V_hs_dsgn_C
         """
         inputs = copy.deepcopy(self._inputs)
-        inputs["C_A"]["input_V_hs_dsgn_C"] = 2
-        inputs["C_A"]["V_hs_dsgn_C"] = 1650
+        inputs["C_A"]["input_V_hs_dsgn"] = 2
+        inputs["C_A"]["V_hs_dsgn"] = 1650
 
         result = calc(inputs, test_mode=True)
 
@@ -518,14 +518,14 @@ class Test既存計算維持_入力値切替_方式1:
         # 機器仕様の入力（入力しない or 定格能力試験の値を入力する or 定格能力試験と中間能力試験の値を入力する）
         inputs["H_A"]["input"] = 2  # ★ 定格能力試験の値を入力する
         # ▼ 入力する場合のみ
-        inputs["H_A"]["q_hs_rtd_H"] = 30000.0     # 定格暖房能力試験 能力 [W]
-        inputs["H_A"]["q_hs_mid_H"] = 15000.0     # 中間暖房能力試験 能力 [W]
-        inputs["H_A"]["P_hs_rtd_H"] = 8570        # 定格暖房能力試験 消費電力 [W]
-        inputs["H_A"]["P_hs_mid_H"] = 4300        # 中間暖房能力試験 消費電力 [W]
-        inputs["H_A"]["V_fan_rtd_H"] = 50.0 * 60  # 定格暖房能力試験 風量 [m3/h]
-        inputs["H_A"]["V_fan_mid_H"] = 25.0 * 60  # 中間暖房能力試験 風量 [m3/h]
-        inputs["H_A"]["P_fan_rtd_H"] = 350        # 定格暖房能力試験 室内側送風機の消費電力 [W]
-        inputs["H_A"]["P_fan_mid_H"] = 170        # 中間暖房能力試験 室内側送風機の消費電力 [W]
+        inputs["H_A"]["q_hs_rtd"] = 30000.0     # 定格暖房能力試験 能力 [W]
+        inputs["H_A"]["q_hs_mid"] = 15000.0     # 中間暖房能力試験 能力 [W]
+        inputs["H_A"]["P_hs_rtd"] = 8570        # 定格暖房能力試験 消費電力 [W]
+        inputs["H_A"]["P_hs_mid"] = 4300        # 中間暖房能力試験 消費電力 [W]
+        inputs["H_A"]["V_fan_rtd"] = 50.0 * 60  # 定格暖房能力試験 風量 [m3/h]
+        inputs["H_A"]["V_fan_mid"] = 25.0 * 60  # 中間暖房能力試験 風量 [m3/h]
+        inputs["H_A"]["P_fan_rtd"] = 350        # 定格暖房能力試験 室内側送風機の消費電力 [W]
+        inputs["H_A"]["P_fan_mid"] = 170        # 中間暖房能力試験 室内側送風機の消費電力 [W]
 
         result = calc(inputs, test_mode=True)
 
@@ -548,14 +548,14 @@ class Test既存計算維持_入力値切替_方式1:
         # 機器仕様の入力（入力しない or 定格能力試験の値を入力する or 定格能力試験と中間能力試験の値を入力する）
         inputs["C_A"]["input"] = 2
         # ▼ 入力する場合のみ
-        inputs["C_A"]["q_hs_rtd_C"] = 30000.0     # 定格冷房能力試験 能力 [W]
-        inputs["C_A"]["q_hs_mid_C"] = 15000.0     # 中間冷房能力試験 能力 [W]
-        inputs["C_A"]["P_hs_rtd_C"] = 8570        # 定格冷房能力試験 消費電力 [W]
-        inputs["C_A"]["P_hs_mid_C"] = 4300        # 中間冷房能力試験 消費電力 [W]
-        inputs["C_A"]["V_fan_rtd_C"] = 50.0 * 60  # 定格冷房能力試験 風量 [m3/h]
-        inputs["C_A"]["V_fan_mid_C"] = 25.0 * 60  # 中間冷房能力試験 風量 [m3/h]
-        inputs["C_A"]["P_fan_rtd_C"] = 350        # 定格冷房能力試験 室内側送風機の消費電力 [W]
-        inputs["C_A"]["P_fan_mid_C"] = 170        # 中間冷房能力試験 室内側送風機の消費電力 [W]
+        inputs["C_A"]["q_hs_rtd"] = 30000.0     # 定格冷房能力試験 能力 [W]
+        inputs["C_A"]["q_hs_mid"] = 15000.0     # 中間冷房能力試験 能力 [W]
+        inputs["C_A"]["P_hs_rtd"] = 8570        # 定格冷房能力試験 消費電力 [W]
+        inputs["C_A"]["P_hs_mid"] = 4300        # 中間冷房能力試験 消費電力 [W]
+        inputs["C_A"]["V_fan_rtd"] = 50.0 * 60  # 定格冷房能力試験 風量 [m3/h]
+        inputs["C_A"]["V_fan_mid"] = 25.0 * 60  # 中間冷房能力試験 風量 [m3/h]
+        inputs["C_A"]["P_fan_rtd"] = 350        # 定格冷房能力試験 室内側送風機の消費電力 [W]
+        inputs["C_A"]["P_fan_mid"] = 170        # 中間冷房能力試験 室内側送風機の消費電力 [W]
 
         result = calc(inputs, test_mode=True)
 
@@ -578,14 +578,14 @@ class Test既存計算維持_入力値切替_方式1:
         # 機器仕様の入力（入力しない or 定格能力試験の値を入力する or 定格能力試験と中間能力試験の値を入力する）
         inputs["H_A"]["input"] = 2
         # ▼ 入力する場合のみ
-        inputs["H_A"]["q_hs_rtd_H"] = 27500.0     # 定格暖房能力試験 能力 [W]
-        inputs["H_A"]["q_hs_mid_H"] = 13000.0     # 中間暖房能力試験 能力 [W]
-        inputs["H_A"]["P_hs_rtd_H"] = 7100        # 定格暖房能力試験 消費電力 [W]
-        inputs["H_A"]["P_hs_mid_H"] = 3450        # 中間暖房能力試験 消費電力 [W]
-        inputs["H_A"]["V_fan_rtd_H"] = 54.0 * 60  # 定格暖房能力試験 風量 [m3/h]
-        inputs["H_A"]["V_fan_mid_H"] = 22.0 * 60  # 中間暖房能力試験 風量 [m3/h]
-        inputs["H_A"]["P_fan_rtd_H"] = 400        # 定格暖房能力試験 室内側送風機の消費電力 [W]
-        inputs["H_A"]["P_fan_mid_H"] = 210        # 中間暖房能力試験 室内側送風機の消費電力 [W]
+        inputs["H_A"]["q_hs_rtd"] = 27500.0     # 定格暖房能力試験 能力 [W]
+        inputs["H_A"]["q_hs_mid"] = 13000.0     # 中間暖房能力試験 能力 [W]
+        inputs["H_A"]["P_hs_rtd"] = 7100        # 定格暖房能力試験 消費電力 [W]
+        inputs["H_A"]["P_hs_mid"] = 3450        # 中間暖房能力試験 消費電力 [W]
+        inputs["H_A"]["V_fan_rtd"] = 54.0 * 60  # 定格暖房能力試験 風量 [m3/h]
+        inputs["H_A"]["V_fan_mid"] = 22.0 * 60  # 中間暖房能力試験 風量 [m3/h]
+        inputs["H_A"]["P_fan_rtd"] = 400        # 定格暖房能力試験 室内側送風機の消費電力 [W]
+        inputs["H_A"]["P_fan_mid"] = 210        # 中間暖房能力試験 室内側送風機の消費電力 [W]
 
         result = calc(inputs, test_mode=True)
 
@@ -608,14 +608,14 @@ class Test既存計算維持_入力値切替_方式1:
         inputs = copy.deepcopy(self._inputs)
         # ▼ 入力する場合のみ
         inputs["C_A"]["input"] = 2
-        inputs["C_A"]["q_hs_rtd_C"] = 27500.0     # 定格冷房能力試験 能力 [W]
-        inputs["C_A"]["q_hs_mid_C"] = 13000.0     # 中間冷房能力試験 能力 [W]
-        inputs["C_A"]["P_hs_rtd_C"] = 7100        # 定格冷房能力試験 消費電力 [W]
-        inputs["C_A"]["P_hs_mid_C"] = 3450        # 中間冷房能力試験 消費電力 [W]
-        inputs["C_A"]["V_fan_rtd_C"] = 54.0 * 60  # 定格冷房能力試験 風量 [m3/h]
-        inputs["C_A"]["V_fan_mid_C"] = 22.0 * 60  # 中間冷房能力試験 風量 [m3/h]
-        inputs["C_A"]["P_fan_rtd_C"] = 400        # 定格冷房能力試験 室内側送風機の消費電力 [W]
-        inputs["C_A"]["P_fan_mid_C"] = 210        # 中間冷房能力試験 室内側送風機の消費電力 [W]
+        inputs["C_A"]["q_hs_rtd"] = 27500.0     # 定格冷房能力試験 能力 [W]
+        inputs["C_A"]["q_hs_mid"] = 13000.0     # 中間冷房能力試験 能力 [W]
+        inputs["C_A"]["P_hs_rtd"] = 7100        # 定格冷房能力試験 消費電力 [W]
+        inputs["C_A"]["P_hs_mid"] = 3450        # 中間冷房能力試験 消費電力 [W]
+        inputs["C_A"]["V_fan_rtd"] = 54.0 * 60  # 定格冷房能力試験 風量 [m3/h]
+        inputs["C_A"]["V_fan_mid"] = 22.0 * 60  # 中間冷房能力試験 風量 [m3/h]
+        inputs["C_A"]["P_fan_rtd"] = 400        # 定格冷房能力試験 室内側送風機の消費電力 [W]
+        inputs["C_A"]["P_fan_mid"] = 210        # 中間冷房能力試験 室内側送風機の消費電力 [W]
 
         result = calc(inputs, test_mode=True)
 

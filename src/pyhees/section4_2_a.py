@@ -45,6 +45,7 @@ from scipy import optimize
 # JJJ_EXPERIMENT ADD
 from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
+from jjjexperiment.inputs.options import 計算モデル
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 
 # ============================================================================
@@ -1360,7 +1361,7 @@ def get_alpha_c_hex_C(type, V_fan_x_C, X_hs_in, q_hs_rtd_C):
     A_f_hex = get_A_f_hex(type, q_hs_rtd_C)
 
     # (36b) 熱伝達特性
-    if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）_熱伝達特性
+    if type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）_熱伝達特性
         x = np.clip(V_hs_supply, 360, None) / (3600 * A_f_hex)
         alpha_dash_c_hex_C = jjj_consts.a_c_hex_c_a4_C * x**4 \
                         + jjj_consts.a_c_hex_c_a3_C * x**3 \
@@ -1393,7 +1394,7 @@ def get_A_f_hex(type, q_hs_rtd_C):
       q_hs_rtd_C: 熱源機の冷房時の定格出力 (W)
 
     """
-    if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+    if type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
       if q_hs_rtd_C < 5600:
         return jjj_consts.A_f_hex_small_H
       else:
@@ -1410,7 +1411,7 @@ def get_A_e_hex(type, q_hs_rtd_C):
       q_hs_rtd_C: 熱源機の冷房時の定格出力 (W)
 
     """
-    if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+    if type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
       if q_hs_rtd_C < 5600:
         return jjj_consts.A_e_hex_small_H
       else:

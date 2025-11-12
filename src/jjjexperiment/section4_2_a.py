@@ -9,7 +9,6 @@ import pyhees.section4_3
 from jjjexperiment.common import *
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as jjj_consts
-from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.inputs.options import *
 
 from jjjexperiment.denchu.inputs.heating import DenchuCatalogSpecification as H_CatalogSpec, RealInnerCondition as H_RealInnerCondition
@@ -18,7 +17,7 @@ import jjjexperiment.denchu.denchu_2 as denchu_2
 
 @log_res(['E_E_H_d_t(type:1,3)'])
 def calc_E_E_H_d_t_type1_and_type3(
-        type: str,
+        type: 計算モデル,
         E_E_fan_H_d_t: Array8760,
         q_hs_H_d_t: Array8760,
         Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  # 空気温度
@@ -27,11 +26,11 @@ def calc_E_E_H_d_t_type1_and_type3(
         q_hs_min_H,  # 最小冷房時
         q_hs_mid_H, P_hs_mid_H, V_fan_mid_H, P_fan_mid_H,  # 中間冷房時
         q_hs_rtd_H, P_fan_rtd_H, V_fan_rtd_H, P_hs_rtd_H,  # 定格冷房時
-        EquipmentSpec,  # その他
+        equipment_spec,  # その他
     ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
-    assert type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3, "type1,3 専用ロジック"
+    assert type in [計算モデル.ダクト式セントラル空調機, 計算モデル.RAC活用型全館空調_潜熱評価モデル], "type1,3 専用ロジック"
 
     """ e_th: ヒートポンプサイクルの理論効率(-) """
     # (20) 中間暖房能力運転時
@@ -42,7 +41,7 @@ def calc_E_E_H_d_t_type1_and_type3(
     e_th_H_d_t = dc_a.calc_e_th_H_d_t(type, Theta_ex_d_t, Theta_hs_in_d_t, Theta_hs_out_d_t, V_hs_supply_d_t, q_hs_rtd_C)
 
     """ e_r: ヒートポンプサイクルの理論効率に対する熱源機の効率の比(-) """
-    if type == PROCESS_TYPE_3:  #コンプレッサ効率特性
+    if type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:  #コンプレッサ効率特性
         # 日付dの時刻tにおける暖房時
         e_r_H_d_t = dc_a.get_e_r_H_d_t_2023(q_hs_H_d_t)
     else:
@@ -51,7 +50,7 @@ def calc_E_E_H_d_t_type1_and_type3(
         # (15) 最小暖房能力運転時
         e_r_min_H = dc_a.get_e_r_min_H(e_r_rtd_H)
         # (13) 中間暖房能力運転時
-        e_r_mid_H = dc_a.get_e_r_mid_H(e_r_rtd_H, e_th_mid_H, q_hs_mid_H, P_hs_mid_H, P_fan_mid_H, EquipmentSpec)
+        e_r_mid_H = dc_a.get_e_r_mid_H(e_r_rtd_H, e_th_mid_H, q_hs_mid_H, P_hs_mid_H, P_fan_mid_H, equipment_spec)
         # (9) 日付dの時刻tにおける暖房時
         e_r_H_d_t = dc_a.get_e_r_H_d_t(q_hs_H_d_t, q_hs_rtd_H, q_hs_min_H, q_hs_mid_H, e_r_mid_H, e_r_min_H, e_r_rtd_H)
 
@@ -66,7 +65,7 @@ def calc_E_E_H_d_t_type1_and_type3(
 
 @log_res(['E_E_H_d_t(type:2)'])
 def calc_E_E_H_d_t_type2(
-        type: str,
+        type: 計算モデル,
         region: int,
         climateFile,
         E_E_fan_H_d_t: Array8760,
@@ -81,7 +80,7 @@ def calc_E_E_H_d_t_type2(
     ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
-    assert type == PROCESS_TYPE_2, "type2 専用ロジック"
+    assert type == 計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, "type2 専用ロジック"
     # TODO: f_SFP_H: type2のみのパラメータ type4での使用は怪しい
     # NOTE: 別モジュールから同名の関数を利用しています
     E_E_CRAC_H_d_t = \
@@ -98,7 +97,7 @@ def calc_E_E_H_d_t_type2(
 @log_res(['E_E_H_d_t(type:4)'])
 def calc_E_E_H_d_t_type4(
         case_name: str,
-        type: str,
+        type: 計算モデル,
         region: int,
         climateFile,
         E_E_fan_H_d_t: Array8760,
@@ -111,7 +110,7 @@ def calc_E_E_H_d_t_type4(
     ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
-    assert type == PROCESS_TYPE_4, "type4 専用ロジック"
+    assert type == 計算モデル.電中研モデル, "type4 専用ロジック"
     # 『2.2 実験方法と実験条件』より
     # 最大時の給気風量と機器のカタログ公表値(強)の比
     V_ratio1 = (spec.V_rac_inner * 60) / np.max(V_hs_supply_d_t)
@@ -151,7 +150,7 @@ def calc_E_E_H_d_t_type4(
 
 @log_res(['E_E_C_d_t(type:1,3)'])
 def calc_E_E_C_d_t_type1_and_type3(
-        type, region,
+        type: 計算モデル, region,
         E_E_fan_C_d_t: Array8760,
         Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  # 空気温度
         V_hs_supply_d_t,  # 風量
@@ -159,11 +158,11 @@ def calc_E_E_C_d_t_type1_and_type3(
         q_hs_min_C,  # 最小冷房時
         q_hs_mid_C, P_hs_mid_C, V_fan_mid_C, P_fan_mid_C,  # 中間冷房時
         q_hs_rtd_C, P_fan_rtd_C, V_fan_rtd_C, P_hs_rtd_C,  # 定格冷房時
-        EquipmentSpec,  # その他
+        equipment_spec,  # その他
     ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
-    assert type == PROCESS_TYPE_1 or type == PROCESS_TYPE_3, "type1,3 専用ロジック"
+    assert type in [計算モデル.ダクト式セントラル空調機, 計算モデル.RAC活用型全館空調_潜熱評価モデル], "type1,3 専用ロジック"
 
     # (4) 潜熱/顕熱を使用せずに全熱負荷を再計算する
     q_hs_C_d_t = dc_a.get_q_hs_C_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, region)
@@ -177,16 +176,16 @@ def calc_E_E_C_d_t_type1_and_type3(
     e_th_C_d_t = dc_a.calc_e_th_C_d_t(type, Theta_ex_d_t, Theta_hs_in_d_t, X_hs_in_d_t, Theta_hs_out_d_t, V_hs_supply_d_t, q_hs_rtd_C)
 
     """ e_r: ヒートポンプサイクルの理論効率に対する熱源機の効率の比(-) """
-    if type == PROCESS_TYPE_1:
+    if type == 計算モデル.ダクト式セントラル空調機:
         # (11) 定格冷房能力運転時
         e_r_rtd_C = dc_a.get_e_r_rtd_C(e_th_rtd_C, q_hs_rtd_C, P_hs_rtd_C, P_fan_rtd_C)
         # (15) 最小冷房能力運転時
         e_r_min_C = dc_a.get_e_r_min_C(e_r_rtd_C)
         # (13) 定格冷房能力運転時
-        e_r_mid_C = dc_a.get_e_r_mid_C(e_r_rtd_C, e_th_mid_C, q_hs_mid_C, P_hs_mid_C, P_fan_mid_C, EquipmentSpec)
+        e_r_mid_C = dc_a.get_e_r_mid_C(e_r_rtd_C, e_th_mid_C, q_hs_mid_C, P_hs_mid_C, P_fan_mid_C, equipment_spec)
         # (9) 日付dの時刻tにおける冷房時
         e_r_C_d_t = dc_a.get_e_r_C_d_t(q_hs_C_d_t, q_hs_rtd_C, q_hs_min_C, q_hs_mid_C, e_r_mid_C, e_r_min_C, e_r_rtd_C)
-    elif type == PROCESS_TYPE_3:  #コンプレッサ効率特性
+    elif type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:  #コンプレッサ効率特性
         # TODO: 潜熱評価モデルが 潜熱(q_hs_CL) ではなく 全熱(q_hs_C) を使用してOKか確認
         e_r_C_d_t = dc_a.get_e_r_C_d_t_2023(q_hs_C_d_t)  # 日付dの時刻tにおける冷房時
     else:
@@ -204,7 +203,7 @@ def calc_E_E_C_d_t_type1_and_type3(
 
 @log_res(['E_E_C_d_t(type:2)'])
 def calc_E_E_C_d_t_type2(
-        type: str,
+        type: 計算モデル,
         region: int,
         climateFile,
         E_E_fan_C_d_t: Array8760,
@@ -218,7 +217,7 @@ def calc_E_E_C_d_t_type2(
     ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
-    assert type == PROCESS_TYPE_2, "type2 専用ロジック"
+    assert type == 計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, "type2 専用ロジック"
 
     """ 顕熱/潜熱 (CS/CL) を使用する """
     # NOTE: 別モジュールから同名の関数を利用しています
@@ -235,7 +234,7 @@ def calc_E_E_C_d_t_type2(
 @log_res(['E_E_C_d_t(type:4)'])
 def calc_E_E_C_d_t_type4(
         case_name: str,
-        type: str,
+        type: 計算モデル,
         region: int,
         climateFile,
         E_E_fan_C_d_t: Array8760,
@@ -248,7 +247,7 @@ def calc_E_E_C_d_t_type4(
     ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
-    assert type == PROCESS_TYPE_4, "type4 専用ロジック"
+    assert type == 計算モデル.電中研モデル, "type4 専用ロジック"
 
     # 『2.2 実験方法と実験条件』より
     # 最大時の給気風量と機器のカタログ公表値(強)の比

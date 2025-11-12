@@ -1104,7 +1104,7 @@ def get_Q_hs_max_H_d_t_2024(type, q_hs_rtd_H, C_df_H_d_t, input_C_af_H):
     Q_hs_max_H_d_t = np.zeros(24 * 365)
 
     if q_hs_rtd_H is not None:
-        if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+        if type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
             C_af_H = get_C_af_H(input_C_af_H)
             Q_hs_max_H_d_t = q_hs_rtd_H * alpha_max_H * C_df_H_d_t * C_af_H * 3600 * 10 ** -6
         else:
@@ -1206,7 +1206,7 @@ def get_Q_hs_max_C_d_t_2024(type, q_hs_rtd_C, input_C_af_C):
     Q_hs_max_C_d_t = np.zeros(24 * 365)
 
     if q_hs_rtd_C is not None:
-        if type == jjj_consts.PROCESS_TYPE_3:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
+        if type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:  # ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）
             C_af_C = get_C_af_C(input_C_af_C)
             Q_hs_max_C_d_t = q_hs_rtd_C * alpha_max_C * C_af_C * 3600 * 10 ** -6
         else:

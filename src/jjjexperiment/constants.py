@@ -7,12 +7,6 @@ def version_info() -> str:
   # ipynb 環境では正常に動作しないことを確認しました(returned no-zero exit status 128.)
   return '_20250325'
 
-# FIXME: PROCESS_TYPE の置き場はこのファイル以外で最適な場所があれば移動する
-PROCESS_TYPE_1 = 'ダクト式セントラル空調機'
-PROCESS_TYPE_2 = 'ルームエアコンディショナ活用型全館空調（旧：現行省エネ法ルームエアコンモデル）'
-PROCESS_TYPE_3 = 'ルームエアコンディショナ活用型全館空調（新：潜熱評価モデル）'
-PROCESS_TYPE_4 = '電中研モデル'
-
 Theta_hs_out_max_H_d_t_limit: float = 45
 """最大暖房出力時の熱源機の出口における空気温度の最大値の上限値"""
 Theta_hs_out_min_C_d_t_limit: float = 15
