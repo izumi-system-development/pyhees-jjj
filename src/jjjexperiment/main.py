@@ -93,8 +93,19 @@ def calc_main(
     _logger.info(f"q_max_H [w]: {heat_CRAC.q_max}")
     _logger.info(f"e_rtd_H [-]: {heat_CRAC.e_rtd}")
 
+    H_MR = None
+    """主たる居室暖房機器"""
+    H_OR = None
+    """その他居室暖房機器"""
+    H_HS = None
+    """温水暖房の種類"""
+    C_MR = None
+    """主たる居室冷房機器"""
+    C_OR = None
+    """その他居室冷房機器"""
+
     # 実質的な暖房機器の仕様を取得
-    spec_MR, spec_OR = get_virtual_heating_devices(house.region, heat_load.H_MR, heat_load.H_OR)
+    spec_MR, spec_OR = get_virtual_heating_devices(house.region, H_MR, H_OR)
     # 暖房方式及び運転方法の区分
     mode_MR, mode_OR = calc_heating_mode(region=house.region, H_MR=spec_MR, H_OR=spec_OR)
 

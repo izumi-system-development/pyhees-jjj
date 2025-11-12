@@ -42,26 +42,6 @@ class SeasonalLoad:
     V_hs_dsgn: float = 0.0
     """設計風量 [m3/h]"""
 
-    # RAC specifications for type 4
-    q_rac_min: float = 0.0
-    q_rac_rtd: float = 0.0
-    q_rac_max: float = 0.0
-    P_rac_min: float = 0.0
-    P_rac_rtd: float = 0.0
-    P_rac_max: float = 0.0
-    V_rac_inner: float = 0.0
-    V_rac_outer: float = 0.0
-    Theta_RH_rac_inner_pub: float = 0.0
-    Theta_RH_rac_outer_pub: float = 0.0
-    RH_rac_inner_pub: float = 0.0
-    RH_rac_outer_pub: float = 0.0
-
-    # Room cooling equipment (currently not input-based)
-    C_MR = None
-    """主たる居室冷房機器"""
-    C_OR = None
-    """その他居室冷房機器"""
-
     @classmethod
     def from_dict(cls, data: dict, region: int, A_A: float) -> 'SeasonalLoad':
         kwargs = {}
@@ -136,18 +116,7 @@ class SeasonalLoad:
                 kwargs['q_hs_min'] = dc_spec.get_q_hs_min_C(q_hs_rtd)
             elif input_mode == 4:
                 kwargs['equipment_spec'] = '最小・定格・最大出力時のメーカー公表値を入力する'
-                kwargs['q_rac_min'] = float(data['q_rac_min_C'])
-                kwargs['q_rac_rtd'] = float(data['q_rac_rtd_C'])
-                kwargs['q_rac_max'] = float(data['q_rac_max_C'])
-                kwargs['P_rac_min'] = float(data['P_rac_min_C'])
-                kwargs['P_rac_rtd'] = float(data['P_rac_rtd_C'])
-                kwargs['P_rac_max'] = float(data['P_rac_max_C'])
-                kwargs['V_rac_inner'] = float(data['V_rac_inner_C'])
-                kwargs['V_rac_outer'] = float(data['V_rac_outer_C'])
-                kwargs['Theta_RH_rac_inner_pub'] = float(data['Theta_RH_rac_inner_pub_C'])
-                kwargs['Theta_RH_rac_outer_pub'] = float(data['Theta_RH_rac_outer_pub_C'])
-                kwargs['RH_rac_inner_pub'] = float(data['RH_rac_inner_pub_C'])
-                kwargs['RH_rac_outer_pub'] = float(data['RH_rac_outer_pub_C'])
+                # NOTE: moved to DenchuCatalogSpecification
             else:
                 raise ValueError('機器の仕様の入力が不正です。')
 

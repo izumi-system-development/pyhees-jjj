@@ -41,14 +41,6 @@ class SeasonalLoad:
     V_hs_dsgn: float = 0.0
     """設計風量 [m3/h]"""
 
-    # Room heating equipment (currently not input-based)
-    H_MR = None
-    """主たる居室暖房機器"""
-    H_OR = None
-    """その他居室暖房機器"""
-    H_HS = None
-    """温水暖房の種類"""
-
     @classmethod
     def from_dict(cls, data: dict, region: int, A_A: float) -> 'SeasonalLoad':
         kwargs = {}
@@ -122,8 +114,8 @@ class SeasonalLoad:
                 kwargs['P_hs_mid'] = float(data['P_hs_mid_H'])
                 kwargs['P_fan_mid'] = float(data['P_fan_mid_H'])
             elif input_mode == 4:
-                # NOTE: Input mode 4 (RAC specifications) handled by DenchuRacSpecification
                 kwargs['equipment_spec'] = '最小・定格・最大出力時のメーカー公表値を入力する'
+                # NOTE: moved to DenchuCatalogSpecification
             else:
                 raise ValueError('機器の仕様の入力が不正です。')
 
