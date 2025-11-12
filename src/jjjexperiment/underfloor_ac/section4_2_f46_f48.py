@@ -2,7 +2,6 @@ import numpy as np
 
 import pyhees.section4_2 as dc
 # JJJ
-from jjjexperiment.inputs.app_config import *
 from jjjexperiment.inputs.di_container import *
 from jjjexperiment.common import *
 from jjjexperiment.inputs.options import *
@@ -25,9 +24,7 @@ def get_Theta_HBR_i(
     ) -> Array5x1:
     """単時点版 (46-1)(46-2)(46-3) の床下空調 補正
     """
-    # 事前条件:
-    assert injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value,  \
-        "床下空調ロジックのみで実行されることを想定"
+    # TODO: 事前条件: 新床下空調ロジック 有効時のみ
 
     assert V_supply_i.shape == (5, 1), '想定外の行列数'
     assert Theta_supply_i.shape == (5, 1), '想定外の行列数'
@@ -88,9 +85,7 @@ def get_Theta_NR(
     ) -> float:
     """単時点版 (48a)(48b) 床下空調 補正アリ
     """
-    # 事前条件:
-    assert injector.get(AppConfig).new_ufac_flg == 床下空調ロジック.変更する.value,  \
-        "床下空調ロジックのみで実行されることを想定"
+    # TODO: 事前条件: 新床下空調ロジック 有効時のみ
 
     assert Theta_HBR_i.shape == (5, 1), '想定外の行列数'
     assert V_dash_supply_i.shape == (5, 1), '想定外の行列数'

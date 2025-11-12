@@ -4,37 +4,53 @@ import numpy as np
 
 import pyhees.section4_2 as dc
 # JJJ
-import jjjexperiment.inputs as jjj_ipt
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
+from jjjexperiment.inputs.climate_entity import ClimateEntity
+from jjjexperiment.inputs.environment_entity import EnvironmentEntity
+
+import jjjexperiment.underfloor_ac.inputs as jjj_ufac_ipt
+from jjjexperiment.underfloor_ac.section4_2_f40 import calc_Q_hat_hs
+
+from test_utils.utils import load_input_yaml
 
 @pytest.fixture(scope='class')
-def climate_entity(request) -> jjj_ipt.ClimateEntity:
+def climate_entity(request) -> ClimateEntity:
     # Arrange
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
     yaml_path = os.path.join(current_dir, yaml_filename)
-    input_data = jjj_ipt.load_input_yaml(yaml_path)
-    climate = jjj_ipt.ClimateEntity(input_data.region)
-    return climate
+    injector = create_injector_from_json(load_input_yaml(yaml_path))
+
+    house_info = injector.get(HouseInfo)
+    new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
+
+    return ClimateEntity(house_info.region, new_ufac)
 
 @pytest.fixture(scope='class')
-def environment_entity(request) -> jjj_ipt.EnvironmentEntity:
+def environment_entity(request) -> EnvironmentEntity:
     # Arrange
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
     yaml_path = os.path.join(current_dir, yaml_filename)
-    input_data = jjj_ipt.load_input_yaml(yaml_path)
-    environment = jjj_ipt.EnvironmentEntity(input_data)
-    return environment
+    injector = create_injector_from_json(load_input_yaml(yaml_path))
+
+    house = injector.get(HouseInfo)
+    skin = injector.get(OuterSkin)
+    return EnvironmentEntity(house, skin)
 
 @pytest.fixture
 def Q_hat_hs_d_t():
     """(40) 熱源機の風量を計算するための熱源機の出力"""
     yaml_fullpath = os.path.join(os.path.dirname(__file__), 'inputs/test_input.yaml')
-    input = jjj_ipt.load_input_yaml(yaml_fullpath)
+    injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-    environment = jjj_ipt.EnvironmentEntity(input)
-    climate = jjj_ipt.ClimateEntity(input.region)
+    house = injector.get(HouseInfo)
+    skin = injector.get(OuterSkin)
+    new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
+
+    environment = EnvironmentEntity(house, skin)
+    climate = ClimateEntity(house.region, new_ufac)
 
     V_vent_l_d_t = np.array(dc.get_V_vent_l_d_t(
         dc.get_V_vent_l_NR_d_t(),
@@ -45,10 +61,10 @@ def Q_hat_hs_d_t():
     sum_V_vent_g_i = np.sum(environment.get_V_vent_g_i())
     HCM=np.array(climate.get_HCM_d_t())
 
-    vector_Q_hat_hs = np.vectorize(jjj_ufac.calc_Q_hat_hs)
+    vector_Q_hat_hs = np.vectorize(calc_Q_hat_hs)
     Q_hat_hs_d_t = vector_Q_hat_hs(
         Q=environment.get_Q(),
-        A_A=input.A_A,
+        A_A=house.A_A,
         V_vent_l=V_vent_l_d_t,
         sum_V_vent_g_i=sum_V_vent_g_i,
         mu_H=environment.get_mu_H(),

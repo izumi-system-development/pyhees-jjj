@@ -5,7 +5,8 @@ import math
 import pyhees.section4_2 as dc
 
 # JJJ
-import jjjexperiment.inputs.input as input
+from jjjexperiment.inputs.common import HouseInfo
+from jjjexperiment.inputs.di_container import create_injector_from_json
 import jjjexperiment.constants as jjj_consts
 # JJJ-Test
 from test_utils.utils import INPUT_SAMPLE_TYPE3_PATH
@@ -28,23 +29,27 @@ class Test風量特性_熱源機:
     @classmethod
     def setup_class(cls):
         """ 特性曲線を指定 """
-        inputs = json.load(open(INPUT_SAMPLE_TYPE3_PATH, 'r'))
+        with open(INPUT_SAMPLE_TYPE3_PATH, 'r') as f:
+            input = json.load(f)
         fixture_C = {
             'airvolume_coeff': [0, 0, 0, cls._C1, cls._C0],
             'airvolume_minimum': cls._airvolume_minimum_C,
             'airvolume_maximum': cls._airvolume_maximum_C,
         }
-        inputs['C_A'].update(fixture_C)
+        input['C_A'].update(fixture_C)
         fixture_H = {
             'airvolume_coeff': [0, 0, 0, cls._H1, cls._H0],
             'airvolume_minimum': cls._airvolume_minimum_H,
             'airvolume_maximum': cls._airvolume_maximum_H,
         }
-        inputs['H_A'].update(fixture_H)
-        jjj_consts.set_constants(inputs)
+        input['H_A'].update(fixture_H)
+        jjj_consts.set_constants(input)
 
-        _, _, _, _, _, cls._region, _ = input.get_basic(inputs)
-        cls._H, cls._C, cls._M = dc.get_season_array_d_t(cls._region)
+        injector = create_injector_from_json(input)
+        house = injector.get(HouseInfo)
+
+        cls._region = house.region
+        cls._H, cls._C, cls._M = dc.get_season_array_d_t(house.region)
 
     def test_夏季の冷房出力_特性曲線上(self):
         def x(y):

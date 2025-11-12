@@ -7,13 +7,14 @@ import pyhees.section4_3
 
 # JJJ
 from jjjexperiment.common import *
-from jjjexperiment.denchu_1 import Spec
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res  # デバッグ用ロガー
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
-import jjjexperiment.denchu.denchu_2 as denchu_2
 from jjjexperiment.inputs.options import *
-from jjjexperiment.inputs.app_config import *
+
+from jjjexperiment.denchu.inputs.heating import DenchuCatalogSpecification as H_CatalogSpec, RealInnerCondition as H_RealInnerCondition
+from jjjexperiment.denchu.inputs.cooling import DenchuCatalogSpecification as C_CatalogSpec, RealInnerCondition as C_RealInnerCondition
+import jjjexperiment.denchu.denchu_2 as denchu_2
 
 @log_res(['E_E_H_d_t(type:1,3)'])
 def calc_E_E_H_d_t_type1_and_type3(
@@ -105,29 +106,28 @@ def calc_E_E_H_d_t_type4(
         V_hs_supply_d_t: Array8760,
         P_rac_fan_rtd_H: float,
         simu_R_H,
-        spec: Spec,
-        Theta_real_inner,
-        RH_real_inner,
+        spec: H_CatalogSpec,
+        real_inner: H_RealInnerCondition
     ) -> Array8760:
     """ (1)改 E_E_H_d_t
     """
     assert type == PROCESS_TYPE_4, "type4 専用ロジック"
     # 『2.2 実験方法と実験条件』より
     # 最大時の給気風量と機器のカタログ公表値(強)の比
-    V_ratio1 = (spec.V_inner * 60) / np.max(V_hs_supply_d_t)
+    V_ratio1 = (spec.V_rac_inner * 60) / np.max(V_hs_supply_d_t)
     # 室外機/室内機 風量比
-    V_ratio2 = spec.V_outer / spec.V_inner
+    V_ratio2 = spec.V_rac_outer / spec.V_rac_inner
 
     COP_H_d_t = denchu_2.calc_COP_H_d_t(
-                        q_d_t= q_hs_H_d_t / 1000,
-                        P_rac_fan_rtd= P_rac_fan_rtd_H / 1000,
-                        R= simu_R_H,
-                        V_rac_inner_d_t= V_ratio1 * V_hs_supply_d_t,
-                        V_rac_outer_d_t= V_ratio2 * V_ratio1 * V_hs_supply_d_t,
-                        region= region,
-                        Theta_real_inner= Theta_real_inner,
-                        RH_real_inner= RH_real_inner,
-                        climateFile= climateFile)
+                        q_d_t = q_hs_H_d_t / 1000,
+                        P_rac_fan_rtd = P_rac_fan_rtd_H / 1000,
+                        R = simu_R_H,
+                        V_rac_inner_d_t = V_ratio1 * V_hs_supply_d_t,
+                        V_rac_outer_d_t = V_ratio2 * V_ratio1 * V_hs_supply_d_t,
+                        region = region,
+                        Theta_real_inner = real_inner.Theta_rac_real_inner,
+                        RH_real_inner = real_inner.RH_rac_real_inner,
+                        climateFile = climateFile)
     E_E_CRAC_H_d_t = np.divide(q_hs_H_d_t / 1000,  # kW
                                COP_H_d_t,
                                out=np.zeros_like(q_hs_H_d_t),
@@ -243,9 +243,8 @@ def calc_E_E_C_d_t_type4(
         V_hs_supply_d_t: Array8760,
         P_rac_fan_rtd_C: float,
         simu_R_C,
-        spec: Spec,
-        Theta_real_inner,
-        RH_real_inner,
+        spec: C_CatalogSpec,
+        real_inner: C_RealInnerCondition
     ) -> Array8760:
     """ (2)改 E_E_C_d_t
     """
@@ -253,21 +252,21 @@ def calc_E_E_C_d_t_type4(
 
     # 『2.2 実験方法と実験条件』より
     # 最大時の給気風量と機器のカタログ公表値(強)の比
-    V_ratio1 = (spec.V_inner * 60) / np.max(V_hs_supply_d_t)
+    V_ratio1 = (spec.V_rac_inner * 60) / np.max(V_hs_supply_d_t)
     # 室外機/室内機 風量比
-    V_ratio2 = spec.V_outer / spec.V_inner
+    V_ratio2 = spec.V_rac_outer / spec.V_rac_inner
 
     # FIXME: COPが大きすぎる問題があります
     COP_C_d_t = denchu_2.calc_COP_C_d_t(
-                    q_d_t= q_hs_C_d_t / 1000,
-                    P_rac_fan_rtd= P_rac_fan_rtd_C / 1000,
-                    R= simu_R_C,
-                    V_rac_inner_d_t= V_ratio1 * V_hs_supply_d_t,
-                    V_rac_outer_d_t= V_ratio2 * V_ratio1 * V_hs_supply_d_t,
-                    region= region,
-                    Theta_real_inner= Theta_real_inner,
-                    RH_real_inner= RH_real_inner,
-                    climateFile= climateFile)
+                    q_d_t = q_hs_C_d_t / 1000,
+                    P_rac_fan_rtd = P_rac_fan_rtd_C / 1000,
+                    R = simu_R_C,
+                    V_rac_inner_d_t = V_ratio1 * V_hs_supply_d_t,
+                    V_rac_outer_d_t = V_ratio2 * V_ratio1 * V_hs_supply_d_t,
+                    region = region,
+                    Theta_real_inner = real_inner.Theta_rac_real_inner,
+                    RH_real_inner = real_inner.RH_rac_real_inner,
+                    climateFile = climateFile)
     E_E_CRAC_C_d_t = np.divide(q_hs_C_d_t / 1000,  # kW
                         COP_C_d_t,
                         out=np.zeros_like(q_hs_C_d_t),

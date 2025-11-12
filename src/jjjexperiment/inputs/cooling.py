@@ -4,7 +4,7 @@ from typing import Optional
 import pyhees.section4_2_b as dc_spec
 import pyhees.section4_3_a as rac_spec
 
-from jjjexperiment.constants import *
+import jjjexperiment.constants as jjj_consts
 from jjjexperiment.inputs.options import *
 
 @dataclass
@@ -12,6 +12,7 @@ class SeasonalLoad:
     """冷房に関する設定値"""
 
     # NOTE: キー名は Heat/Cool 共通にする
+    # 親で H/C 分かれているのでフィールドに _H/_C 不要
 
     mode: str = '住戸全体を連続的に冷房する方式'
 
@@ -19,7 +20,8 @@ class SeasonalLoad:
     q_hs_rtd: float = 0
     VAV: bool = False
     general_ventilation: bool = True
-
+    """全般換気"""
+    # NOTE: enumもあるが現状はboolなので注意
     f_SFP: float = 0.4 * 0.36
     """ファンの比消費電力"""
 
@@ -37,7 +39,6 @@ class SeasonalLoad:
     P_fan_mid: float = 0.0
     P_hs_mid: float = 0.0
 
-    # Design air volume
     V_hs_dsgn: float = 0.0
     """設計風量 [m3/h]"""
 
@@ -68,24 +69,22 @@ class SeasonalLoad:
             # TODO: options の Enum へ移行予定
             match int(data['type']):
                 case 1:
-                    kwargs['type'] = PROCESS_TYPE_1
+                    kwargs['type'] = jjj_consts.PROCESS_TYPE_1
                 case 2:
-                    kwargs['type'] = PROCESS_TYPE_2
+                    kwargs['type'] = jjj_consts.PROCESS_TYPE_2
                 case 3:
-                    kwargs['type'] = PROCESS_TYPE_3
+                    kwargs['type'] = jjj_consts.PROCESS_TYPE_3
                 case 4:
-                    kwargs['type'] = PROCESS_TYPE_4
+                    kwargs['type'] = jjj_consts.PROCESS_TYPE_4
                 case _:
                     raise ValueError
 
-        if 'q_hs_rtd' in data:
-            kwargs['q_hs_rtd'] = dc_spec.get_q_hs_rtd_C(region, A_A)
         if 'VAV' in data:
             kwargs['VAV'] = int(data['VAV']) == 2
         if 'general_ventilation' in data:
             kwargs['general_ventilation'] = int(data['general_ventilation']) == 全般換気機能.あり.value
         if 'input_f_SFP_C' in data and data['input_f_SFP_C'] == 2:
-            kwargs['f_SFP'] = float(data['f_SFP'])
+            kwargs['f_SFP'] = float(data['f_SFP_C'])
 
         # ダクトが通過する空間
         if 'duct_insulation' in data:

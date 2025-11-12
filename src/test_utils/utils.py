@@ -21,7 +21,7 @@ INPUT_SAMPLE_TYPE4_PATH = path.join(path.dirname(__file__), 'input_sample_type4.
 @pytest.fixture
 def expected_inputs():
     """ テストコードは下記の入力を想定したものになっています """
-    inputs = TestInputPickups(
+    inputs = SutValues(
         q_rtd_C = 5600,
         q_rtd_H = 6685.3,
         q_max_C = 5944.619999999999,
@@ -49,3 +49,9 @@ def deep_update(d, u):
         else:
             d[k] = u[k]
     return d
+
+def load_input_yaml(path: str) -> dict:
+    import yaml
+    with open(path, 'r', encoding='utf-8') as f:
+        input_yaml = yaml.safe_load(f)
+    return input_yaml

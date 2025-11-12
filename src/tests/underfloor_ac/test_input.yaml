@@ -17,10 +17,18 @@ TS: False
 r_A_ufvnt: null  # [%]
 hs_CAV: False
 change_underfloor_temperature: 2  # 床下空調あり
-input_ufac_consts: 2  # 定数上書き
+input_ufac_consts: 1  # 定数上書きしない
 H_A:
   type: 1
+  input_V_hs_dsgn_H: 2 # ★
+  V_hs_dsgn_H: 1500
+  q_hs_rtd_H: 10000.0
+  V_fan_rtd_H: 0.0
   input: 1
 C_A:
   type: 1
+  input_V_hs_dsgn_C: 2 # ★
+  V_hs_dsgn_C: 1500
+  q_hs_rtd_C: 10000.0
+  V_fan_rtd_C: 0.0
   input: 1

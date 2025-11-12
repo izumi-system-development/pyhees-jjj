@@ -1,5 +1,2 @@
-from .input_dto import *
-from .environment_entity import *
-from .climate_entity import *
-from .ArgHEntity import *
-from .ArgCEntity import *
+# Empty __init__.py to avoid circular imports
+# Direct imports from specific modules are preferred

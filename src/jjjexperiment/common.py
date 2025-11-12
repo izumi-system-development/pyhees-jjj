@@ -1,8 +1,13 @@
 from enum import Enum
-from typing import Annotated
+from typing import Annotated, Optional
+from injector import Injector
 import numpy as np
 from numpy.typing import NDArray
 
+# NOTE: どこからでも利用するのでカスタムファイルへ依存させない
+# 循環参照の原因になるため
+
+# WARNING: np.shape のアサートには残念ながら使用できない
 Array5 = Annotated[NDArray[np.float64], '5']
 Array5x1 = Annotated[NDArray[np.float64], '5x1']
 Array5x8760 = Annotated[NDArray[np.float64], '5x8760']
@@ -12,8 +17,6 @@ Array12x8760 = Annotated[NDArray[np.float64], '12x8760']
 Array8760 = Annotated[NDArray[np.float64], '8760']
 # これ以外のその他変則的な次元はその場で定義
 
-# NOTE: import * して利用するので、jjj_ 付けるとわかりやすい
-
 class JJJ_HCM(Enum):
   """暖冷房期間"""
   Undefined = 0  # Enumの規定値無効化
@@ -21,24 +24,6 @@ class JJJ_HCM(Enum):
   H = 1  # 暖房期
   C = 2  # 冷房期
   M = 3  # 中間期
-
-class JJJ_PROC_TYPE(Enum):
-  """処理方式"""
-  Undefined = 0  # Enum規定値無効
-
-  ダクト式セントラル空調機 = 1
-  RAC活用型全館空調_現行省エネ法RACモデル = 2  # 旧ロジック
-  RAC活用型全館空調_潜熱評価モデル = 3  # 新ロジック
-  電中研モデル = 4
-
-class JJJ_SpecInput(Enum):
-  """機器仕様の手動入力タイプ"""
-  Undefined = 0  # Enum規定値無効
-
-  入力しない = 1
-  定格能力試験の値を入力する = 2
-  定格能力試験と中間能力試験の値を入力する = 3
-  最小_定格_最大出力時のメーカー公表値を入力する = 4
 
 # NOTE: オリジンが更新されたときに改変コードの追従対応の判断用にラベリングしている
 
@@ -55,3 +40,22 @@ def jjj_mod(func):
   """ pyheesモジュール内における jjjexperimentによる 改変された実装"""
   # NOTE: オリジナルに手を加え 複製はしない
   return func
+
+# ネストされた関数からの取得用
+# NOTE: injectの連鎖でも到達できない深いネストの時
+# (グローバルDIコンテナーは回避した)
+# ContextManager にする方法もあるが今は簡易性を優先
+import threading
+_current_injector = threading.local()
+def set_current_injector(injector: Injector):
+    """スレッドにDIコンテキストをセット"""
+    _current_injector.value = injector
+
+def get_current_injector() -> Optional[Injector]:
+    """スレッドからDIコンテキストを取得"""
+    return getattr(_current_injector, 'value', None)
+
+def clear_current_injector():
+    """スレッドにセットしたDIコンテキストをリセット"""
+    if hasattr(_current_injector, 'value'):
+        delattr(_current_injector, 'value')

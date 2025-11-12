@@ -1,13 +1,21 @@
 from enum import Enum
 
 # NOTE: プラットフォーム上の選択肢と一致させます
+# NOTE: Enum の規定値 0 は除外するのが望ましい
 
 # TODO: こちらを使用するように後で移行する PRは分ける
-class 評価モデル(Enum):
+
+class 計算モデル(Enum):
     ダクト式セントラル空調機 = 1
-    ルームエアコンディショナ活用型全館空調_旧_現行省エネ法ルームエアコンモデル = 2
-    ルームエアコンディショナ活用型全館空調_新_潜熱評価モデル = 3
+    RAC活用型全館空調_現行省エネ法RACモデル = 2
+    RAC活用型全館空調_潜熱評価モデル = 3
     電中研モデル = 4
+
+class 機器仕様手動入力タイプ(Enum):
+    入力しない = 1
+    定格能力試験の値を入力する = 2
+    定格能力試験と中間能力試験の値を入力する = 3
+    最小_定格_最大出力時のメーカー公表値を入力する = 4
 
 class 全般換気機能(Enum):
     """ ありがデフォルトなので注意
@@ -50,3 +58,7 @@ class 最低電力直接入力(Enum):
 class ファン消費電力算定方法(Enum):
     直線近似法 = 1  # 従来式
     風量三乗近似法 = 2
+
+# Export all Enum classes automatically
+__all__ = [name for name, obj in globals().items()
+        if isinstance(obj, type) and issubclass(obj, Enum) and obj is not Enum]

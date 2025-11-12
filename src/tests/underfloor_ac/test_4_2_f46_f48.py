@@ -4,19 +4,17 @@ import numpy as np
 
 # JJJ
 from jjjexperiment.common import *
+
 from jjjexperiment.inputs.options import *
-from jjjexperiment.inputs.di_container import *
-from jjjexperiment.inputs.app_config import *
-import jjjexperiment.inputs as jjj_ipt
-import jjjexperiment.underfloor_ac as jjj_ufac
+from jjjexperiment.inputs.di_container import create_injector_from_json
+from jjjexperiment.inputs.environment_entity import EnvironmentEntity
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
+from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i
+from jjjexperiment.underfloor_ac.section4_2_f46_f48 import get_Theta_HBR_i, get_Theta_NR
+
+from test_utils.utils import load_input_yaml
 
 class Test_床下空調時_式46_式48:
-
-    @classmethod
-    def setup_class(cls):
-        """テストクラス共通設定"""
-        app_config = injector.get(AppConfig)
-        app_config.new_ufac_flg = 床下空調ロジック.変更する.value
 
     def test_式46_時点計算例(self):
         """
@@ -24,15 +22,18 @@ class Test_床下空調時_式46_式48:
         """
         # Arrange
         yaml_fullpath = os.path.join(os.path.dirname(__file__), 'test_input.yaml')
-        input = jjj_ipt.load_input_yaml(yaml_fullpath)
-        environment = jjj_ipt.EnvironmentEntity(input)
+        injector = create_injector_from_json(load_input_yaml(yaml_fullpath))
 
-        A_s_ufac_i, _ = jjj_ufac.get_A_s_ufac_i(input.A_A, input.A_MR, input.A_OR)
+        skin = injector.get(OuterSkin)
+        house = injector.get(HouseInfo)
+        environment = EnvironmentEntity(house, skin)
+
+        A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         A_HCZ_i = environment.get_A_HCZ_i().reshape(-1, 1)
 
         # Act
         Theta_star_HBR = 20.0
-        Theta_HBR_i = jjj_ufac.get_Theta_HBR_i(
+        Theta_HBR_i = get_Theta_HBR_i(
             Theta_star_HBR = Theta_star_HBR,
             V_supply_i = np.array([342.3, 190.2, 152.0, 123.6, 123.7]).reshape(-1, 1),
             Theta_supply_i = np.array([24.89, 24.89, 36.78, 35.39, 36.85]).reshape(-1, 1),
@@ -63,7 +64,7 @@ class Test_床下空調時_式46_式48:
         # Arrange
 
         # Act
-        Theta_NR = jjj_ufac.get_Theta_NR(
+        Theta_NR = get_Theta_NR(
             Theta_star_NR = 19.40,
             Theta_star_HBR = 20.0,
             # 上テストのアサートと同一値
