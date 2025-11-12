@@ -29,15 +29,15 @@ class SeasonalLoad:
 
     # Equipment specifications
     equipment_spec: str = '入力しない'
-    q_hs_rtd: float = 0.0
-    P_hs_rtd: float = 0.0
-    V_fan_rtd: float = 0.0
-    P_fan_rtd: float = 0.0
     q_hs_min: float = 0.0
+    q_hs_rtd: float = 0.0
     q_hs_mid: float = 0.0
-    V_fan_mid: float = 0.0
-    P_fan_mid: float = 0.0
+    P_hs_rtd: float = 0.0
     P_hs_mid: float = 0.0
+    V_fan_rtd: float = 0.0
+    V_fan_mid: float = 0.0
+    P_fan_rtd: float = 0.0
+    P_fan_mid: float = 0.0
 
     V_hs_dsgn: float = 0.0
     """設計風量 [m3/h]"""
@@ -81,39 +81,39 @@ class SeasonalLoad:
             if input_mode == 1:
                 kwargs['equipment_spec'] = '入力しない'
                 q_hs_rtd = dc_spec.get_q_hs_rtd_C(region, A_A)
+                kwargs['q_hs_min'] = dc_spec.get_q_hs_min_C(q_hs_rtd)
                 kwargs['q_hs_rtd'] = q_hs_rtd
                 kwargs['q_hs_mid'] = dc_spec.get_q_hs_mid_C(q_hs_rtd)
-                kwargs['q_hs_min'] = dc_spec.get_q_hs_min_C(q_hs_rtd)
                 kwargs['P_hs_rtd'] = dc_spec.get_P_hs_rtd_C(q_hs_rtd)
+                kwargs['P_hs_mid'] = float('nan')
                 kwargs['V_fan_rtd'] = dc_spec.get_V_fan_rtd_C(q_hs_rtd)
                 kwargs['V_fan_mid'] = dc_spec.get_V_fan_mid_C(kwargs['q_hs_mid'])
                 kwargs['P_fan_rtd'] = dc_spec.get_P_fan_rtd_C(kwargs['V_fan_rtd'])
                 kwargs['P_fan_mid'] = dc_spec.get_P_fan_mid_C(kwargs['V_fan_mid'])
-                kwargs['P_hs_mid'] = float('nan')
             elif input_mode == 2:
                 kwargs['equipment_spec'] = '定格能力試験の値を入力する'
                 q_hs_rtd = float(data['q_hs_rtd_C'])
-                kwargs['q_hs_rtd'] = q_hs_rtd
-                kwargs['P_hs_rtd'] = float(data['P_hs_rtd_C'])
-                kwargs['V_fan_rtd'] = float(data['V_fan_rtd_C'])
-                kwargs['P_fan_rtd'] = float(data['P_fan_rtd_C'])
-                kwargs['q_hs_mid'] = dc_spec.get_q_hs_mid_C(q_hs_rtd)
                 kwargs['q_hs_min'] = dc_spec.get_q_hs_min_C(q_hs_rtd)
-                kwargs['V_fan_mid'] = dc_spec.get_V_fan_mid_C(kwargs['q_hs_mid'])
-                kwargs['P_fan_mid'] = dc_spec.get_P_fan_mid_C(kwargs['V_fan_mid'])
+                kwargs['q_hs_rtd'] = q_hs_rtd
+                kwargs['q_hs_mid'] = dc_spec.get_q_hs_mid_C(q_hs_rtd)
+                kwargs['P_hs_rtd'] = float(data['P_hs_rtd_C'])
                 kwargs['P_hs_mid'] = float('nan')
+                kwargs['V_fan_rtd'] = float(data['V_fan_rtd_C'])
+                kwargs['V_fan_mid'] = dc_spec.get_V_fan_mid_C(kwargs['q_hs_mid'])
+                kwargs['P_fan_rtd'] = float(data['P_fan_rtd_C'])
+                kwargs['P_fan_mid'] = dc_spec.get_P_fan_mid_C(kwargs['V_fan_mid'])
             elif input_mode == 3:
                 kwargs['equipment_spec'] = '定格能力試験と中間能力試験の値を入力する'
                 q_hs_rtd = float(data['q_hs_rtd_C'])
-                kwargs['q_hs_rtd'] = q_hs_rtd
-                kwargs['P_hs_rtd'] = float(data['P_hs_rtd_C'])
-                kwargs['V_fan_rtd'] = float(data['V_fan_rtd_C'])
-                kwargs['P_fan_rtd'] = float(data['P_fan_rtd_C'])
-                kwargs['q_hs_mid'] = float(data['q_hs_mid_C'])
-                kwargs['P_hs_mid'] = float(data['P_hs_mid_C'])
-                kwargs['V_fan_mid'] = float(data['V_fan_mid_C'])
-                kwargs['P_fan_mid'] = float(data['P_fan_mid_C'])
                 kwargs['q_hs_min'] = dc_spec.get_q_hs_min_C(q_hs_rtd)
+                kwargs['q_hs_rtd'] = q_hs_rtd
+                kwargs['q_hs_mid'] = float(data['q_hs_mid_C'])
+                kwargs['P_hs_rtd'] = float(data['P_hs_rtd_C'])
+                kwargs['P_hs_mid'] = float(data['P_hs_mid_C'])
+                kwargs['V_fan_rtd'] = float(data['V_fan_rtd_C'])
+                kwargs['V_fan_mid'] = float(data['V_fan_mid_C'])
+                kwargs['P_fan_rtd'] = float(data['P_fan_rtd_C'])
+                kwargs['P_fan_mid'] = float(data['P_fan_mid_C'])
             elif input_mode == 4:
                 kwargs['equipment_spec'] = '最小・定格・最大出力時のメーカー公表値を入力する'
                 # NOTE: moved to DenchuCatalogSpecification
