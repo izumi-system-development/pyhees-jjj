@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
-# JJJ
+
 from jjjexperiment.inputs.options import *
+# NOTE: データクラスからどうしてもロジックを参照するときは遅延インポートする
 
 @dataclass
 class InputMinVolumeInput:
@@ -11,7 +12,7 @@ class InputMinVolumeInput:
     """熱源機ファン最低風量の直接入力値 [m3/h]"""
     input_E_E_fan_min: 最低電力直接入力 = 最低電力直接入力.入力しない
     """熱源機ファン最低電力の直接入力フラグ"""
-    E_E_fan_min: Optional[float] = 0.0
+    E_E_fan_min: Optional[float] = None
     """熱源機ファン最低電力の直接入力値 [W]"""
     E_E_fan_logic: ファン消費電力算定方法 = ファン消費電力算定方法.直線近似法
     """最低電力入力時 ファン消費電力算定方法"""

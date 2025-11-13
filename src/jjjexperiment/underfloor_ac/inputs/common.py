@@ -2,6 +2,7 @@ import pandas as pd
 from dataclasses import dataclass
 # JJJ
 from jjjexperiment.inputs.options import *
+# NOTE: データクラスからどうしてもロジックを参照するときは遅延インポートする
 
 __all__ = ['UnderfloorAc', 'UfVarsDataFrame']
 

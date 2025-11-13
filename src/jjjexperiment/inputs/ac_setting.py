@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
-
-import jjjexperiment.constants as jjj_consts
-from jjjexperiment.inputs.options import 全般換気機能, 機器仕様手動入力タイプ, 暖房方式, 冷房方式, 計算モデル
-
+# JJJ
+from .options import 全般換気機能, 機器仕様手動入力タイプ, 暖房方式, 冷房方式, 計算モデル
+# NOTE: データクラスからどうしてもロジックを参照するときは遅延インポートする
 
 @dataclass
 class AcSetting:
@@ -87,7 +86,7 @@ class AcSetting:
             kwargs['P_fan_mid_input'] = float(data['P_fan_mid'])
 
         return kwargs
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> 'AcSetting':
         """愚直なパース処理 - サフィックス不要"""
@@ -99,7 +98,6 @@ class AcSetting:
             raise ValueError
 
         return cls(**kwargs)
-
 
 
 class HeatingAcSetting(AcSetting):

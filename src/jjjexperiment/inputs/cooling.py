@@ -1,12 +1,6 @@
-# SeasonalLoadクラスは削除 - 新アーキテクチャではAcSetting + Entityパターンを使用
-# CoolingAcSetting + CoolQuantityを使用してください
-from .ac_setting import CoolingAcSetting
-from .ac_quantity_service import CoolQuantity
-
-# 後方互換性のためのエイリアス
-SeasonalLoad = CoolQuantity
-import pyhees.section4_3_a as rac_spec
 from dataclasses import dataclass
+
+# NOTE: データクラスからどうしてもロジックを参照するときは遅延インポートする
 
 @dataclass
 class CRACSpecification:
@@ -32,6 +26,7 @@ class CRACSpecification:
             e_class = {1: 'い', 2: 'ろ', 3: 'は'}.get(mode)
 
         # 機器性能
+        from pyhees.section4_3_a import get_e_rtd_C, get_q_rtd_C, get_q_max_C
         if data.get('type') == 2 and int(data.get('input_rac_performance', 1)) == 2:
             q_rtd = float(data['q_rac_rtd_C'])
             q_max = float(data['q_rac_max_C'])
@@ -39,11 +34,11 @@ class CRACSpecification:
         elif data.get('type') == 4:
             q_rtd = float(data['q_rac_pub_rtd']) * 1000
             q_max = float(data['q_rac_pub_max']) * 1000
-            e_rtd = rac_spec.get_e_rtd_C(e_class, q_rtd)
+            e_rtd = get_e_rtd_C(e_class, q_rtd)
         else:
-            q_rtd = rac_spec.get_q_rtd_C(A_A)
-            q_max = rac_spec.get_q_max_C(q_rtd)
-            e_rtd = rac_spec.get_e_rtd_C(e_class, q_rtd)
+            q_rtd = get_q_rtd_C(A_A)
+            q_max = get_q_max_C(q_rtd)
+            e_rtd = get_e_rtd_C(e_class, q_rtd)
 
         dualcompressor = data.get('type') == 2 and int(data.get('dualcompressor', 1)) == 2
 

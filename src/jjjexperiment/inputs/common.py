@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
-# 床下
-from pyhees.section3_2 import calc_r_env, get_Q_dash, get_mu_H, get_mu_C
+
+# NOTE: データクラスからどうしてもロジックを参照するときは遅延インポートする
 
 # for scope of import *
 __all__ = ['HouseInfo', 'OuterSkin', 'HEX']
@@ -104,10 +104,12 @@ class OuterSkin:
         if 'eta_A_C' in data:
             kwargs['eta_A_C'] = float(data['eta_A_C'])
 
+        from pyhees.section3_2 import calc_r_env, get_Q_dash, get_mu_H, get_mu_C
         kwargs['r_env'] = calc_r_env(
                         method = '当該住戸の外皮の部位の面積等を用いて外皮性能を評価する方法',
                         A_env = kwargs.get('A_env', cls.A_env),
                         A_A = kwargs.get('A_A', cls.A_A))
+
         from pyhees.section3_1 import get_Q
         kwargs['Q'] = get_Q(get_Q_dash(kwargs.get('U_A', cls.U_A), kwargs.get('r_env', None)))
         kwargs['mu_H'] = get_mu_H(kwargs.get('eta_A_H', cls.eta_A_H), kwargs.get('r_env', None))
