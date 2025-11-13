@@ -16,4 +16,5 @@
 - Write minimal code that directly addresses requirements
 - Follow established patterns and conventions in the codebase
 - Use Japanese comments/docstrings in tests and implementation code
+- Use Japanese for user-facing documentation (README.md, feature docs)
 - Explain technical decisions and reasoning in COMBINED style
