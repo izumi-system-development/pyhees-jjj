@@ -104,17 +104,19 @@ class AcSetting:
 
 class HeatingAcSetting(AcSetting):
     """暖房AC設定"""
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> 'HeatingAcSetting':
         kwargs = cls._parse_common_fields(data)
+        # NOTE: 暖房方式には他もあるが JJJ検証では対象としていない
         return cls(**kwargs, mode=暖房方式.住戸全体を連続的に暖房する方式)
 
 
 class CoolingAcSetting(AcSetting):
     """冷房AC設定"""
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> 'CoolingAcSetting':
         kwargs = cls._parse_common_fields(data)
+        # NOTE: 冷房方式には他もあるが JJJ検証では対象としていない
         return cls(**kwargs, mode=冷房方式.住戸全体を連続的に冷房する方式)
