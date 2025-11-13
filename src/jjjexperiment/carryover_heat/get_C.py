@@ -18,7 +18,7 @@ def get_C_BR_i(A_HCZ_i: Array5x1) -> Array5x1:
     assert A_HCZ_i.shape == (5, 1), "A_HCZ_i の行列数が想定外"
 
     # 標準住戸における居室の床面積 [m2]
-    A_HCZ_R_i = np.array([ld.get_A_HCZ_R_i(i) for i in range(5)]).reshape(5, 1)
+    A_HCZ_R_i = np.array([ld.get_A_HCZ_R_i(i) for i in range(1, 6)]).reshape(5, 1)
     assert A_HCZ_R_i.shape == (5, 1), "A_HCZ_R_i の行列数が想定外"
 
     # 標準住戸における居室の熱容量 [J/K]

@@ -22,7 +22,7 @@ def test_過剰熱量繰越を考慮した室温_居室_式46():
     A_prt_i = np.array([32.92, 24.02, 19.22, 15.61, 15.61]).reshape(-1,1)
     assert A_prt_i.shape == (5, 1), "A_prt_iの次数が想定外"
 
-    A_HCZ_i = np.array([ld.get_A_HCZ_R_i(i) for i in range(5)]).reshape(-1,1)
+    A_HCZ_i = np.array([ld.get_A_HCZ_R_i(i) for i in range(1, 6)]).reshape(-1,1)
     assert A_HCZ_i.shape == (5, 1), "A_HCZ_iの次数が想定外"
 
     Theta_HBR_before_i = np.array([20.0, 20.9, 21.0, 20.0, 20.0]).reshape(-1,1)
