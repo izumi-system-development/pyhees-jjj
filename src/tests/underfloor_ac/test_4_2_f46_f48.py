@@ -7,7 +7,7 @@ from jjjexperiment.common import *
 
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import create_injector_from_json
-from jjjexperiment.inputs.environment_entity import EnvironmentEntity
+from jjjexperiment.inputs.environment_service import EnvironmentService
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i
 from jjjexperiment.underfloor_ac.section4_2_f46_f48 import get_Theta_HBR_i, get_Theta_NR
@@ -26,7 +26,7 @@ class Test_床下空調時_式46_式48:
 
         skin = injector.get(OuterSkin)
         house = injector.get(HouseInfo)
-        environment = EnvironmentEntity(house, skin)
+        environment = EnvironmentService(house, skin)
 
         A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
         A_HCZ_i = environment.get_A_HCZ_i().reshape(-1, 1)

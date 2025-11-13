@@ -28,15 +28,15 @@ from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ
 import jjjexperiment.carryover_heat as jjj_carryover_heat
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
 from jjjexperiment.inputs.options import *
-# DI用データクラス
+# データクラス
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 from jjjexperiment.inputs.ac_setting import HeatingAcSetting, CoolingAcSetting
 from jjjexperiment.inputs.heating import CRACSpecification as HeatCRACSpec
 from jjjexperiment.inputs.cooling import CRACSpecification as CoolCRACSpec
 from jjjexperiment.inputs.di_container import ClimateFile, CaseName
-# 計算用エンティティ
-from jjjexperiment.inputs.climate_entity import ClimateEntity
-from jjjexperiment.inputs.ac_quantity_service import HeatQuantity, CoolQuantity
+# ドメインサービス
+from jjjexperiment.inputs.climate_service import ClimateService
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantityService, CoolQuantityService
 
 # F24-5 新床下空調
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i, get_r_A_uf_i, calc_Theta_uf, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
@@ -96,13 +96,13 @@ def calc_Q_UT_A(
             case _: raise ValueError
     def q_hs_rtd_H() -> float | None:
         match ac_setting:
-            case HeatingAcSetting(): return HeatQuantity(ac_setting, house.region, house.A_A).q_hs_rtd
+            case HeatingAcSetting(): return HeatQuantityService(ac_setting, house.region, house.A_A).q_hs_rtd
             case CoolingAcSetting(): return None
             case _: raise ValueError
     def q_hs_rtd_C() -> float | None:
         match ac_setting:
             case HeatingAcSetting(): return None
-            case CoolingAcSetting(): return CoolQuantity(ac_setting, house.region, house.A_A).q_hs_rtd
+            case CoolingAcSetting(): return CoolQuantityService(ac_setting, house.region, house.A_A).q_hs_rtd
             case _: raise ValueError
 
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
@@ -360,7 +360,7 @@ def calc_Q_UT_A(
 
         # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
-        U_s_vert = ClimateEntity(house.region).get_U_s_vert(skin.Q)  # 床の熱貫流率 [W/m2K]
+        U_s_vert = ClimateService(house.region).get_U_s_vert(skin.Q)  # 床の熱貫流率 [W/m2K]
         A_s_ufac_i, r_A_s_ufac = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
 
         assert A_s_ufac_i.ndim == 2
@@ -401,7 +401,7 @@ def calc_Q_UT_A(
                 ) for t in range(24*365)
             ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
-        climate = ClimateEntity(house.region, new_ufac)
+        climate = ClimateService(house.region, new_ufac)
         phi = climate.get_phi(skin.Q)
 
         delta_L_uf2outdoor_d_t = np.vectorize(calc_delta_L_uf2outdoor)
@@ -463,7 +463,7 @@ def calc_Q_UT_A(
 
         assert A_prt_i.shape == (5,)
         A_prt_A = np.sum(A_prt_i)
-        HCM = np.array(ClimateEntity(house.region).get_HCM_d_t())
+        HCM = np.array(ClimateService(house.region).get_HCM_d_t())
 
         #デバッグ用 250501 IGUCHI
         print("Theta_in_d_t[4848]", Theta_in_d_t[4848])
@@ -1112,7 +1112,7 @@ def calc_Q_UT_A(
 
         # (46) 暖冷房区画𝑖の実際の居室の室温
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
-            HCM = np.array(ClimateEntity(house.region).get_HCM_d_t())
+            HCM = np.array(ClimateService(house.region).get_HCM_d_t())
             A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
             Theta_HBR_d_t_i = np.hstack([
                 get_Theta_HBR_i(

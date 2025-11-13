@@ -13,9 +13,9 @@ from jjjexperiment.inputs.ac_setting import HeatingAcSetting, CoolingAcSetting
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 # 計算用エンティティ
-from jjjexperiment.inputs.climate_entity import ClimateEntity
-from jjjexperiment.inputs.environment_entity import EnvironmentEntity
-from jjjexperiment.inputs.ac_quantity_service import HeatQuantity, CoolQuantity
+from jjjexperiment.inputs.climate_service import ClimateService
+from jjjexperiment.inputs.environment_service import EnvironmentService
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantityService, CoolQuantityService
 
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i
 
@@ -43,8 +43,8 @@ class Test_床下空調時_式8補正:
 
         _logger.info(f"UnderfloorAc config: {new_ufac}")
 
-        climate = ClimateEntity(house.region, new_ufac)
-        environment = EnvironmentEntity(house, skin)
+        climate = ClimateService(house.region, new_ufac)
+        environment = EnvironmentService(house, skin)
 
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
@@ -119,8 +119,8 @@ class Test_床下空調時_式8補正:
         _logger.NDdebug('L_CS_d_t_i_4', L_CS_d_t_i[3])
         _logger.NDdebug('L_CS_d_t_i_5', L_CS_d_t_i[4])
 
-        q_hs_rtd_H = HeatQuantity(heat_ac_setting, house.region, house.A_A).q_hs_rtd
-        q_hs_rtd_C = CoolQuantity(cool_ac_setting, house.region, house.A_A).q_hs_rtd
+        q_hs_rtd_H = HeatQuantityService(heat_ac_setting, house.region, house.A_A).q_hs_rtd
+        q_hs_rtd_C = CoolQuantityService(cool_ac_setting, house.region, house.A_A).q_hs_rtd
 
         V_dash_hs_supply_d_t = dc.get_V_dash_hs_supply_d_t(
             V_hs_min = dc.get_V_hs_min(environment.get_V_vent_g_i()),

@@ -6,8 +6,8 @@ import pyhees.section4_2 as dc
 # JJJ
 from jjjexperiment.inputs.di_container import create_injector_from_json
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
-from jjjexperiment.inputs.climate_entity import ClimateEntity
-from jjjexperiment.inputs.environment_entity import EnvironmentEntity
+from jjjexperiment.inputs.climate_service import ClimateService
+from jjjexperiment.inputs.environment_service import EnvironmentService
 
 import jjjexperiment.underfloor_ac.inputs as jjj_ufac_ipt
 from jjjexperiment.underfloor_ac.section4_2_f40 import calc_Q_hat_hs
@@ -15,7 +15,7 @@ from jjjexperiment.underfloor_ac.section4_2_f40 import calc_Q_hat_hs
 from test_utils.utils import load_input_yaml
 
 @pytest.fixture(scope='class')
-def climate_entity(request) -> ClimateEntity:
+def climate_entity(request) -> ClimateService:
     # Arrange
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
@@ -25,10 +25,10 @@ def climate_entity(request) -> ClimateEntity:
     house_info = injector.get(HouseInfo)
     new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
 
-    return ClimateEntity(house_info.region, new_ufac)
+    return ClimateService(house_info.region, new_ufac)
 
 @pytest.fixture(scope='class')
-def environment_entity(request) -> EnvironmentEntity:
+def environment_entity(request) -> EnvironmentService:
     # Arrange
     yaml_filename = request.cls.yaml_filename  # クラスのメンバー名
     current_dir = os.path.dirname(__file__)
@@ -37,7 +37,7 @@ def environment_entity(request) -> EnvironmentEntity:
 
     house = injector.get(HouseInfo)
     skin = injector.get(OuterSkin)
-    return EnvironmentEntity(house, skin)
+    return EnvironmentService(house, skin)
 
 @pytest.fixture
 def Q_hat_hs_d_t():
@@ -49,8 +49,8 @@ def Q_hat_hs_d_t():
     skin = injector.get(OuterSkin)
     new_ufac = injector.get(jjj_ufac_ipt.UnderfloorAc)
 
-    environment = EnvironmentEntity(house, skin)
-    climate = ClimateEntity(house.region, new_ufac)
+    environment = EnvironmentService(house, skin)
+    climate = ClimateService(house.region, new_ufac)
 
     V_vent_l_d_t = np.array(dc.get_V_vent_l_d_t(
         dc.get_V_vent_l_NR_d_t(),

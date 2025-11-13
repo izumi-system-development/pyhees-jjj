@@ -3,7 +3,7 @@ import pyhees.section4_2_b as dc_spec
 from .options import 機器仕様手動入力タイプ
 from .ac_setting import HeatingAcSetting, CoolingAcSetting
 
-class HeatQuantity:
+class HeatQuantityService:
     """熱源機の暖房能力 計算サービス"""
 
     def __init__(self, ac_setting: HeatingAcSetting, region: int, A_A: float):
@@ -145,7 +145,7 @@ class HeatQuantity:
             raise ValueError
 
 
-class CoolQuantity:
+class CoolQuantityService:
     """熱源機の冷房能力 計算サービス"""
 
     def __init__(self, ac_setting: CoolingAcSetting, region: int, A_A: float):

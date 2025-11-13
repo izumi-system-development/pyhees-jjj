@@ -32,14 +32,14 @@ import jjjexperiment.denchu.inputs.cooling as jjj_denchu_cool_ipt
 import jjjexperiment.inputs.di_container as jjj_ipt_di
 from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import *
-# DIデータクラス
+# データクラス
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin, HEX
 from jjjexperiment.inputs.ac_setting import HeatingAcSetting, CoolingAcSetting
 from jjjexperiment.inputs.heating import CRACSpecification as HeatCRACSpec
 from jjjexperiment.inputs.cooling import CRACSpecification as CoolCRACSpec
-# 計算用エンティティ
-from jjjexperiment.inputs.climate_entity import ClimateEntity
-from jjjexperiment.inputs.ac_quantity_service import HeatQuantity, CoolQuantity
+# ドメインサービス
+from jjjexperiment.inputs.climate_service import ClimateService
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantityService, CoolQuantityService
 
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.result import *
@@ -96,9 +96,9 @@ def calc_main(
     _logger.info(f"q_max_H [w]: {heat_CRAC.q_max}")
     _logger.info(f"e_rtd_H [-]: {heat_CRAC.e_rtd}")
 
-    # 計算用エンティティ
-    heat_quantity = HeatQuantity(heat_ac_setting, house.region, house.A_A)
-    cool_quantity = CoolQuantity(cool_ac_setting, house.region, house.A_A)
+    # ドメインサービス
+    heat_quantity = HeatQuantityService(heat_ac_setting, house.region, house.A_A)
+    cool_quantity = CoolQuantityService(cool_ac_setting, house.region, house.A_A)
 
     H_MR = None
     """主たる居室暖房機器"""
@@ -225,7 +225,7 @@ def calc_main(
         dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, house.region)
     # NOTE: 消費電力量計算に広く使用されており、広いスコープで定義してよいことを確認済
 
-    climate = ClimateEntity(house.region)
+    climate = ClimateService(house.region)
     HCM = climate.get_HCM_d_t()
 
     E_E_fan_H_d_t: Array8760

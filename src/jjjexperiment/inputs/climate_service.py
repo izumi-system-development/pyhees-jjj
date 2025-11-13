@@ -8,7 +8,7 @@ import pyhees.section11_2 as slr
 from jjjexperiment.common import *
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
-class ClimateEntity:
+class ClimateService:
     """ region に関するデータを保持するクラス """
 
     def __init__(self, region: int, new_ufac: UnderfloorAc = None):
