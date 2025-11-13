@@ -1,7 +1,7 @@
 # SeasonalLoadクラスは削除 - 新アーキテクチャではAcSetting + Entityパターンを使用
 # CoolingAcSetting + CoolQuantityを使用してください
 from .ac_setting import CoolingAcSetting
-from .ac_quantity_entity import CoolQuantity
+from .ac_quantity_service import CoolQuantity
 
 # 後方互換性のためのエイリアス
 SeasonalLoad = CoolQuantity

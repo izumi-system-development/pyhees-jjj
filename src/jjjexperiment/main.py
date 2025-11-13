@@ -39,7 +39,7 @@ from jjjexperiment.inputs.heating import CRACSpecification as HeatCRACSpec
 from jjjexperiment.inputs.cooling import CRACSpecification as CoolCRACSpec
 # 計算用エンティティ
 from jjjexperiment.inputs.climate_entity import ClimateEntity
-from jjjexperiment.inputs.ac_quantity_entity import HeatQuantity, CoolQuantity
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantity, CoolQuantity
 
 import jjjexperiment.constants as jjj_consts
 from jjjexperiment.result import *

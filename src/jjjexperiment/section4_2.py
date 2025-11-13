@@ -36,7 +36,7 @@ from jjjexperiment.inputs.cooling import CRACSpecification as CoolCRACSpec
 from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 # 計算用エンティティ
 from jjjexperiment.inputs.climate_entity import ClimateEntity
-from jjjexperiment.inputs.ac_quantity_entity import HeatQuantity, CoolQuantity
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantity, CoolQuantity
 
 # F24-5 新床下空調
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i, get_r_A_uf_i, calc_Theta_uf, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd

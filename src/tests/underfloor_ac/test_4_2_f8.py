@@ -15,7 +15,7 @@ from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 # 計算用エンティティ
 from jjjexperiment.inputs.climate_entity import ClimateEntity
 from jjjexperiment.inputs.environment_entity import EnvironmentEntity
-from jjjexperiment.inputs.ac_quantity_entity import HeatQuantity, CoolQuantity
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantity, CoolQuantity
 
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i
 

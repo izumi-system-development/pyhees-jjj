@@ -4,7 +4,7 @@ from injector import Injector, singleton, provider, Module
 from jjjexperiment.inputs.options import *
 import jjjexperiment.inputs.common as common_input
 from jjjexperiment.inputs.ac_setting import HeatingAcSetting, CoolingAcSetting
-from jjjexperiment.inputs.ac_quantity_entity import HeatQuantity, CoolQuantity
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantity, CoolQuantity
 import jjjexperiment.inputs.cooling as common_cooling_input
 import jjjexperiment.inputs.heating as common_heating_input
 # F23 電中研モデル
