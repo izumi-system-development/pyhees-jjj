@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+
+import pyhees.section3_1 as ld
 # JJJ
 import jjjexperiment.constants as jjj_consts
 import jjjexperiment.carryover_heat as jjj_carryover_heat
@@ -21,7 +23,7 @@ def test_負荷バランス時の負荷_暖房_式8():
     # Act
     carryover = jjj_carryover_heat.calc_carryover(
             H = True, C = False,
-            A_HCZ_i = np.array(jjj_consts.A_HCZ_R_i),
+            A_HCZ_i = np.array([ld.get_A_HCZ_R_i[i] for i in range(5)]),
             Theta_HBR_i = Theta_HBR_i,
             Theta_star_HBR = 20.0)
 

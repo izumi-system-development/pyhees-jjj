@@ -1,12 +1,11 @@
 import numpy as np
 
+import pyhees.section3_1 as ld
 # JJJ
 from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
 
-def get_C_BR_i(
-        A_HCZ_i: Array5x1
-    )-> Array5x1:
+def get_C_BR_i(A_HCZ_i: Array5x1) -> Array5x1:
     """標準住戸との床面積比率で熱容量を求める
 
     Args:
@@ -19,7 +18,7 @@ def get_C_BR_i(
     assert A_HCZ_i.shape == (5, 1), "A_HCZ_i の行列数が想定外"
 
     # 標準住戸における居室の床面積 [m2]
-    A_HCZ_R_i = np.array(jjj_consts.A_HCZ_R_i).reshape(5, 1)
+    A_HCZ_R_i = np.array([ld.get_A_HCZ_R_i(i) for i in range(5)]).reshape(5, 1)
     assert A_HCZ_R_i.shape == (5, 1), "A_HCZ_R_i の行列数が想定外"
 
     # 標準住戸における居室の熱容量 [J/K]
@@ -35,9 +34,7 @@ def get_C_BR_i(
     return cbri
 
 
-def get_C_NR(
-        A_NR: float,
-    ) -> float:
+def get_C_NR(A_NR: float) -> float:
     """標準住戸との比較で熱容量を求める
 
     Args:

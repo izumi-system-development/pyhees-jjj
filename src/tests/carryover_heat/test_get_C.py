@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import pyhees.section3_1 as ld
 # JJJ
 import jjjexperiment.constants as jjj_consts
 import jjjexperiment.carryover_heat as jjj_carryover_heat
@@ -13,8 +14,7 @@ def test_熱容量取得_居室_標準住戸(exp_C_BR_i):
     """ 居室の面積が標準住戸通りであれば、熱容量も標準住戸通りとなる
     """
     # Arrange
-    A_HCZ_i = np.array(jjj_consts.A_HCZ_R_i) \
-                .reshape(-1,1)  # (5,) -> (5,1)
+    A_HCZ_i = np.array([ld.get_A_HCZ_R_i[i] for i in range(5)]).reshape(-1, 1)  # (5,) -> (5,1)
 
     # Act
     C_BR_i = jjj_carryover_heat.get_C_BR_i(A_HCZ_i)
