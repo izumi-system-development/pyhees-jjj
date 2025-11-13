@@ -23,18 +23,20 @@ import pyhees.section4_2_a as dc_a
 """ JJJ_EXPERIMENT ORIGINAL """
 from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
-from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3, PROCESS_TYPE_4
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger  # デバッグ用ロガー
 
 import jjjexperiment.carryover_heat as jjj_carryover_heat
 import jjjexperiment.ac_min_volume_input as jjj_V_min_input
-
-from jjjexperiment.inputs.climate_entity import ClimateEntity
-from jjjexperiment.inputs.common import HouseInfo, OuterSkin
-from jjjexperiment.inputs.heating import SeasonalLoad as CommonHeatLoad, CRACSpecification as HeatCRACSpec
-from jjjexperiment.inputs.cooling import SeasonalLoad as CommonCoolLoad, CRACSpecification as CoolCRACSpec
 from jjjexperiment.inputs.options import *
+# データクラス
+from jjjexperiment.inputs.common import HouseInfo, OuterSkin
+from jjjexperiment.inputs.ac_setting import HeatingAcSetting, CoolingAcSetting
+from jjjexperiment.inputs.heating import CRACSpecification as HeatCRACSpec
+from jjjexperiment.inputs.cooling import CRACSpecification as CoolCRACSpec
 from jjjexperiment.inputs.di_container import ClimateFile, CaseName
+# ドメインサービス
+from jjjexperiment.inputs.climate_service import ClimateService
+from jjjexperiment.inputs.ac_quantity_service import HeatQuantityService, CoolQuantityService
 
 # F24-5 新床下空調
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i, get_r_A_uf_i, calc_Theta_uf, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
@@ -63,8 +65,8 @@ VHS_DSGN_C = NewType('VHS_DSGN_C', float)
 
 # NOTE: クライアントコード側で切り替える(bind)するためのギミック
 @dataclass
-class ActiveSeasonalLoad:
-    load: CommonHeatLoad | CommonCoolLoad
+class ActiveAcSetting:
+    load: HeatingAcSetting | CoolingAcSetting
 
 # NOTE: section4_2 の同名の関数の改変版
 @jjj_cloning
@@ -73,7 +75,7 @@ def calc_Q_UT_A(
         case_name: CaseName,
         climateFile: ClimateFile,
         house: HouseInfo,
-        common_load: ActiveSeasonalLoad,
+        ac_setting: ActiveAcSetting,
         skin: OuterSkin,
         heat_CRAC: HeatCRACSpec,
         cool_CRAC: CoolCRACSpec,
@@ -88,19 +90,19 @@ def calc_Q_UT_A(
 
     # NOTE: 暖房・冷房で二回実行される。q_hs_rtd_H, q_hs_rtd_C のどちらが None かで判別している
     def flg_char() -> str:
-        match common_load:
-            case CommonHeatLoad(): return '_H'
-            case CommonCoolLoad(): return '_C'
+        match ac_setting:
+            case HeatingAcSetting(): return '_H'
+            case CoolingAcSetting(): return '_C'
             case _: raise ValueError
     def q_hs_rtd_H() -> float | None:
-        match common_load:
-            case CommonHeatLoad(): return common_load.q_hs_rtd
-            case CommonCoolLoad(): return None
+        match ac_setting:
+            case HeatingAcSetting(): return HeatQuantityService(ac_setting, house.region, house.A_A).q_hs_rtd
+            case CoolingAcSetting(): return None
             case _: raise ValueError
     def q_hs_rtd_C() -> float | None:
-        match common_load:
-            case CommonHeatLoad(): return None
-            case CommonCoolLoad(): return common_load.q_hs_rtd
+        match ac_setting:
+            case HeatingAcSetting(): return None
+            case CoolingAcSetting(): return CoolQuantityService(ac_setting, house.region, house.A_A).q_hs_rtd
             case _: raise ValueError
 
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
@@ -244,7 +246,7 @@ def calc_Q_UT_A(
     df_output['Theta_attic_d_t'] = Theta_attic_d_t
 
     # (54)　ダクトの周囲の空気温度
-    Theta_sur_d_t_i = dc.get_Theta_sur_d_t_i(Theta_star_HBR_d_t, Theta_attic_d_t, l_duct_in_i, l_duct_ex_i, common_load.duct_insulation)
+    Theta_sur_d_t_i = dc.get_Theta_sur_d_t_i(Theta_star_HBR_d_t, Theta_attic_d_t, l_duct_in_i, l_duct_ex_i, ac_setting.duct_insulation)
     df_output = df_output.assign(
         Theta_sur_d_t_i_1 = Theta_sur_d_t_i[0],
         Theta_sur_d_t_i_2 = Theta_sur_d_t_i[1],
@@ -259,13 +261,13 @@ def calc_Q_UT_A(
     df_output['Q_hat_hs_d_t'] = Q_hat_hs_d_t
 
     # (39)　熱源機の最低風量
-    match common_load:
-        case CommonHeatLoad():
+    match ac_setting:
+        case HeatingAcSetting():
             if v_min_heat_input.input_V_hs_min == 最低風量直接入力.入力する.value:
                 V_hs_min = v_min_heat_input.V_hs_min
             else:
                 V_hs_min = dc.get_V_hs_min(V_vent_g_i)  # 従来式
-        case CommonCoolLoad():
+        case CoolingAcSetting():
             if v_min_cool_input.input_V_hs_min == 最低風量直接入力.入力する.value:
                 V_hs_min = v_min_cool_input.V_hs_min
             else:
@@ -274,12 +276,18 @@ def calc_Q_UT_A(
     df_output3['V_hs_min'] = [V_hs_min]
 
     ####################################################################################################################
-    if common_load.type == PROCESS_TYPE_1 or common_load.type == PROCESS_TYPE_3:
+    if ac_setting.type in [
+        計算モデル.ダクト式セントラル空調機,
+        計算モデル.RAC活用型全館空調_潜熱評価モデル
+    ]:
         # (38)
         Q_hs_rtd_C = dc.get_Q_hs_rtd_C(q_hs_rtd_C())
         # (37)
         Q_hs_rtd_H = dc.get_Q_hs_rtd_H(q_hs_rtd_H())
-    elif common_load.type == PROCESS_TYPE_2 or common_load.type == PROCESS_TYPE_4:
+    elif ac_setting.type in [
+        計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
+        計算モデル.電中研モデル
+    ]:
         # (38)　冷房時の熱源機の定格出力
         Q_hs_rtd_C = dc.get_Q_hs_rtd_C(cool_CRAC.q_rtd)  #ルームエアコンディショナの定格能力 q_rtd_C を入力するよう書き換え
         # (37)　暖房時の熱源機の定格出力
@@ -291,9 +299,9 @@ def calc_Q_UT_A(
     df_output3['Q_hs_rtd_H'] = [Q_hs_rtd_H]
     ####################################################################################################################
 
-    match common_load:
-        case CommonHeatLoad(): Theta_in_d_t = uf.get_Theta_in_d_t('H')
-        case CommonCoolLoad(): Theta_in_d_t = uf.get_Theta_in_d_t('CS')
+    match ac_setting:
+        case HeatingAcSetting(): Theta_in_d_t = uf.get_Theta_in_d_t('H')
+        case CoolingAcSetting(): Theta_in_d_t = uf.get_Theta_in_d_t('CS')
         case _: raise ValueError
 
     # 脱出条件:
@@ -307,7 +315,7 @@ def calc_Q_UT_A(
             V_dash_hs_supply_d_t[C] = V_hs_dsgn_C or 0
             V_dash_hs_supply_d_t[M] = 0
         else:
-            if common_load.type == PROCESS_TYPE_3:
+            if ac_setting.type == 計算モデル.RAC活用型全館空調_潜熱評価モデル:
                 # FIXME: 方式3が他方式と比較して大きくなる問題
                 match (Q_hs_rtd_H, Q_hs_rtd_C):
                     case (None, None):
@@ -330,7 +338,7 @@ def calc_Q_UT_A(
                     dc.get_V_dash_hs_supply_d_t(V_hs_min, updated_V_hs_dsgn_H, updated_V_hs_dsgn_C, Q_hs_rtd_H, Q_hs_rtd_C, Q_hat_hs_d_t, house.region)
                 df_output['V_dash_hs_supply_d_t'] = V_dash_hs_supply_d_t
 
-        if common_load.VAV and jjj_consts.change_supply_volume_before_vav_adjust == VAVありなしの吹出風量.数式を統一する.value:
+        if ac_setting.VAV and jjj_consts.change_supply_volume_before_vav_adjust == VAVありなしの吹出風量.数式を統一する.value:
             # (45)　風量バランス
             r_supply_des_d_t_i = dc.get_r_supply_des_d_t_i_2023(house.region, load.L_CS_d_t_i, load.L_H_d_t_i)
             assert r_supply_des_d_t_i.shape == (5, 24*365)
@@ -352,7 +360,7 @@ def calc_Q_UT_A(
 
         # (40)-2nd 床下空調時 熱源機の風量を計算するための熱源機の出力 補正
         # 1. 床下 -> 居室全体 (目標方向の熱移動)
-        U_s_vert = ClimateEntity(house.region).get_U_s_vert(skin.Q)  # 床の熱貫流率 [W/m2K]
+        U_s_vert = ClimateService(house.region).get_U_s_vert(skin.Q)  # 床の熱貫流率 [W/m2K]
         A_s_ufac_i, r_A_s_ufac = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
 
         assert A_s_ufac_i.ndim == 2
@@ -369,10 +377,10 @@ def calc_Q_UT_A(
 
         # 2. 床下 -> 外気 (逃げ方向)
         # 一階負荷 暖冷房
-        match common_load:
-            case CommonHeatLoad():
+        match ac_setting:
+            case HeatingAcSetting():
                 L_d_t_flr1st = 1 * r_A_s_ufac * np.sum(load.L_H_d_t_i, axis=0)
-            case CommonCoolLoad():
+            case CoolingAcSetting():
                 L_d_t_flr1st = -1 * r_A_s_ufac * np.sum(load.L_CS_d_t_i, axis=0)
                 # NOTE[井口_250501]: 一階冷房負荷は顕熱のみ
             case _:
@@ -393,7 +401,7 @@ def calc_Q_UT_A(
                 ) for t in range(24*365)
             ])
         L_uf = algo.get_L_uf(np.sum(A_s_ufac_i))
-        climate = ClimateEntity(house.region, new_ufac)
+        climate = ClimateService(house.region, new_ufac)
         phi = climate.get_phi(skin.Q)
 
         delta_L_uf2outdoor_d_t = np.vectorize(calc_delta_L_uf2outdoor)
@@ -407,10 +415,10 @@ def calc_Q_UT_A(
         Phi_A_0 = 0.025504994
 
         # NOTE: 実際には Theta_uf_d_t と共に後に算出される
-        match common_load:
-            case CommonHeatLoad():
+        match ac_setting:
+            case HeatingAcSetting():
                 sum_Theta_dash_g_surf_A_m = 4.138
-            case CommonCoolLoad():
+            case CoolingAcSetting():
                 sum_Theta_dash_g_surf_A_m = 9.824
             case _:
                 raise ValueError
@@ -455,7 +463,7 @@ def calc_Q_UT_A(
 
         assert A_prt_i.shape == (5,)
         A_prt_A = np.sum(A_prt_i)
-        HCM = np.array(ClimateEntity(house.region).get_HCM_d_t())
+        HCM = np.array(ClimateService(house.region).get_HCM_d_t())
 
         #デバッグ用 250501 IGUCHI
         print("Theta_in_d_t[4848]", Theta_in_d_t[4848])
@@ -605,7 +613,10 @@ def calc_Q_UT_A(
                     carryover)
 
             ####################################################################################################################
-            if common_load.type == PROCESS_TYPE_1 or common_load.type == PROCESS_TYPE_3:
+            if ac_setting.type in [
+                計算モデル.ダクト式セントラル空調機,
+                計算モデル.RAC活用型全館空調_潜熱評価モデル
+            ]:
                 # (33)
                 L_star_CL_d_t = dc.get_L_star_CL_d_t(L_star_CL_d_t_i)
                 # (32)
@@ -619,7 +630,7 @@ def calc_Q_UT_A(
                 # (28)
                 SHF_dash_d_t = dc.get_SHF_dash_d_t(L_star_CS_d_t, L_star_dash_C_d_t)
                 # (27)
-                Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t_2024(common_load.type, q_hs_rtd_C(), cool_CRAC.input_C_af)
+                Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t_2024(ac_setting.type, q_hs_rtd_C(), cool_CRAC.input_C_af)
                 # (26)
                 Q_hs_max_CL_d_t = dc.get_Q_hs_max_CL_d_t(Q_hs_max_C_d_t, SHF_dash_d_t, L_star_dash_CL_d_t)
                 # (25)
@@ -627,9 +638,12 @@ def calc_Q_UT_A(
                 # (24)
                 C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
                 # (23)
-                Q_hs_max_H_d_t = dc.get_Q_hs_max_H_d_t_2024(common_load.type, q_hs_rtd_H(), C_df_H_d_t, heat_CRAC.input_C_af)
+                Q_hs_max_H_d_t = dc.get_Q_hs_max_H_d_t_2024(ac_setting.type, q_hs_rtd_H(), C_df_H_d_t, heat_CRAC.input_C_af)
 
-            elif common_load.type == PROCESS_TYPE_2 or common_load.type == PROCESS_TYPE_4:
+            elif ac_setting.type in [
+                計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
+                計算モデル.電中研モデル
+            ]:
                 # (24)　デフロストに関する暖房出力補正係数
                 C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
                 # 最大暖房能力比
@@ -694,10 +708,10 @@ def calc_Q_UT_A(
                             '', load.L_H_d_t_i, load.L_CS_d_t_i)
 
                     # 暖冷房期 判別
-                    match common_load:
-                        case CommonHeatLoad():
+                    match ac_setting:
+                        case HeatingAcSetting():
                             mask = Theta_req_d_t_i[i] > Theta_uf_d_t
-                        case CommonCoolLoad():
+                        case CoolingAcSetting():
                             mask = Theta_req_d_t_i[i] < Theta_uf_d_t
                         case _:
                             raise ValueError
@@ -722,13 +736,13 @@ def calc_Q_UT_A(
 
             # L_star_H_d_t_i，L_star_CS_d_t_iの暖冷房区画1～5を合算し0以上だった場合の順序で計算
             # (14)　熱源機の出口における空気温度
-            Theta_hs_out_d_t = dc.get_Theta_hs_out_d_t(common_load.VAV, Theta_req_d_t_i, V_dash_supply_d_t_i,
+            Theta_hs_out_d_t = dc.get_Theta_hs_out_d_t(ac_setting.VAV, Theta_req_d_t_i, V_dash_supply_d_t_i,
                                                     L_star_H_d_t_i, L_star_CS_d_t_i, house.region, Theta_NR_d_t,
                                                     Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
             # (43)　暖冷房区画𝑖の吹き出し風量
             V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
-                                                            V_vent_g_i, V_dash_supply_d_t_i, common_load.VAV, house.region, Theta_hs_out_d_t)
+                                                            V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
             V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
 
             # (41)　暖冷房区画𝑖の吹き出し温度
@@ -743,11 +757,11 @@ def calc_Q_UT_A(
                             Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                             '', load.L_H_d_t_i, load.L_CS_d_t_i)
 
-                    match common_load:
-                        case CommonHeatLoad():
+                    match ac_setting:
+                        case HeatingAcSetting():
                             # 暖房期は 床下温度以上の温度は吹き出てこない
                             Theta_supply_d_t_i[i] = np.clip(Theta_supply_d_t_i[i], None, Theta_uf_d_t)
-                        case CommonCoolLoad():
+                        case CoolingAcSetting():
                             # 冷房期は 床下温度以下の温度は吹き出てこない
                             Theta_supply_d_t_i[i] = np.clip(Theta_supply_d_t_i[i], Theta_uf_d_t, None)
                         case _:
@@ -826,7 +840,10 @@ def calc_Q_UT_A(
             })
 
         ####################################################################################################################
-        if common_load.type == PROCESS_TYPE_1 or common_load.type == PROCESS_TYPE_3:
+        if ac_setting.type in [
+            計算モデル.ダクト式セントラル空調機,
+            計算モデル.RAC活用型全館空調_潜熱評価モデル
+        ]:
             # (33)
             L_star_CL_d_t = dc.get_L_star_CL_d_t(L_star_CL_d_t_i)
             # (32)
@@ -840,7 +857,7 @@ def calc_Q_UT_A(
             # (28)
             SHF_dash_d_t = dc.get_SHF_dash_d_t(L_star_CS_d_t, L_star_dash_C_d_t)
             # (27)
-            Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t_2024(common_load.type, q_hs_rtd_C(), cool_CRAC.input_C_af)
+            Q_hs_max_C_d_t = dc.get_Q_hs_max_C_d_t_2024(ac_setting.type, q_hs_rtd_C(), cool_CRAC.input_C_af)
             # (26)
             Q_hs_max_CL_d_t = dc.get_Q_hs_max_CL_d_t(Q_hs_max_C_d_t, SHF_dash_d_t, L_star_dash_CL_d_t)
             # (25)
@@ -848,9 +865,12 @@ def calc_Q_UT_A(
             # (24)
             C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
             # (23)
-            Q_hs_max_H_d_t = dc.get_Q_hs_max_H_d_t_2024(common_load.type, q_hs_rtd_H(), C_df_H_d_t, heat_CRAC.input_C_af)
+            Q_hs_max_H_d_t = dc.get_Q_hs_max_H_d_t_2024(ac_setting.type, q_hs_rtd_H(), C_df_H_d_t, heat_CRAC.input_C_af)
 
-        elif common_load.type == PROCESS_TYPE_2 or common_load.type == PROCESS_TYPE_4:
+        elif ac_setting.type in [
+            計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
+            計算モデル.電中研モデル
+        ]:
             # (24)　デフロストに関する暖房出力補正係数
             C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
             _logger.debug(f'C_df_H_d_t: {C_df_H_d_t}')
@@ -971,7 +991,7 @@ def calc_Q_UT_A(
                 "Theta_uf_d_t_2023": Theta_uf_d_t_2023,
                 "Theta_req_d_t_1": Theta_req_d_t_i[0], "Theta_req_d_t_2": Theta_req_d_t_i[1], "Theta_req_d_t_3": Theta_req_d_t_i[2], "Theta_req_d_t_4": Theta_req_d_t_i[3], "Theta_req_d_t_5": Theta_req_d_t_i[4],
             })
-        elif skin.underfloor_air_conditioning_air_supply == True:
+        elif skin.underfloor_air_conditioning_air_supply:
             for i in range(2):  # 1F居室のみ(i=0,1)損失分を補正
                 # CHECK: 床下温度が i(部屋) で変わるが問題ないか
                 Theta_uf_d_t, Theta_g_surf_d_t, *others  \
@@ -980,10 +1000,10 @@ def calc_Q_UT_A(
                         Theta_req_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                         '', load.L_H_d_t_i, load.L_CS_d_t_i)
 
-                match common_load:
-                    case CommonHeatLoad():
+                match ac_setting:
+                    case HeatingAcSetting():
                         mask = Theta_req_d_t_i[i] > Theta_uf_d_t
-                    case CommonCoolLoad():
+                    case CoolingAcSetting():
                         mask = Theta_req_d_t_i[i] < Theta_uf_d_t
                     case _:
                         raise ValueError
@@ -1009,13 +1029,13 @@ def calc_Q_UT_A(
 
         # L_star_H_d_t_i，L_star_CS_d_t_iの暖冷房区画1～5を合算し0以上だった場合の順序で計算
         # (14)　熱源機の出口における空気温度
-        Theta_hs_out_d_t = dc.get_Theta_hs_out_d_t(common_load.VAV, Theta_req_d_t_i, V_dash_supply_d_t_i,
+        Theta_hs_out_d_t = dc.get_Theta_hs_out_d_t(ac_setting.VAV, Theta_req_d_t_i, V_dash_supply_d_t_i,
                                                 L_star_H_d_t_i, L_star_CS_d_t_i, house.region, Theta_NR_d_t,
                                                 Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
         # (43)　暖冷房区画𝑖の吹き出し風量
         V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
-                                                        V_vent_g_i, V_dash_supply_d_t_i, common_load.VAV, house.region, Theta_hs_out_d_t)
+                                                        V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
         V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
 
         # (41)　暖冷房区画𝑖の吹き出し温度
@@ -1074,10 +1094,10 @@ def calc_Q_UT_A(
                         Theta_supply_d_t_i[i], Theta_ex_d_t, V_dash_supply_d_t_i[i],
                         '', load.L_H_d_t_i, load.L_CS_d_t_i)
 
-                match common_load:
-                    case CommonHeatLoad():
+                match ac_setting:
+                    case HeatingAcSetting():
                         mask = Theta_supply_d_t_i[i] > Theta_uf_d_t
-                    case CommonCoolLoad():
+                    case CoolingAcSetting():
                         mask = Theta_supply_d_t_i[i] < Theta_uf_d_t
                     case _:
                         raise ValueError
@@ -1092,7 +1112,7 @@ def calc_Q_UT_A(
 
         # (46) 暖冷房区画𝑖の実際の居室の室温
         if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
-            HCM = np.array(ClimateEntity(house.region).get_HCM_d_t())
+            HCM = np.array(ClimateService(house.region).get_HCM_d_t())
             A_s_ufac_i, _ = get_A_s_ufac_i(house.A_A, house.A_MR, house.A_OR)
             Theta_HBR_d_t_i = np.hstack([
                 get_Theta_HBR_i(
@@ -1288,7 +1308,7 @@ def calc_Q_UT_A(
     """ 吹出口 - 熱源機の出口 """
     # L_star_H_d_t_i，L_star_CS_d_t_iの暖冷房区画1～5を合算し0以下だった場合の為に再計算
     # (14)　熱源機の出口における空気温度
-    Theta_hs_out_d_t = dc.get_Theta_hs_out_d_t(common_load.VAV, Theta_req_d_t_i, V_dash_supply_d_t_i,
+    Theta_hs_out_d_t = dc.get_Theta_hs_out_d_t(ac_setting.VAV, Theta_req_d_t_i, V_dash_supply_d_t_i,
                                             L_star_H_d_t_i, L_star_CS_d_t_i, house.region, Theta_NR_d_t,
                                             Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
     df_output['Theta_hs_out_d_t'] = Theta_hs_out_d_t
@@ -1306,7 +1326,7 @@ def calc_Q_UT_A(
 
     """ 熱源機の入口 - 熱源機の風量の計算 """
     # (35)　熱源機の風量のうちの全般換気分
-    V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, common_load.general_ventilation)  # 従来式通り
+    V_hs_vent_d_t = dc.get_V_hs_vent_d_t(V_vent_g_i, ac_setting.general_ventilation)  # 従来式通り
     df_output['V_hs_vent_d_t'] = V_hs_vent_d_t
 
     # (34)　熱源機の風量

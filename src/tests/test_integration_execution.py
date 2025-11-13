@@ -207,17 +207,17 @@ def change_testmode_exploded_Q_UT(inputs: dict):
     fixtures = {
         "H_A": {
             "input": 2,
-            "q_hs_rtd_H": 5000,
-            "P_hs_rtd_H": 900,
-            "V_fan_rtd_H": 1377,
-            "P_fan_rtd_H": 204,
+            "q_hs_rtd": 5000,
+            "P_hs_rtd": 900,
+            "V_fan_rtd": 1377,
+            "P_fan_rtd": 204,
         },
         "C_A": {
             "input": 2,
-            "q_hs_rtd_C": 4000,
-            "P_hs_rtd_C": 800,
-            "V_fan_rtd_C": 1377,
-            "P_fan_rtd_C": 204.3,
+            "q_hs_rtd": 4000,
+            "P_hs_rtd": 800,
+            "V_fan_rtd": 1377,
+            "P_fan_rtd": 204.3,
         },
     }
     # 複製しないと別テストで矛盾する

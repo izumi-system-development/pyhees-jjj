@@ -7,8 +7,8 @@ import pyhees.section3_1_e as algo
 import pyhees.section4_1 as HC
 # JJJ
 from jjjexperiment.inputs.di_container import create_injector_from_json
-from jjjexperiment.inputs.climate_entity import ClimateEntity
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
+from jjjexperiment.inputs.climate_service import ClimateService
 
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_Theta_uf, calc_delta_L_room2uf_i, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
@@ -37,7 +37,7 @@ class Test_床下空調時_式40:
         skin = injector.get(OuterSkin)
         new_ufac = injector.get(UnderfloorAc)
 
-        climate = ClimateEntity(house.region, new_ufac)
+        climate = ClimateService(house.region, new_ufac)
 
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
@@ -122,7 +122,7 @@ class Test_床下空調時_式40:
         skin = injector.get(OuterSkin)
         new_ufac = injector.get(UnderfloorAc)
 
-        climate = ClimateEntity(house.region, new_ufac)
+        climate = ClimateService(house.region, new_ufac)
         Theta_in_d_t = uf.get_Theta_in_d_t('H')
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
 
@@ -160,7 +160,7 @@ class Test_床下空調時_式40:
         house = injector.get(HouseInfo)
         skin = injector.get(OuterSkin)
 
-        climate = ClimateEntity(house.region, None)  # new_ufac 必須でない
+        climate = ClimateService(house.region, None)  # new_ufac 必須でない
         phi = climate.get_phi(skin.Q)
 
         # Arrange - 基礎外周長さ [m]
@@ -197,7 +197,7 @@ class Test_床下空調時_式40:
         Phi_A_0 = 0.025504994
 
         # Arrange - 地盤の不易層温度 [℃]
-        climate = ClimateEntity(house.region, None)  # new_ufac 必須でない
+        climate = ClimateService(house.region, None)  # new_ufac 必須でない
         Theta_ex_d_t = climate.get_Theta_ex_d_t()
         Theta_g_avg = algo.get_Theta_g_avg(Theta_ex_d_t)
 

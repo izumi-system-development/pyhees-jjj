@@ -8,7 +8,7 @@ import pyhees.section4_2_b as dc_spec
 from jjjexperiment.common import *
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin
 
-class EnvironmentEntity:
+class EnvironmentService:
 
     def __init__(self, house: HouseInfo, skin: OuterSkin):
         self._skin = skin

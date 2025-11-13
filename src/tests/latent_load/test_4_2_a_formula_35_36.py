@@ -3,7 +3,7 @@ import pyhees.section4_2_a as dc_a
 
 # JJJ
 import jjjexperiment.constants as jjj_consts
-from jjjexperiment.constants import PROCESS_TYPE_1, PROCESS_TYPE_2, PROCESS_TYPE_3
+from jjjexperiment.inputs.options import 計算モデル
 
 class Testコイル特性:
 
@@ -23,42 +23,42 @@ class Testコイル特性:
 
     def test_有効面積_方式1_定格低(self):
         """ 定格能力 5.6 kW 未満で 仕様書通り """
-        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(PROCESS_TYPE_1, 5500)
-        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(PROCESS_TYPE_1, 5500)
+        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(計算モデル.ダクト式セントラル空調機, 5500)
+        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(計算モデル.ダクト式セントラル空調機, 5500)
     def test_有効面積_方式1_定格BVA(self):
         """ 定格能力 5.6 kW 丁度で 仕様書通り """
-        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(PROCESS_TYPE_1, 5600)
-        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(PROCESS_TYPE_1, 5600)
+        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(計算モデル.ダクト式セントラル空調機, 5600)
+        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(計算モデル.ダクト式セントラル空調機, 5600)
     def test_有効面積_方式1_定格高(self):
         """ 定格能力 5.6 kW 以上で 仕様書通り """
-        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(PROCESS_TYPE_1, 5700)
-        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(PROCESS_TYPE_1, 5700)
+        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(計算モデル.ダクト式セントラル空調機, 5700)
+        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(計算モデル.ダクト式セントラル空調機, 5700)
 
     def test_有効面積_方式2_定格低(self):
         """ 定格能力 5.6 kW 未満で 仕様書通り """
-        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(PROCESS_TYPE_2, 5500)
-        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(PROCESS_TYPE_2, 5500)
+        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, 5500)
+        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, 5500)
     def test_有効面積_方式2_定格BVA(self):
         """ 定格能力 5.6 kW 丁度で 仕様書通り """
-        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(PROCESS_TYPE_2, 5600)
-        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(PROCESS_TYPE_2, 5600)
+        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, 5600)
+        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, 5600)
     def test_有効面積_方式2_定格高(self):
         """ 定格能力 5.6 kW 以上で 仕様書通り """
-        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(PROCESS_TYPE_2, 5700)
-        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(PROCESS_TYPE_2, 5700)
+        assert self._expected_T1T2['A_f_hex'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, 5700)
+        assert self._expected_T1T2['A_e_hex'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_現行省エネ法RACモデル, 5700)
 
     def test_有効面積_方式3_定格低(self):
         """ 定格能力 5.6 kW 未満で 仕様書通り """
-        assert self._expected_T3['A_f_hex_lower'] == dc_a.get_A_f_hex(PROCESS_TYPE_3, 5500)
-        assert self._expected_T3['A_e_hex_lower'] == dc_a.get_A_e_hex(PROCESS_TYPE_3, 5500)
+        assert self._expected_T3['A_f_hex_lower'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5500)
+        assert self._expected_T3['A_e_hex_lower'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5500)
     def test_有効面積_方式3_定格BVA(self):
         """ 定格能力 5.6 kW 丁度で 仕様書通り """
-        assert self._expected_T3['A_f_hex_upper'] == dc_a.get_A_f_hex(PROCESS_TYPE_3, 5600)
-        assert self._expected_T3['A_e_hex_upper'] == dc_a.get_A_e_hex(PROCESS_TYPE_3, 5600)
+        assert self._expected_T3['A_f_hex_upper'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5600)
+        assert self._expected_T3['A_e_hex_upper'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5600)
     def test_有効面積_方式3_定格高(self):
         """ 定格能力 5.6 kW 以上で 仕様書通り """
-        assert self._expected_T3['A_f_hex_upper'] == dc_a.get_A_f_hex(PROCESS_TYPE_3, 5700)
-        assert self._expected_T3['A_e_hex_upper'] == dc_a.get_A_e_hex(PROCESS_TYPE_3, 5700)
+        assert self._expected_T3['A_f_hex_upper'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5700)
+        assert self._expected_T3['A_e_hex_upper'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5700)
 
 
 class Testコイル特性_方式3_ユーザー独自値:
@@ -92,16 +92,16 @@ class Testコイル特性_方式3_ユーザー独自値:
 
     def test_有効面積_方式3_定格低_上書き(self):
         """ 定格能力 5.6 kW 未満で 仕様書通り """
-        assert self._custom_values['H_A']['A_f_hex_small'] == dc_a.get_A_f_hex(PROCESS_TYPE_3, 5500)
-        assert self._custom_values['H_A']['A_e_hex_small'] == dc_a.get_A_e_hex(PROCESS_TYPE_3, 5500)
+        assert self._custom_values['H_A']['A_f_hex_small'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5500)
+        assert self._custom_values['H_A']['A_e_hex_small'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5500)
     def test_有効面積_方式3_定格BVA_上書き(self):
         """ 定格能力 5.6 kW 丁度で 仕様書通り """
-        assert self._custom_values['H_A']['A_f_hex_large'] == dc_a.get_A_f_hex(PROCESS_TYPE_3, 5600)
-        assert self._custom_values['H_A']['A_e_hex_large'] == dc_a.get_A_e_hex(PROCESS_TYPE_3, 5600)
+        assert self._custom_values['H_A']['A_f_hex_large'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5600)
+        assert self._custom_values['H_A']['A_e_hex_large'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5600)
     def test_有効面積_方式3_定格高_上書き(self):
         """ 定格能力 5.6 kW 以上で 仕様書通り """
-        assert self._custom_values['H_A']['A_f_hex_large'] == dc_a.get_A_f_hex(PROCESS_TYPE_3, 5700)
-        assert self._custom_values['H_A']['A_e_hex_large'] == dc_a.get_A_e_hex(PROCESS_TYPE_3, 5700)
+        assert self._custom_values['H_A']['A_f_hex_large'] == dc_a.get_A_f_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5700)
+        assert self._custom_values['H_A']['A_e_hex_large'] == dc_a.get_A_e_hex(計算モデル.RAC活用型全館空調_潜熱評価モデル, 5700)
 
 
 class Test熱伝達特性_冷房:
@@ -125,7 +125,7 @@ class Test熱伝達特性_冷房:
                 (0.0814755746556952, 0.0548170497704635),
                 (0.125827719671756, 0.0843851464478376),
             ],
-            'type': PROCESS_TYPE_3,
+            'type': 計算モデル.RAC活用型全館空調_潜熱評価モデル,
             'X_hs_in': 8.0,  # ダミー値
         }
 
@@ -171,17 +171,17 @@ class Test熱伝達特性_冷房:
             'q': 800,
         }
         a1, a1_dash = dc_a.get_alpha_c_hex_C(
-                            type = PROCESS_TYPE_1,
+                            type = 計算モデル.ダクト式セントラル空調機,
                             V_fan_x_C  = fixture['V'],
                             X_hs_in    = fixture['X'],
                             q_hs_rtd_C = fixture['q'])
         a2, a2_dash = dc_a.get_alpha_c_hex_C(
-                            type = PROCESS_TYPE_2,
+                            type = 計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
                             V_fan_x_C  = fixture['V'],
                             X_hs_in    = fixture['X'],
                             q_hs_rtd_C = fixture['q'])
         a3, a3_dash = dc_a.get_alpha_c_hex_C(
-                            type = PROCESS_TYPE_3,
+                            type = 計算モデル.RAC活用型全館空調_潜熱評価モデル,
                             V_fan_x_C  = fixture['V'],
                             X_hs_in    = fixture['X'],
                             q_hs_rtd_C = fixture['q'])
@@ -202,15 +202,15 @@ class Test熱伝達特性_暖房:
             'q': 800,
         }
         a1 = dc_a.get_alpha_c_hex_H(
-            type = PROCESS_TYPE_1,
+            type = 計算モデル.ダクト式セントラル空調機,
             V_fan_x_H = fixture['V'],
             q_hs_rtd_C = fixture['q'])
         a2 = dc_a.get_alpha_c_hex_H(
-            type = PROCESS_TYPE_2,
+            type = 計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
             V_fan_x_H = fixture['V'],
             q_hs_rtd_C = fixture['q'])
         a3 = dc_a.get_alpha_c_hex_H(
-            type = PROCESS_TYPE_3,
+            type = 計算モデル.RAC活用型全館空調_潜熱評価モデル,
             V_fan_x_H = fixture['V'],
             q_hs_rtd_C = fixture['q'])
 

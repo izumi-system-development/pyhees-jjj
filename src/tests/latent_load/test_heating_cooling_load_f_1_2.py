@@ -1,10 +1,10 @@
 import numpy as np
 from pyhees.section4_2_a import get_q_hs_H_d_t, get_q_hs_C_d_t
 
-class TestHeatingLoad:
+class Test暖房負荷計算:
     """暖房負荷計算のユニットテスト (式1: get_q_hs_H_d_t)"""
 
-    def test_basic_heating_calculation(self):
+    def test_基本計算_正常値(self):
         """暖房負荷の基本計算テスト"""
         # Arrange
         Theta_hs_out_d_t = np.zeros(8760)
@@ -33,7 +33,7 @@ class TestHeatingLoad:
         assert all(result >= 0)  # 暖房能力は非負値であること
         assert result[0] > 0     # 暖房期では正の値になること
 
-    def test_zero_temperature_difference(self):
+    def test_境界値_温度差ゼロ(self):
         """温度差がゼロの場合の暖房負荷テスト"""
         # Arrange
         Theta_hs_out_d_t = np.zeros(8760)
@@ -59,7 +59,7 @@ class TestHeatingLoad:
         # Assert
         assert result[0] == 0.0  # 温度差がゼロの場合、暖房能力もゼロになること
 
-    def test_defrost_correction_factor(self):
+    def test_パラメータ変動_デフロスト補正(self):
         """デフロスト補正係数の影響テスト"""
         # Arrange
         Theta_hs_out_d_t = np.zeros(8760)
@@ -86,10 +86,10 @@ class TestHeatingLoad:
         assert result[0] > 0  # デフロスト補正があっても正の値になること
 
 
-class TestCoolingLoad:
+class Test冷房負荷計算:
     """冷房負荷計算のユニットテスト (式2: get_q_hs_C_d_t)"""
 
-    def test_basic_cooling_calculation(self):
+    def test_基本計算_正常値(self):
         """冷房負荷の基本計算テスト"""
         # Arrange
         Theta_hs_out_d_t = np.zeros(8760)
@@ -123,7 +123,7 @@ class TestCoolingLoad:
         assert all(result >= 0)  # 冷房能力は非負値であること
         assert result[summer_index] > 0  # 冷房期では正の値になること
 
-    def test_zero_temperature_difference_cooling(self):
+    def test_境界値_温度湿度差ゼロ(self):
         """温度差がゼロの場合の冷房負荷テスト"""
         # Arrange
         Theta_hs_out_d_t = np.zeros(8760)
@@ -154,7 +154,7 @@ class TestCoolingLoad:
         # Assert
         assert result[summer_index] == 0.0  # 温度・湿度差がゼロの場合、冷房能力もゼロになること
 
-    def test_humidity_difference_effect(self):
+    def test_パラメータ変動_湿度差影響(self):
         """湿度差の影響テスト"""
         # Arrange
         Theta_hs_out_d_t = np.zeros(8760)
@@ -185,10 +185,10 @@ class TestCoolingLoad:
         assert result[summer_index] > 0  # 湿度差がある場合、潜熱負荷も含めて正の値になること
 
 
-class TestHeatingCoolingComparison:
+class Test暖冷房負荷比較:
     """暖房・冷房負荷の比較テスト"""
 
-    def test_seasonal_behavior(self):
+    def test_季節別動作確認(self):
         """季節による動作の違いをテスト"""
         # Arrange
         # 暖房負荷用パラメータ
@@ -205,7 +205,7 @@ class TestHeatingCoolingComparison:
         V_hs_supply_C = np.zeros(8760)
 
         # 冬期条件（暖房）
-        winter_index = 100
+        winter_index = 0
         Theta_hs_out_H[winter_index] = 35.0
         Theta_hs_in_H[winter_index] = 20.0
         V_hs_supply_H[winter_index] = 300.0

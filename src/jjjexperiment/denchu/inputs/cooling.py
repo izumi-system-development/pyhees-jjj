@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from jjjexperiment.denchu.utils import absolute_humid
+# NOTE: データクラスからどうしてもロジックを参照するときは遅延インポートする
 
 @dataclass
 class RealInnerCondition:
@@ -74,6 +74,7 @@ class DenchuCatalogSpecification:
 
     @classmethod
     def from_dict(cls, data: dict) -> 'DenchuCatalogSpecification':
+        from jjjexperiment.denchu.utils import absolute_humid
         return cls(
             P_rac_min=float(data.get('P_rac_pub_min', 0.0)),
             P_rac_rtd=float(data.get('P_rac_pub_rtd', 0.0)),
