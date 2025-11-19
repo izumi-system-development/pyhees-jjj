@@ -37,8 +37,6 @@ change_supply_volume_before_vav_adjust: int = VAVありなしの吹出風量.数
 """VAV調整前の吹き出し風量の式を変更"""
 change_heat_source_outlet_required_temperature: int = 1
 """熱源機の出口における空気温度"""
-change_V_supply_d_t_i_max: int = Vサプライの上限キャップ.外さない.value
-"""V_supply_d_t_iの上限キャップを外す"""
 carry_over_heat: int = 過剰熱量繰越計算.行わない.value
 """過剰熱量を次の時刻に持ち越す"""
 
@@ -223,9 +221,6 @@ def set_constants(input: dict):
   if 'change_heat_source_outlet_required_temperature' in input:
     global change_heat_source_outlet_required_temperature
     change_heat_source_outlet_required_temperature = int(input['change_heat_source_outlet_required_temperature'])
-  if 'change_V_supply_d_t_i_max' in input:
-    global change_V_supply_d_t_i_max
-    change_V_supply_d_t_i_max = int(input['change_V_supply_d_t_i_max'])
   if 'carry_over_heat' in input:
     global carry_over_heat
     carry_over_heat = int(input['carry_over_heat'])

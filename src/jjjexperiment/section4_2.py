@@ -38,6 +38,9 @@ from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 from jjjexperiment.inputs.climate_service import ClimateService
 from jjjexperiment.inputs.ac_quantity_service import HeatQuantityService, CoolQuantityService
 
+# F23-1 Vサプライの上限キャップ変更
+from jjjexperiment.v_supply_cap.inputs.v_supply_cap_dto import VSupplyCapDto
+import jjjexperiment.v_supply_cap.cap_V_supply_d_t_i as jjj_vsupcap
 # F24-5 新床下空調
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i, get_r_A_uf_i, calc_Theta_uf, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
 from jjjexperiment.underfloor_ac.section3_1_e import calc_Theta_uf_d_t_2023
@@ -85,6 +88,7 @@ def calc_Q_UT_A(
         v_min_cool_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         V_hs_dsgn_H: VHS_DSGN_H,
         V_hs_dsgn_C: VHS_DSGN_C,
+        v_supply_cap_dto: VSupplyCapDto,
         load: Load_DTI):
     """未処理負荷と機器の計算に必要な変数を取得"""
 
@@ -749,9 +753,10 @@ def calc_Q_UT_A(
                                                     Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
             # (43)　暖冷房区画𝑖の吹き出し風量
-            V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
-                                                            V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
-            V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
+            V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t
+                                                        , V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
+            V_supply_d_t_i = jjj_vsupcap.cap_V_supply_d_t_i(v_supply_cap_dto, V_supply_d_t_i_before, V_dash_supply_d_t_i
+                                                        , V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
 
             # (41)　暖冷房区画𝑖の吹き出し温度
             Theta_supply_d_t_i = dc.get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
@@ -1043,9 +1048,10 @@ def calc_Q_UT_A(
                                                 Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
         # (43)　暖冷房区画𝑖の吹き出し風量
-        V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
-                                                        V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
-        V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
+        V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t
+                                                    , V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
+        V_supply_d_t_i = jjj_vsupcap.cap_V_supply_d_t_i(v_supply_cap_dto, V_supply_d_t_i_before, V_dash_supply_d_t_i
+                                                    , V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
 
         # (41)　暖冷房区画𝑖の吹き出し温度
         Theta_supply_d_t_i = dc.get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
