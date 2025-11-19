@@ -38,6 +38,9 @@ from jjjexperiment.inputs.di_container import ClimateFile, CaseName
 from jjjexperiment.inputs.climate_service import ClimateService
 from jjjexperiment.inputs.ac_quantity_service import HeatQuantityService, CoolQuantityService
 
+# F23-1 Vサプライの上限キャップ変更
+from jjjexperiment.v_supply_cap.inputs.v_supply_cap_dto import VSupplyCapDto
+import jjjexperiment.v_supply_cap.cap_V_supply_d_t_i as jjj_vsupcap
 # F24-5 新床下空調
 from jjjexperiment.underfloor_ac.section4_2 import get_A_s_ufac_i, calc_delta_L_room2uf_i, get_r_A_uf_i, calc_Theta_uf, calc_delta_L_uf2outdoor, calc_delta_L_uf2gnd
 from jjjexperiment.underfloor_ac.section3_1_e import calc_Theta_uf_d_t_2023
@@ -85,6 +88,7 @@ def calc_Q_UT_A(
         v_min_cool_input: jjj_V_min_input.inputs.heating.InputMinVolumeInput,
         V_hs_dsgn_H: VHS_DSGN_H,
         V_hs_dsgn_C: VHS_DSGN_C,
+        v_supply_cap_dto: VSupplyCapDto,
         load: Load_DTI):
     """未処理負荷と機器の計算に必要な変数を取得"""
 
@@ -104,6 +108,14 @@ def calc_Q_UT_A(
             case HeatingAcSetting(): return None
             case CoolingAcSetting(): return CoolQuantityService(ac_setting, house.region, house.A_A).q_hs_rtd
             case _: raise ValueError
+
+    match V_hs_dsgn_H, V_hs_dsgn_C:
+        case 0, _:
+            V_hs_dsgn_H = None
+        case _, 0:
+            V_hs_dsgn_C = None
+        case _:
+            raise ValueError("暖房・冷房の判別がつかない")
 
     df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
     df_output2 = pd.DataFrame()
@@ -277,17 +289,17 @@ def calc_Q_UT_A(
 
     ####################################################################################################################
     if ac_setting.type in [
-        計算モデル.ダクト式セントラル空調機,
-        計算モデル.RAC活用型全館空調_潜熱評価モデル
-    ]:
+            計算モデル.ダクト式セントラル空調機,
+            計算モデル.RAC活用型全館空調_潜熱評価モデル
+        ]:
         # (38)
         Q_hs_rtd_C = dc.get_Q_hs_rtd_C(q_hs_rtd_C())
         # (37)
         Q_hs_rtd_H = dc.get_Q_hs_rtd_H(q_hs_rtd_H())
     elif ac_setting.type in [
-        計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
-        計算モデル.電中研モデル
-    ]:
+            計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
+            計算モデル.電中研モデル
+        ]:
         # (38)　冷房時の熱源機の定格出力
         Q_hs_rtd_C = dc.get_Q_hs_rtd_C(cool_CRAC.q_rtd)  #ルームエアコンディショナの定格能力 q_rtd_C を入力するよう書き換え
         # (37)　暖房時の熱源機の定格出力
@@ -614,9 +626,9 @@ def calc_Q_UT_A(
 
             ####################################################################################################################
             if ac_setting.type in [
-                計算モデル.ダクト式セントラル空調機,
-                計算モデル.RAC活用型全館空調_潜熱評価モデル
-            ]:
+                    計算モデル.ダクト式セントラル空調機,
+                    計算モデル.RAC活用型全館空調_潜熱評価モデル
+                ]:
                 # (33)
                 L_star_CL_d_t = dc.get_L_star_CL_d_t(L_star_CL_d_t_i)
                 # (32)
@@ -641,9 +653,9 @@ def calc_Q_UT_A(
                 Q_hs_max_H_d_t = dc.get_Q_hs_max_H_d_t_2024(ac_setting.type, q_hs_rtd_H(), C_df_H_d_t, heat_CRAC.input_C_af)
 
             elif ac_setting.type in [
-                計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
-                計算モデル.電中研モデル
-            ]:
+                    計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
+                    計算モデル.電中研モデル
+                ]:
                 # (24)　デフロストに関する暖房出力補正係数
                 C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
                 # 最大暖房能力比
@@ -741,9 +753,10 @@ def calc_Q_UT_A(
                                                     Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
             # (43)　暖冷房区画𝑖の吹き出し風量
-            V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
-                                                            V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
-            V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
+            V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t
+                                                        , V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
+            V_supply_d_t_i = jjj_vsupcap.cap_V_supply_d_t_i(v_supply_cap_dto, V_supply_d_t_i_before, V_dash_supply_d_t_i
+                                                        , V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
 
             # (41)　暖冷房区画𝑖の吹き出し温度
             Theta_supply_d_t_i = dc.get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,
@@ -841,9 +854,9 @@ def calc_Q_UT_A(
 
         ####################################################################################################################
         if ac_setting.type in [
-            計算モデル.ダクト式セントラル空調機,
-            計算モデル.RAC活用型全館空調_潜熱評価モデル
-        ]:
+                計算モデル.ダクト式セントラル空調機,
+                計算モデル.RAC活用型全館空調_潜熱評価モデル
+            ]:
             # (33)
             L_star_CL_d_t = dc.get_L_star_CL_d_t(L_star_CL_d_t_i)
             # (32)
@@ -868,9 +881,9 @@ def calc_Q_UT_A(
             Q_hs_max_H_d_t = dc.get_Q_hs_max_H_d_t_2024(ac_setting.type, q_hs_rtd_H(), C_df_H_d_t, heat_CRAC.input_C_af)
 
         elif ac_setting.type in [
-            計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
-            計算モデル.電中研モデル
-        ]:
+                計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
+                計算モデル.電中研モデル
+            ]:
             # (24)　デフロストに関する暖房出力補正係数
             C_df_H_d_t = dc.get_C_df_H_d_t(Theta_ex_d_t, h_ex_d_t)
             _logger.debug(f'C_df_H_d_t: {C_df_H_d_t}')
@@ -991,6 +1004,7 @@ def calc_Q_UT_A(
                 "Theta_uf_d_t_2023": Theta_uf_d_t_2023,
                 "Theta_req_d_t_1": Theta_req_d_t_i[0], "Theta_req_d_t_2": Theta_req_d_t_i[1], "Theta_req_d_t_3": Theta_req_d_t_i[2], "Theta_req_d_t_4": Theta_req_d_t_i[3], "Theta_req_d_t_5": Theta_req_d_t_i[4],
             })
+
         elif skin.underfloor_air_conditioning_air_supply:
             for i in range(2):  # 1F居室のみ(i=0,1)損失分を補正
                 # CHECK: 床下温度が i(部屋) で変わるが問題ないか
@@ -1034,9 +1048,10 @@ def calc_Q_UT_A(
                                                 Theta_hs_out_max_H_d_t, Theta_hs_out_min_C_d_t)
 
         # (43)　暖冷房区画𝑖の吹き出し風量
-        V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t,
-                                                        V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
-        V_supply_d_t_i = dc.cap_V_supply_d_t_i(V_supply_d_t_i_before, V_dash_supply_d_t_i, V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
+        V_supply_d_t_i_before = dc.get_V_supply_d_t_i(L_star_H_d_t_i, L_star_CS_d_t_i, Theta_sur_d_t_i, l_duct_i, Theta_star_HBR_d_t
+                                                    , V_vent_g_i, V_dash_supply_d_t_i, ac_setting.VAV, house.region, Theta_hs_out_d_t)
+        V_supply_d_t_i = jjj_vsupcap.cap_V_supply_d_t_i(v_supply_cap_dto, V_supply_d_t_i_before, V_dash_supply_d_t_i
+                                                    , V_vent_g_i, house.region, V_hs_dsgn_H, V_hs_dsgn_C)
 
         # (41)　暖冷房区画𝑖の吹き出し温度
         Theta_supply_d_t_i = dc.get_Thata_supply_d_t_i(Theta_sur_d_t_i, Theta_hs_out_d_t, Theta_star_HBR_d_t, l_duct_i,

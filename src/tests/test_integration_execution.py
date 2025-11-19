@@ -111,7 +111,7 @@ class Test統合テスト_デフォルト入力時:
 def change_testmode_VAV(inputs: dict):
     fixtures = {
         "change_supply_volume_before_vav_adjust": VAVありなしの吹出風量.数式を統一する.value,
-        "change_V_supply_d_t_i_max": Vサプライの上限キャップ.外さない.value,
+        "change_V_supply_d_t_i_max": Vサプライの上限キャップ.従来.value,
         "H_A": {"VAV": 2},
         "C_A": {"VAV": 2},
     }
@@ -124,7 +124,7 @@ def change_testmode_VAV_cap1logic(inputs: dict):
     """
     fixtures = {
         "change_supply_volume_before_vav_adjust": VAVありなしの吹出風量.数式を統一する.value,
-        "change_V_supply_d_t_i_max": Vサプライの上限キャップ.全体でキャップ.value,
+        "change_V_supply_d_t_i_max": Vサプライの上限キャップ.設計風量_全室で均一.value,
         "H_A": {"VAV": 2},
         "C_A": {"VAV": 2},
     }
@@ -136,7 +136,7 @@ def change_testmode_VAV_cap2logic(inputs: dict):
     """
     fixtures = {
         "change_supply_volume_before_vav_adjust": VAVありなしの吹出風量.数式を統一する.value,
-        "change_V_supply_d_t_i_max": Vサプライの上限キャップ.ピンポイントでキャップ.value,
+        "change_V_supply_d_t_i_max": Vサプライの上限キャップ.設計風量_風量増室のみ.value,
         "H_A": {"VAV": 2},
         "C_A": {"VAV": 2},
     }

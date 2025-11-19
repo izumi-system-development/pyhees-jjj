@@ -9,6 +9,8 @@ import jjjexperiment.inputs.heating as common_heating_input
 # F23 電中研モデル
 import jjjexperiment.denchu.inputs.heating as denchu_heating_input
 import jjjexperiment.denchu.inputs.cooling as denchu_cooling_input
+# F23-01 Vサプライの上限キャップ変更
+from jjjexperiment.v_supply_cap.inputs.v_supply_cap_dto import VSupplyCapDto
 # F24-05 新床下空調
 import jjjexperiment.underfloor_ac.inputs.common as ufac_input
 # F25-01 最小風量・最低電力 直接入力
@@ -142,7 +144,7 @@ class JJJExperimentModule(Module):
         return HeatingAcSetting.from_dict(
             self._input['H_A'] if self._input is not None and 'H_A' in self._input else {}
         )
-    
+
     @singleton
     @provider
     def provide_cooling_ac_setting(self) -> CoolingAcSetting:
@@ -180,7 +182,14 @@ class JJJExperimentModule(Module):
         return denchu_cooling_input.DenchuCatalogSpecification \
             .from_dict(self._input['C_A'] if self._input is not None and 'C_A' in self._input else {})
 
+    # F23-01 Vサプライの上限キャップ変更
+    @singleton
+    @provider
+    def provide_v_supply_cap_dto(self) -> VSupplyCapDto:
+        return VSupplyCapDto.from_dict(self._input if self._input is not None else {})
+
     # F24-05 新・床下空調
+    @singleton
     @provider
     def provide_underfloor_ac_input(self) -> ufac_input.UnderfloorAc:
         return ufac_input.UnderfloorAc.from_dict(self._input if self._input is not None else {})
