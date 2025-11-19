@@ -178,18 +178,6 @@ def calc_main(
 
         return dc_spec.get_V_fan_dsgn_H(V_fan_rtd_H)
 
-    V_hs_dsgn_H = heat_ac_setting.V_hs_dsgn if heat_ac_setting.V_hs_dsgn > 0 \
-        else get_V_hs_dsgn_H(heat_ac_setting.type, heat_quantity.V_fan_rtd, heat_CRAC.q_rtd)
-    """ 暖房時の送風機の設計風量[m3/h] """
-    V_hs_dsgn_C: float = None  # NOTE: 暖房負荷計算時は空
-    """ 冷房時の送風機の設計風量[m3/h] """
-    # DIコンテナに型で登録
-    injector.binder.bind(jjj_dc.VHS_DSGN_H, to=V_hs_dsgn_H)
-    injector.binder.bind(jjj_dc.VHS_DSGN_C, to=V_hs_dsgn_C)
-
-    Q_UT_H_d_t_i: np.ndarray
-    """暖房設備機器等の未処理暖房負荷(MJ/h)"""
-
     def arr_summary(arr: np.ndarray):
         return {
             "MAX  ": max(arr),
@@ -197,9 +185,24 @@ def calc_main(
             "AVG  ": np.average(arr[np.nonzero(arr)])
         }
 
-    # 暖房負荷アクティブ
-    injector.binder.bind(jjj_dc.ActiveAcSetting, to=heat_ac_setting)
+    V_hs_dsgn_H: float =  \
+        heat_ac_setting.V_hs_dsgn if heat_ac_setting.V_hs_dsgn > 0  \
+        else get_V_hs_dsgn_H(heat_ac_setting.type, heat_quantity.V_fan_rtd, heat_CRAC.q_rtd)
+    """ 暖房時の送風機の設計風量 [m3/h] """
 
+    V_hs_dsgn_C: float = 0.0  # NOTE: 暖房負荷計算時は空
+    """ 冷房時の送風機の設計風量 [m3/h] """
+
+    # 型バインド
+    assert isinstance(V_hs_dsgn_H, float), "V_hs_dsgn_Hの型が不正"
+    injector.binder.bind(jjj_dc.VHS_DSGN_H, to=V_hs_dsgn_H)
+    assert isinstance(V_hs_dsgn_C, float), "V_hs_dsgn_Cの型が不正"
+    injector.binder.bind(jjj_dc.VHS_DSGN_C, to=V_hs_dsgn_C)
+
+    injector.binder.bind(jjj_dc.ActiveAcSetting, to=heat_ac_setting)  # 暖房負荷アクティブ
+
+    Q_UT_H_d_t_i: np.ndarray
+    """暖房設備機器等の未処理暖房負荷(MJ/h)"""
     _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, C_df_H_d_t = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
@@ -396,27 +399,35 @@ def calc_main(
 
     def get_V_hs_dsgn_C(type: 計算モデル, v_fan_rtd: float, q_rtd_C: float):
         if type in [
-            計算モデル.ダクト式セントラル空調機,
-            計算モデル.RAC活用型全館空調_潜熱評価モデル
-        ]:
+                計算モデル.ダクト式セントラル空調機,
+                計算モデル.RAC活用型全館空調_潜熱評価モデル
+            ]:
             pass
         elif type in [
-            計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
-            計算モデル.電中研モデル
-        ]:
+                計算モデル.RAC活用型全館空調_現行省エネ法RACモデル,
+                計算モデル.電中研モデル
+            ]:
             v_fan_rtd = dc_spec.get_V_fan_rtd_C(q_rtd_C)
         else:
             raise Exception("冷房方式が不正です。")
 
         return dc_spec.get_V_fan_dsgn_C(v_fan_rtd)
 
-    V_hs_dsgn_C = cool_ac_setting.V_hs_dsgn if cool_ac_setting.V_hs_dsgn > 0 else get_V_hs_dsgn_C(cool_ac_setting.type, cool_quantity.V_fan_rtd, cool_CRAC.q_rtd)
-    """ 冷房時の送風機の設計風量[m3/h] """
-    V_hs_dsgn_H: float = None  # NOTE: 冷房負荷計算時は空
-    """ 暖房時の送風機の設計風量[m3/h] """
-    # DIコンテナに型で登録
+    V_hs_dsgn_C: float =  \
+        cool_ac_setting.V_hs_dsgn if cool_ac_setting.V_hs_dsgn > 0  \
+        else get_V_hs_dsgn_C(cool_ac_setting.type, cool_quantity.V_fan_rtd, cool_CRAC.q_rtd)
+    """ 冷房時の送風機の設計風量 [m3/h] """
+
+    V_hs_dsgn_H: float = 0.0  # NOTE: 冷房負荷計算時は空
+    """ 暖房時の送風機の設計風量 [m3/h] """
+
+    # 型バインド
+    assert isinstance(V_hs_dsgn_H, float), "V_hs_dsgn_Hの型が不正"
     injector.binder.bind(jjj_dc.VHS_DSGN_H, to=V_hs_dsgn_H)
+    assert isinstance(V_hs_dsgn_C, float), "V_hs_dsgn_Cの型が不正"
     injector.binder.bind(jjj_dc.VHS_DSGN_C, to=V_hs_dsgn_C)
+
+    injector.binder.bind(jjj_dc.ActiveAcSetting, to=cool_ac_setting)  # 冷房負荷アクティブ
 
     if cool_ac_setting.type == 計算モデル.電中研モデル:
         R2, R1, R0, P_rac_fan_rtd_C = jjjexperiment.denchu.denchu_1.calc_R_and_Pc_C(cool_denchu_catalog)
@@ -435,10 +446,6 @@ def calc_main(
 
     E_C_UT_d_t: np.ndarray
     """冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
-
-    # 冷房負荷アクティブ
-    injector.binder.bind(jjj_dc.ActiveAcSetting, to=cool_ac_setting)
-
     E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, _ = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
