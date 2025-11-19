@@ -161,6 +161,7 @@ def calc_main(
     """冷房潜熱負荷の全区画合計 [MJ/h]"""
 
     ##### 暖房消費電力の計算（kWh/h）
+    print("暖房消費電力の計算")
 
     def get_V_hs_dsgn_H(type: 計算モデル, v_fan_rtd, q_rtd_H):
         if type in [
@@ -396,6 +397,7 @@ def calc_main(
     df_output2['C_df_H_d_t [-]']            = C_df_H_d_t
 
     ##### 冷房消費電力の計算（kWh/h）
+    print("冷房消費電力の計算")
 
     def get_V_hs_dsgn_C(type: 計算モデル, v_fan_rtd: float, q_rtd_C: float):
         if type in [

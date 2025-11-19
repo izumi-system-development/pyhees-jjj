@@ -115,14 +115,14 @@ def cap_V_supply_d_t_i(
         ratio_H_d_t_i = np.divide(masked_vs_H_d_t_i,
                             np.floor(added_sums_H_d_t_i * 1000) / 1000,  # 超えない工夫(引くのを大き目に)
                             where=target_mask_H_d_t_i, out=default_subtract_d_t_i)
-        ratio_H_d_t_i = np.nan_to_num(ratio_H_d_t_i, nan=0.0)
+        # ratio_H_d_t_i = np.nan_to_num(ratio_H_d_t_i, nan=0.0)
         # 削減量に値の割合を適用
         subtract_H_d_t_i = ratio_H_d_t_i * np.tile(overflow_values_H_d_t, (5,1))
 
         ratio_C_d_t_i = np.divide(masked_vs_C_d_t_i,
                             np.floor(added_sums_C_d_t_i * 1000) / 1000,
                             where=target_mask_C_d_t_i, out=default_subtract_d_t_i)
-        ratio_C_d_t_i = np.nan_to_num(ratio_C_d_t_i, nan=0.0)
+        # ratio_C_d_t_i = np.nan_to_num(ratio_C_d_t_i, nan=0.0)
         # 削減量に値の割合を適用
         subtract_C_d_t_i = ratio_C_d_t_i * np.tile(overflow_values_C_d_t, (5,1))
 
