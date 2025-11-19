@@ -98,8 +98,8 @@ def cap_V_supply_d_t_i(
 
         """ 縮小対象セルの削減量を計算 """
         # 全体で削減すべき量
-        overflow_values_H_d_t = V_supply_d_t - V_hs_dsgn_H
-        overflow_values_C_d_t = V_supply_d_t - V_hs_dsgn_C
+        overflow_values_H_d_t = np.nan_to_num(V_supply_d_t - V_hs_dsgn_H, nan=0.0)
+        overflow_values_C_d_t = np.nan_to_num(V_supply_d_t - V_hs_dsgn_C, nan=0.0)
         # 削減場所では限界値以上になっている
 
         masked_vs_H_d_t_i = np.where(target_mask_H_d_t_i, V_supply_d_t_i, 0)
@@ -112,17 +112,17 @@ def cap_V_supply_d_t_i(
 
         default_subtract_d_t_i = np.zeros_like(V_supply_d_t_i)
 
-        ratio_H_d_t_i = np.divide(
-            masked_vs_H_d_t_i,
-            np.floor(added_sums_H_d_t_i * 1000) / 1000,  # 超えない工夫(引くのを大き目に)
-            where=target_mask_H_d_t_i, out=default_subtract_d_t_i)
+        ratio_H_d_t_i = np.divide(masked_vs_H_d_t_i,
+                            np.floor(added_sums_H_d_t_i * 1000) / 1000,  # 超えない工夫(引くのを大き目に)
+                            where=target_mask_H_d_t_i, out=default_subtract_d_t_i)
+        ratio_H_d_t_i = np.nan_to_num(ratio_H_d_t_i, nan=0.0)
         # 削減量に値の割合を適用
         subtract_H_d_t_i = ratio_H_d_t_i * np.tile(overflow_values_H_d_t, (5,1))
 
-        ratio_C_d_t_i = np.divide(
-            masked_vs_C_d_t_i,
-            np.floor(added_sums_C_d_t_i * 1000) / 1000,
-            where=target_mask_C_d_t_i, out=default_subtract_d_t_i)
+        ratio_C_d_t_i = np.divide(masked_vs_C_d_t_i,
+                            np.floor(added_sums_C_d_t_i * 1000) / 1000,
+                            where=target_mask_C_d_t_i, out=default_subtract_d_t_i)
+        ratio_C_d_t_i = np.nan_to_num(ratio_C_d_t_i, nan=0.0)
         # 削減量に値の割合を適用
         subtract_C_d_t_i = ratio_C_d_t_i * np.tile(overflow_values_C_d_t, (5,1))
 
