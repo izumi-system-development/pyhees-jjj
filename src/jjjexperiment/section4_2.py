@@ -1453,5 +1453,5 @@ def calc_Q_UT_A(
     # Mode-specific energy value (E_UT_H_d_t or E_UT_C_d_t)
     # Other variables used by subsequent calculations
     return E_UT_d_t, \
-            Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  \
+            Theta_hs_out_d_t, Theta_hs_in_d_t, \
             X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t

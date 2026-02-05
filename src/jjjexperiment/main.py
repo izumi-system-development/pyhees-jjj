@@ -205,7 +205,7 @@ def calc_main(
 
     E_UT_H_d_t: np.ndarray
     """暖房設備の未処理暖房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
-    E_UT_H_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t = \
+    E_UT_H_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
@@ -318,7 +318,7 @@ def calc_main(
                 q_hs_H_d_t = q_hs_H_d_t,
                 Theta_hs_out_d_t = Theta_hs_out_d_t,
                 Theta_hs_in_d_t = Theta_hs_in_d_t,
-                Theta_ex_d_t = Theta_ex_d_t,  # 空気温度
+                Theta_ex_d_t = climate.get_Theta_ex_d_t(),  # 空気温度
                 V_hs_supply_d_t = V_hs_supply_d_t,  # 風量
                 q_hs_rtd_C = cool_quantity.q_hs_rtd,  # 定格冷房能力※
 
@@ -372,7 +372,7 @@ def calc_main(
     df_output2 = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
     df_output2['Theta_hs_H_out_d_t [℃]']    = Theta_hs_out_d_t
     df_output2['Theta_hs_H_in_d_t [℃]']     = Theta_hs_in_d_t
-    df_output2['Theta_ex_d_t [℃]']          = Theta_ex_d_t
+    df_output2['Theta_ex_d_t [℃]']          = climate.get_Theta_ex_d_t()
     df_output2['V_hs_supply_H_d_t [m3/h]']  = V_hs_supply_d_t
     df_output2['V_hs_vent_H_d_t [m3/h]']    = V_hs_vent_d_t
     df_output2['C_df_H_d_t [-]']            = climate.get_C_df_H_d_t()
@@ -429,7 +429,7 @@ def calc_main(
 
     E_C_UT_d_t: np.ndarray
     """冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
-    E_C_UT_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t = \
+    E_C_UT_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
@@ -530,7 +530,7 @@ def calc_main(
             E_E_fan_C_d_t = E_E_fan_C_d_t,
             Theta_hs_out_d_t = Theta_hs_out_d_t,
             Theta_hs_in_d_t = Theta_hs_in_d_t,
-            Theta_ex_d_t = Theta_ex_d_t,
+            Theta_ex_d_t = climate.get_Theta_ex_d_t(),
             V_hs_supply_d_t = V_hs_supply_d_t,
             X_hs_out_d_t = X_hs_out_d_t,
             X_hs_in_d_t = X_hs_in_d_t,
@@ -598,7 +598,7 @@ def calc_main(
 
     df_output2['Theta_hs_C_out_d_t [℃]']    = Theta_hs_out_d_t
     df_output2['Theta_hs_C_in_d_t [℃]']     = Theta_hs_in_d_t
-    df_output2['Theta_ex_d_t [℃]']          = Theta_ex_d_t
+    df_output2['Theta_ex_d_t [℃]']          = climate.get_Theta_ex_d_t()
     df_output2['V_hs_supply_C_d_t [m3/h]']  = V_hs_supply_d_t
     df_output2['V_hs_vent_C_d_t [m3/h]']    = V_hs_vent_d_t
     df_output2['E_H_d_t [MJ/h]']            = E_H_d_t
