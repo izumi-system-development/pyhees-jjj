@@ -5,9 +5,6 @@ import pandas as pd
 from datetime import datetime
 from injector import inject
 
-from pyhees.section11_1 import calc_h_ex, load_climate, get_Theta_ex, get_X_ex, get_climate_df
-from pyhees.section11_2 import calc_I_s_d_t
-
 # エアーコンディショナー
 import pyhees.section4_3 as rac
 # 床下
@@ -15,6 +12,7 @@ import pyhees.section3_1 as ld
 import pyhees.section3_1_d as uf
 import pyhees.section3_1_e as algo
 # ダクト式セントラル空調機
+from pyhees.section4_1 import get_alpha_UT_H_A
 import pyhees.section4_2 as dc
 import pyhees.section4_2_a as dc_a
 
@@ -1420,9 +1418,17 @@ def calc_Q_UT_A(
     )
 
     """ まとめ - 一次エネルギー """
-    # (1)　冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値
-    E_UT_C_d_t = dc.get_E_C_UT_d_t(Q_UT_CL_d_t_i, Q_UT_CS_d_t_i, house.region)
-    df_output['E_C_UT_d_t'] = E_UT_C_d_t
+    match ac_setting:
+        case HeatingAcSetting():
+            # 暖房: 未処理暖房負荷の設計一次エネルギー消費量相当値
+            alpha_UT_H_A: float = get_alpha_UT_H_A(house.region)
+            Q_UT_H_A_d_t: np.ndarray = np.sum(Q_UT_H_d_t_i, axis=0)
+            E_UT_d_t = Q_UT_H_A_d_t * alpha_UT_H_A
+        case CoolingAcSetting():
+            # (1)　冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値
+            E_UT_d_t = dc.get_E_C_UT_d_t(Q_UT_CL_d_t_i, Q_UT_CS_d_t_i, house.region)
+        case _:
+            raise ValueError("ac_setting must be HeatingAcSetting or CoolingAcSetting")
 
     # 床下空調新ロジック調査用変数の出力
     if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
@@ -1444,6 +1450,8 @@ def calc_Q_UT_A(
         case(_, _):
             raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-    return E_UT_C_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i,  \
+    # Mode-specific energy value (E_UT_H_d_t or E_UT_C_d_t)
+    # Other variables used by subsequent calculations
+    return E_UT_d_t, \
             Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  \
-            X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i
+            X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t

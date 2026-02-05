@@ -203,9 +203,9 @@ def calc_main(
 
     injector.binder.bind(jjj_dc.ActiveAcSetting, to=heat_ac_setting)  # 暖房負荷アクティブ
 
-    Q_UT_H_d_t_i: np.ndarray
-    """暖房設備機器等の未処理暖房負荷(MJ/h)"""
-    _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i = \
+    E_UT_H_d_t: np.ndarray
+    """暖房設備の未処理暖房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
+    E_UT_H_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
@@ -367,16 +367,9 @@ def calc_main(
     else:
         raise Exception("暖房方式が不正です。")
 
-    alpha_UT_H_A: float = get_alpha_UT_H_A(house.region)
-    """未処理暖房負荷を未処理暖房負荷の設計一次エネルギー消費量相当値に換算するための係数"""
-    Q_UT_H_A_d_t: np.ndarray = np.sum(Q_UT_H_d_t_i, axis=0)
-    """未処理暖房負荷の全機器合計(MJ/h)"""
-    E_UT_H_d_t: np.ndarray = Q_UT_H_A_d_t * alpha_UT_H_A
-    """未処理暖房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
     _logger.NDdebug("E_UT_H_d_t", E_UT_H_d_t)
 
     df_output2 = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
-    df_output2['Q_UT_H_d_A_t [MJ/h]']        = Q_UT_H_A_d_t
     df_output2['Theta_hs_H_out_d_t [℃]']    = Theta_hs_out_d_t
     df_output2['Theta_hs_H_in_d_t [℃]']     = Theta_hs_in_d_t
     df_output2['Theta_ex_d_t [℃]']          = Theta_ex_d_t
@@ -436,7 +429,7 @@ def calc_main(
 
     E_C_UT_d_t: np.ndarray
     """冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
-    E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i = \
+    E_C_UT_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
