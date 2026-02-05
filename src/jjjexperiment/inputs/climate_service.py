@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 import pyhees.section3_1_e as algo
 import pyhees.section4_2 as dc
@@ -9,11 +10,14 @@ from jjjexperiment.common import *
 from jjjexperiment.underfloor_ac.inputs.common import UnderfloorAc
 
 class ClimateService:
-    """ region に関するデータを保持するクラス """
+    """ region ごとの気候に関するロジックサービス """
 
-    def __init__(self, region: int, new_ufac: UnderfloorAc = None):
+    def __init__(self, region: int, new_ufac: UnderfloorAc = None, climate_file: str = '-'):
         self.region = region
-        self.climate = rgn.load_climate(region)
+        if climate_file == '-':
+            self.climate = rgn.load_climate(region)
+        else:
+            self.climate = pd.read_csv(climate_file, nrows=24 * 365, encoding="SHIFT-JIS")
         self._new_ufac = new_ufac
 
     def get_J_d_t(self) -> Array8760:
@@ -79,3 +83,22 @@ class ClimateService:
             return self._new_ufac.U_s_vert
         else:
             return algo.get_U_s_vert(self.region, Q)
+
+    def get_h_ex_d_t(self) -> Array8760:
+        """
+        外気相対湿度 [%]
+        Returns:
+            h_ex_d_t: 日付dの時刻tにおける外気相対湿度 [%]
+        """
+        h_ex_d_t = dc.calc_h_ex(self.get_X_ex_d_t(), self.get_Theta_ex_d_t())
+        return h_ex_d_t
+
+    def get_C_df_H_d_t(self) -> Array8760:
+        """
+        デフロストに関する暖房出力補正係数 [-]
+        暖房時のみ使用される係数。冷房時は全て1.0を返す。
+        Returns:
+            C_df_H_d_t: 日付dの時刻tにおけるデフロストに関する暖房出力補正係数 [-]
+        """
+        C_df_H_d_t = dc.get_C_df_H_d_t(self.get_Theta_ex_d_t(), self.get_h_ex_d_t())
+        return C_df_H_d_t

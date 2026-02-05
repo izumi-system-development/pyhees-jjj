@@ -97,6 +97,7 @@ def calc_main(
     _logger.info(f"e_rtd_H [-]: {heat_CRAC.e_rtd}")
 
     # ドメインサービス
+    climate = ClimateService(house.region, ufac, climateFile)
     heat_quantity = HeatQuantityService(heat_ac_setting, house.region, house.A_A)
     cool_quantity = CoolQuantityService(cool_ac_setting, house.region, house.A_A)
 
@@ -204,7 +205,7 @@ def calc_main(
 
     Q_UT_H_d_t_i: np.ndarray
     """暖房設備機器等の未処理暖房負荷(MJ/h)"""
-    _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, C_df_H_d_t = \
+    _, Q_UT_H_d_t_i, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, _, _, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
@@ -226,10 +227,9 @@ def calc_main(
 
     # (3) 日付dの時刻tにおける1時間当たりの熱源機の平均暖房能力(W)
     q_hs_H_d_t = \
-        dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, C_df_H_d_t, house.region)
+        dc_a.get_q_hs_H_d_t(Theta_hs_out_d_t, Theta_hs_in_d_t, V_hs_supply_d_t, climate.get_C_df_H_d_t(), house.region)
     # NOTE: 消費電力量計算に広く使用されており、広いスコープで定義してよいことを確認済
 
-    climate = ClimateService(house.region)
     HCM = climate.get_HCM_d_t()
 
     E_E_fan_H_d_t: Array8760
@@ -382,7 +382,7 @@ def calc_main(
     df_output2['Theta_ex_d_t [℃]']          = Theta_ex_d_t
     df_output2['V_hs_supply_H_d_t [m3/h]']  = V_hs_supply_d_t
     df_output2['V_hs_vent_H_d_t [m3/h]']    = V_hs_vent_d_t
-    df_output2['C_df_H_d_t [-]']            = C_df_H_d_t
+    df_output2['C_df_H_d_t [-]']            = climate.get_C_df_H_d_t()
 
     ##### 冷房消費電力の計算（kWh/h）
     print("冷房消費電力の計算")
@@ -436,7 +436,7 @@ def calc_main(
 
     E_C_UT_d_t: np.ndarray
     """冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
-    E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, _ = \
+    E_C_UT_d_t, _, _, _, Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
