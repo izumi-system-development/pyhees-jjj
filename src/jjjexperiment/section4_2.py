@@ -141,9 +141,6 @@ def calc_Q_UT_A(
 
     df_output['Theta_ex_d_t']  = Theta_ex_d_t
     df_output['X_ex_d_t']      = X_ex_d_t
-
-    h_ex_d_t = calc_h_ex(X_ex_d_t, Theta_ex_d_t)
-
     df_output['J_d_t']    = J_d_t.to_numpy()
     df_output['h_ex_d_t'] = h_ex_d_t
 
@@ -1430,8 +1427,8 @@ def calc_Q_UT_A(
 
     """ まとめ - 一次エネルギー """
     # (1)　冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値
-    E_C_UT_d_t = dc.get_E_C_UT_d_t(Q_UT_CL_d_t_i, Q_UT_CS_d_t_i, house.region)
-    df_output['E_C_UT_d_t'] = E_C_UT_d_t
+    E_UT_C_d_t = dc.get_E_C_UT_d_t(Q_UT_CL_d_t_i, Q_UT_CS_d_t_i, house.region)
+    df_output['E_C_UT_d_t'] = E_UT_C_d_t
 
     # 床下空調新ロジック調査用変数の出力
     if new_ufac.new_ufac_flg == 床下空調ロジック.変更する:
@@ -1453,6 +1450,6 @@ def calc_Q_UT_A(
         case(_, _):
             raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-    return E_C_UT_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i,  \
+    return E_UT_C_d_t, Q_UT_H_d_t_i, Q_UT_CS_d_t_i, Q_UT_CL_d_t_i,  \
             Theta_hs_out_d_t, Theta_hs_in_d_t, Theta_ex_d_t,  \
             X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t, V_vent_g_i, C_df_H_d_t
