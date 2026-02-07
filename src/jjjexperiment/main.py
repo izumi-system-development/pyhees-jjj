@@ -427,9 +427,9 @@ def calc_main(
     """定格冷房能力運転時の送風機の消費電力(W)"""
     _logger.info(f"P_rac_fan_rtd_C [W]: {P_rac_fan_rtd_C}")
 
-    E_C_UT_d_t: np.ndarray
+    E_UT_C_d_t: np.ndarray  # NOTE: ベースプログラムでは E_UT_C, E_C_UT が統一されていない
     """冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値(MJ/h)"""
-    E_C_UT_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t = \
+    E_UT_C_d_t, Theta_hs_out_d_t, Theta_hs_in_d_t, X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t = \
         injector.call_with_injection(jjj_dc.calc_Q_UT_A)
     _logger.NDdebug("V_hs_supply_d_t", V_hs_supply_d_t)
     _logger.NDdebug("V_hs_vent_d_t", V_hs_vent_d_t)
@@ -580,9 +580,8 @@ def calc_main(
     ##### 計算結果のまとめ
 
     f_prim: float       = get_f_prim()                              # 電気の量 1kWh を熱量に換算する係数(kJ/kWh)
-    # CHECK: E_C_UT_d_t, E_H_UT_d_t 変数名表現の統一
     E_H_d_t: np.ndarray = E_E_H_d_t * f_prim / 1000 + E_UT_H_d_t    #1 時間当たりの暖房設備の設計一次エネルギー消費量(MJ/h)
-    E_C_d_t: np.ndarray = E_E_C_d_t * f_prim / 1000 + E_C_UT_d_t    #1 時間当たりの冷房設備の設計一次エネルギー消費量(MJ/h)
+    E_C_d_t: np.ndarray = E_E_C_d_t * f_prim / 1000 + E_UT_C_d_t    #1 時間当たりの冷房設備の設計一次エネルギー消費量(MJ/h)
     E_H                 = np.sum(E_H_d_t)                           #1 年当たりの暖房設備の設計一次エネルギー消費量(MJ/年)
     E_C                 = np.sum(E_C_d_t)                           #1 年当たりの冷房設備の設計一次エネルギー消費量(MJ/年)
 
@@ -606,7 +605,7 @@ def calc_main(
     df_output2['E_E_H_d_t [kWh/h]']         = E_E_H_d_t
     df_output2['E_E_C_d_t [kWh/h]']         = E_E_C_d_t
     df_output2['E_UT_H_d_t [MJ/h]']         = E_UT_H_d_t
-    df_output2['E_UT_C_d_t [MJ/h]']         = E_C_UT_d_t
+    df_output2['E_UT_C_d_t [MJ/h]']         = E_UT_C_d_t
     df_output2['L_H_d_t [MJ/h]']            = L_H_d_t
     df_output2['L_CS_d_t [MJ/h]']           = L_CS_d_t
     df_output2['L_CL_d_t [MJ/h]']           = L_CL_d_t

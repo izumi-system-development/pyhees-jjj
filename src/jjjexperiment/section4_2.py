@@ -1424,9 +1424,11 @@ def calc_Q_UT_A(
             alpha_UT_H_A: float = get_alpha_UT_H_A(house.region)
             Q_UT_H_A_d_t: np.ndarray = np.sum(Q_UT_H_d_t_i, axis=0)
             E_UT_d_t = Q_UT_H_A_d_t * alpha_UT_H_A
+            df_output['E_UT_H_d_t'] = E_UT_d_t
         case CoolingAcSetting():
             # (1)　冷房設備の未処理冷房負荷の設計一次エネルギー消費量相当値
             E_UT_d_t = dc.get_E_C_UT_d_t(Q_UT_CL_d_t_i, Q_UT_CS_d_t_i, house.region)
+            df_output['E_UT_C_d_t'] = E_UT_d_t
         case _:
             raise ValueError("ac_setting must be HeatingAcSetting or CoolingAcSetting")
 
@@ -1450,8 +1452,6 @@ def calc_Q_UT_A(
         case(_, _):
             raise Exception("q_hs_rtd_H, q_hs_rtd_C はどちらかのみを前提")
 
-    # Mode-specific energy value (E_UT_H_d_t or E_UT_C_d_t)
-    # Other variables used by subsequent calculations
     return E_UT_d_t, \
             Theta_hs_out_d_t, Theta_hs_in_d_t, \
             X_hs_out_d_t, X_hs_in_d_t, V_hs_supply_d_t, V_hs_vent_d_t
