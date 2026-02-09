@@ -22,7 +22,7 @@ class ClimateService:
 
     def get_J_d_t(self) -> Array8760:
         J_d_t = slr.calc_I_s_d_t(0, 0, rgn.get_climate_df(self.climate))
-        return J_d_t
+        return J_d_t.values  # pd.Series -> ndarray
 
     def get_X_ex_d_t(self) -> Array8760:
         X_ex_d_t = rgn.get_X_ex(self.climate)
