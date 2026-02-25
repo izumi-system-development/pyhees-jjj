@@ -15,7 +15,7 @@ def get_E_E_fan_d_t(
         V_hs_dsgn: float,
         q_hs_d_t: Array8760,
         E_E_fan_min: float
-        ) -> float:
+        ) -> Array8760:
     """(37)改 日付dの時刻tにおける1時間当たり 送風機の消費電力量のうちの暖房設備への付加分 [kWh/h]
 
     Args:
@@ -44,15 +44,20 @@ def get_E_E_fan_d_t(
     x2 = V_hs_dsgn
     y2 = P_fan_rtd
 
+    # 消費電力が発生する時間。従来ロジックと同じ条件でフィルタする。
+    f = q_hs_d_t > 0
+
     match E_E_fan_logic:
         case ファン消費電力算定方法.直線近似法:
             a, b = _solve_linear_system(x1_d_t, x2, y1, y2)
-            E_E_fan = a * V_hs_supply_d_t + b
+            E_E_fan = np.zeros_like(V_hs_supply_d_t)
+            E_E_fan[f] = a[f] * V_hs_supply_d_t[f] + b[f]
             return np.maximum(E_E_fan * 1e-3, 0.0)  # [kW]
 
         case ファン消費電力算定方法.風量三乗近似法:
             a, b = _solve_cubic_system(x1_d_t, x2, y1, y2)
-            E_E_fan = a * V_hs_supply_d_t**3 + b
+            E_E_fan = np.zeros_like(V_hs_supply_d_t)
+            E_E_fan[f] = a[f] * V_hs_supply_d_t[f]**3 + b[f]
             return np.maximum(E_E_fan * 1e-3, 0.0)  # [kW]
 
         case _:
