@@ -1,11 +1,10 @@
 import json
-from injector import inject, Injector
-import numpy as np
+from injector import inject
 import pandas as pd
 from datetime import datetime
 
 from pyhees.section2_1_b import get_f_prim
-from pyhees.section4_1 import calc_heating_load, calc_cooling_load, get_virtual_heating_devices, get_alpha_UT_H_A
+from pyhees.section4_1 import calc_heating_load, calc_cooling_load, get_virtual_heating_devices
 from pyhees.section4_1_a import calc_heating_mode
 
 # ダクト式セントラル空調機
@@ -30,7 +29,6 @@ import jjjexperiment.denchu.inputs.heating as jjj_denchu_heat_ipt
 import jjjexperiment.denchu.inputs.cooling as jjj_denchu_cool_ipt
 
 import jjjexperiment.inputs.di_container as jjj_ipt_di
-from jjjexperiment.inputs.options import *
 from jjjexperiment.inputs.di_container import *
 # データクラス
 from jjjexperiment.inputs.common import HouseInfo, OuterSkin, HEX
@@ -261,7 +259,8 @@ def calc_main(
                         , V_hs_supply_d_t
                         , V_hs_dsgn_H
                         , q_hs_H_d_t  # W
-                        , heat_ac_setting.f_SFP)  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                        , heat_ac_setting.f_SFP  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                        , v_min_heating_input.subtract_ventilation_power)
 
             case 最低風量直接入力.入力する:
                 print(最低風量直接入力.入力する)
@@ -279,7 +278,8 @@ def calc_main(
                                 , V_hs_supply_d_t
                                 , V_hs_dsgn_H
                                 , q_hs_H_d_t  # W
-                                , heat_ac_setting.f_SFP)  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                                , heat_ac_setting.f_SFP  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                                , ファン消費電力から換気分を引く.換気分を引かない)  # 最低風量を入力する場合、換気分は引かない
 
                     case 最低電力直接入力.入力する:
                         print(最低電力直接入力.入力する)
@@ -475,7 +475,8 @@ def calc_main(
                         , V_hs_supply_d_t
                         , V_hs_dsgn_C
                         , q_hs_C_d_t  # W
-                        , cool_ac_setting.f_SFP)  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                        , cool_ac_setting.f_SFP  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                        , v_min_cooling_input.subtract_ventilation_power)
 
             case 最低風量直接入力.入力する:
                 print(最低風量直接入力.入力する)
@@ -493,7 +494,8 @@ def calc_main(
                                 , V_hs_supply_d_t
                                 , V_hs_dsgn_C
                                 , q_hs_C_d_t  # W
-                                , cool_ac_setting.f_SFP)  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                                , cool_ac_setting.f_SFP  # NOTE: 従来式は標準値固定だがカスタム値を反映
+                                , ファン消費電力から換気分を引く.換気分を引かない)  # 最低風量を入力する場合、換気分は引かない
 
                     case 最低電力直接入力.入力する:
                         print(最低電力直接入力.入力する)

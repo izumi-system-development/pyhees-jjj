@@ -45,7 +45,7 @@ from scipy import optimize
 # JJJ_EXPERIMENT ADD
 from jjjexperiment.common import *
 import jjjexperiment.constants as jjj_consts
-from jjjexperiment.inputs.options import 計算モデル
+from jjjexperiment.inputs.options import 計算モデル, ファン消費電力から換気分を引く
 from jjjexperiment.logger import LimitedLoggerAdapter as _logger, log_res
 
 # ============================================================================
@@ -1429,8 +1429,9 @@ def get_A_e_hex(type, q_hs_rtd_C):
 # ============================================================================
 
 @jjj_cloned  # 潜熱評価モデル, 最低風量・最低電力 直接入力
-@jjj_mod  # SFP あるなら使う用にだけ変更
-def get_E_E_fan_H_d_t(P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, q_hs_H_d_t, f_SFP=None):
+@jjj_mod  # SFP あるなら使う用にだけ変更。また、消費電力から換気分を引くかどうか設定可能にする。
+def get_E_E_fan_H_d_t(P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, q_hs_H_d_t,
+                      f_SFP=None, subtract_ventilation_power=ファン消費電力から換気分を引く.換気分を引く):
     """(37)
 
     Args:
@@ -1447,7 +1448,17 @@ def get_E_E_fan_H_d_t(P_fan_rtd_H, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_H, 
     f_SFP = get_f_SFP(f_SFP)
     E_E_fan_H_d_t = np.zeros(24 * 365)
 
-    a = (P_fan_rtd_H - f_SFP * V_hs_vent_d_t) \
+    # 換気分のファン消費電力
+    match subtract_ventilation_power:
+        case ファン消費電力から換気分を引く.換気分を引く:
+            # 従来式
+            P_fan_vent_d_t = f_SFP * V_hs_vent_d_t
+        case ファン消費電力から換気分を引く.換気分を引かない:
+            P_fan_vent_d_t = 0
+        case _:
+            raise ValueError
+
+    a = (P_fan_rtd_H - P_fan_vent_d_t) \
         * ((V_hs_supply_d_t - V_hs_vent_d_t) / (V_hs_dsgn_H - V_hs_vent_d_t)) * 10 ** (-3)
 
     E_E_fan_H_d_t[q_hs_H_d_t > 0] = np.clip(a[q_hs_H_d_t > 0], 0, None)
@@ -1482,8 +1493,9 @@ def get_e_rtd_C():
     return e_rtd_C
 
 @jjj_cloned  # 潜熱評価モデル, 最低風量・最低電力 直接入力
-@jjj_mod  # SFP あるなら使う用にだけ変更
-def get_E_E_fan_C_d_t(P_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C, q_hs_C_d_t, f_SFP=None):
+@jjj_mod  # SFP あるなら使う用にだけ変更。また、消費電力から換気分を引くかどうか設定可能にする。
+def get_E_E_fan_C_d_t(P_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C, q_hs_C_d_t,
+                      f_SFP=None, subtract_ventilation_power=ファン消費電力から換気分を引く.換気分を引く):
     """(38)
 
     Args:
@@ -1500,7 +1512,17 @@ def get_E_E_fan_C_d_t(P_fan_rtd_C, V_hs_vent_d_t, V_hs_supply_d_t, V_hs_dsgn_C, 
     f_SFP = get_f_SFP(f_SFP)
     E_E_fan_C_d_t = np.zeros(24 * 365)
 
-    a = (P_fan_rtd_C - f_SFP * V_hs_vent_d_t) \
+    # 換気分のファン消費電力
+    match subtract_ventilation_power:
+        case ファン消費電力から換気分を引く.換気分を引く:
+            # 従来式
+            P_fan_vent_d_t = f_SFP * V_hs_vent_d_t
+        case ファン消費電力から換気分を引く.換気分を引かない:
+            P_fan_vent_d_t = 0
+        case _:
+            raise ValueError
+
+    a = (P_fan_rtd_C - P_fan_vent_d_t) \
         * ((V_hs_supply_d_t - V_hs_vent_d_t) / (V_hs_dsgn_C - V_hs_vent_d_t)) * 10 ** (-3)
 
     E_E_fan_C_d_t[q_hs_C_d_t > 0] = np.clip(a[q_hs_C_d_t > 0], 0, None)
