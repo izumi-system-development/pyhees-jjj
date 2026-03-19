@@ -135,7 +135,7 @@ def calc_E_E_H_d_t_type4(
 
     # 電中研モデル調査用
     df_output_denchuH = pd.DataFrame(index = pd.date_range(
-        datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
+        datetime(2023,1,1,0,0,0), datetime(2023,12,31,23,0,0), freq='h'))
 
     df_output_denchuH = df_output_denchuH.assign(
         q_hs_H_d_t = q_hs_H_d_t,  # W
@@ -275,7 +275,7 @@ def calc_E_E_C_d_t_type4(
 
     # 電中研モデル調査用
     df_output_denchuC = pd.DataFrame(index = pd.date_range(
-        datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
+        datetime(2023,1,1,0,0,0), datetime(2023,12,31,23,0,0), freq='h'))
 
     df_output_denchuC = df_output_denchuC.assign(
         q_hs_C_d_t = q_hs_C_d_t,  # W

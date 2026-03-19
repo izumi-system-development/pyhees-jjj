@@ -372,7 +372,7 @@ def calc_main(
 
     _logger.NDdebug("E_UT_H_d_t", E_UT_H_d_t)
 
-    df_output2 = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
+    df_output2 = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,0,0,0), datetime(2023,12,31,23,0,0), freq='h'))
     df_output2['Q_UT_H_d_A_t [MJ/h]'] = np.full(len(df_output2), np.nan)  # 列数維持のため
     df_output2['Theta_hs_H_out_d_t [℃]']    = Theta_hs_out_d_t
     df_output2['Theta_hs_H_in_d_t [℃]']     = Theta_hs_in_d_t

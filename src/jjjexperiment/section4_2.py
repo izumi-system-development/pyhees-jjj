@@ -119,12 +119,12 @@ def calc_Q_UT_A(
         case _:
             raise ValueError("暖房・冷房の判別がつかない")
 
-    df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
+    df_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,0,0,0), datetime(2023,12,31,23,0,0), freq='h'))
     df_output2 = pd.DataFrame()
     df_output3 = pd.DataFrame()
 
     # 熱繰越調査用出力ファイル
-    df_carryover_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,1,0,0), datetime(2024,1,1,0,0,0), freq='h'))
+    df_carryover_output  = pd.DataFrame(index = pd.date_range(datetime(2023,1,1,0,0,0), datetime(2023,12,31,23,0,0), freq='h'))
 
     # 気象条件
     climate = ClimateService(house.region, new_ufac, climateFile)
